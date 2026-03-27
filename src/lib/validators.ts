@@ -1,6 +1,6 @@
 // Business rule validators
 
-import { Mission, Client, Driver, Vehicle, Expense, Invoice, MissionStatus, DriverStatus, VehicleStatus } from '../types'
+import { Mission, Driver, Vehicle, MissionStatus, DriverStatus, VehicleStatus } from '../types'
 
 // ============================================================================
 // MISSION VALIDATORS
@@ -71,7 +71,6 @@ export function validateMissionCreation(data: {
 }
 
 export function validateMissionAssignment(
-  mission: Mission,
   driver?: Driver,
   vehicle?: Vehicle,
 ): ValidationResult {

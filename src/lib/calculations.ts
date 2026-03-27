@@ -1,6 +1,6 @@
 // Financial and operational calculations
 
-import type { Mission, Expense, Invoice, Payment, Expense as ExpenseType } from '../types'
+import type { Mission, Expense, Invoice, Payment } from '../types'
 import type { MissionProfitability, DriverPerformance, VehicleHealthStatus, FinancialSnapshot } from '../types/relationships'
 
 // ============================================================================
@@ -69,7 +69,7 @@ export function calculateDriverPerformance(
   expenses: Expense[],
 ): DriverPerformance {
   const driverMissions = missions.filter((m) => m.driver_id === driverId)
-  const driverExpenses = expenses.filter((e) => e.driver_id === driverId || e.mission_ids?.includes(driverId))
+  const driverExpenses = expenses.filter((e) => e.driver_id === driverId)
 
   const completedMissions = driverMissions.filter((m) => m.status === 'delivered')
   const totalRevenue = completedMissions.reduce((sum, m) => sum + m.revenue_amount, 0)
@@ -95,7 +95,6 @@ export function calculateDriverPerformance(
 export function calculateVehicleHealthStatus(
   vehicleId: string,
   mileageCurrent: number,
-  mileageLastService: number,
   nextServiceMileage: number,
   lastServiceDate: string | undefined,
   missions: Mission[],
