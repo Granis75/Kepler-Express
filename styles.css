@@ -1,0 +1,101 @@
+:root {
+  --bg: #ffffff;
+  --panel: #ffffff;
+  --panel-soft: #f5f5f5;
+  --line: #e7e7e7;
+  --ink: #101010;
+  --muted: #696969;
+  --blue-bg: #eff6ff;
+  --blue-text: #1d4ed8;
+  --green-bg: #ecfdf3;
+  --green-text: #047857;
+  --amber-bg: #fffbeb;
+  --amber-text: #b45309;
+  --red-bg: #fef2f2;
+  --red-text: #b91c1c;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); }
+body { min-height: 100vh; }
+button, input { font: inherit; }
+.hidden { display: none !important; }
+
+.page-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, rgba(0, 0, 0, 0.03), transparent 22%), linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+}
+.page-wrap { max-width: 1360px; margin: 0 auto; padding: 32px 24px 56px; }
+.hero { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 28px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; background: #fafafa; color: var(--muted); padding: 8px 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+.dot { width: 8px; height: 8px; border-radius: 999px; background: #111; display: inline-block; }
+.hero h1 { margin: 14px 0 0; max-width: 880px; font-size: clamp(2.2rem, 4vw, 4rem); line-height: 1.02; letter-spacing: -0.04em; }
+.hero p { margin: 14px 0 0; max-width: 760px; color: var(--muted); font-size: 1rem; line-height: 1.7; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.button { border-radius: 18px; padding: 12px 16px; border: 1px solid var(--line); cursor: pointer; transition: transform 120ms ease, border-color 120ms ease, background 120ms ease; }
+.button:hover, .tab-button:hover { transform: translateY(-1px); }
+.button-primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.button-secondary { background: #fff; color: var(--ink); }
+.kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+.kpi-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03); }
+.kpi-card { padding: 20px; display: flex; justify-content: space-between; gap: 16px; }
+.kpi-label, .label { color: var(--muted); font-size: 0.82rem; }
+.kpi-value { margin: 8px 0 0; font-size: 2rem; line-height: 1; letter-spacing: -0.04em; }
+.kpi-hint { margin: 10px 0 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.icon-shell { width: 48px; height: 48px; border-radius: 18px; border: 1px solid var(--line); background: #fafafa; display: grid; place-items: center; color: #444; flex-shrink: 0; }
+.main-grid { margin-top: 24px; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); gap: 24px; }
+.side-column { display: flex; flex-direction: column; gap: 24px; }
+.panel { padding: 22px; }
+.panel-header { margin-bottom: 18px; }
+.panel-header-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.panel h2 { margin: 0; font-size: 1.25rem; }
+.panel-header p, .fleet-head p, .priority-card p, .workflow-card p, .invoice-card p, .alert-card p { margin: 6px 0 0; color: var(--muted); line-height: 1.6; }
+.searchbox { display: flex; align-items: center; gap: 8px; width: min(320px, 100%); border: 1px solid var(--line); background: #fff; color: var(--muted); border-radius: 18px; padding: 10px 12px; }
+.searchbox input { width: 100%; border: none; outline: none; background: transparent; }
+.mission-list, .alert-stack, .fleet-list, .priority-list, .invoice-list { display: flex; flex-direction: column; gap: 12px; }
+.mission-card, .fleet-card, .invoice-card { border: 1px solid var(--line); border-radius: 24px; padding: 16px; transition: border-color 140ms ease, background 140ms ease; }
+.mission-card:hover, .fleet-card:hover, .invoice-card:hover { border-color: #d5d5d5; background: #fafafa; }
+.mission-card { display: flex; justify-content: space-between; gap: 16px; }
+.mission-id { font-size: 0.85rem; font-weight: 700; }
+.mission-main h3, .fleet-head h3 { margin: 10px 0 0; font-size: 1.05rem; }
+.mission-meta-row, .invoice-title-row, .fleet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.mission-details { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 0.92rem; }
+.mission-details span, .expense-type { display: inline-flex; align-items: center; gap: 6px; }
+.metric-pill-grid { min-width: 310px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.metric-pill, .workflow-card, .priority-card { border-radius: 20px; background: var(--panel-soft); padding: 14px; }
+.metric-pill span { display: block; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.metric-pill strong, .invoice-right strong { display: block; margin-top: 6px; }
+.badge { display: inline-flex; align-items: center; justify-content: center; padding: 7px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.badge-neutral { background: #f4f4f5; color: #4b5563; border-color: #e4e4e7; }
+.badge-blue { background: var(--blue-bg); color: var(--blue-text); border-color: #bfdbfe; }
+.badge-green { background: var(--green-bg); color: var(--green-text); border-color: #bbf7d0; }
+.badge-amber { background: var(--amber-bg); color: var(--amber-text); border-color: #fde68a; }
+.badge-red { background: var(--red-bg); color: var(--red-text); border-color: #fecaca; }
+.alert-card { border-radius: 22px; padding: 16px; display: flex; justify-content: space-between; gap: 14px; border: 1px solid var(--line); }
+.alert-card strong { display: block; }
+.alert-red { background: var(--red-bg); border-color: #fecaca; color: var(--red-text); }
+.alert-amber { background: var(--amber-bg); border-color: #fde68a; color: var(--amber-text); }
+.alert-neutral { background: #fafafa; }
+.fleet-meta { display: flex; justify-content: space-between; gap: 10px; margin: 10px 0 12px; color: var(--muted); font-size: 0.9rem; }
+.progress-track { width: 100%; height: 8px; border-radius: 999px; background: #ececec; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #111, #444); }
+.tabs-shell { margin-top: 24px; }
+.tabs-row { display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 18px; background: #f3f3f3; margin-bottom: 16px; }
+.tab-button { border: none; background: transparent; padding: 10px 14px; border-radius: 14px; cursor: pointer; }
+.tab-active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 880px; }
+th, td { text-align: left; padding: 14px 10px; border-bottom: 1px solid #efefef; vertical-align: top; }
+th { color: var(--muted); font-size: 0.82rem; font-weight: 600; }
+.table-amount { font-weight: 700; }
+.table-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.invoice-card { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.invoice-right { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.link-button { border: none; background: transparent; color: #444; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.overview-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 24px; }
+.workflow-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.workflow-card strong, .priority-card strong { display: block; }
+@media (max-width: 1180px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .main-grid, .overview-grid { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .page-wrap { padding: 24px 16px 42px; } .hero, .panel-header-row, .mission-card, .invoice-card { flex-direction: column; align-items: stretch; } .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .metric-pill-grid, .workflow-grid { grid-template-columns: 1fr; min-width: 0; } .tabs-row { width: 100%; } }
+@media (max-width: 560px) { .kpi-grid { grid-template-columns: 1fr; } .fleet-meta, .invoice-right { flex-direction: column; align-items: flex-start; } }

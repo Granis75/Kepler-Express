@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kepler Express — Operations System</title>
+    <meta
+      name="description"
+      content="Internal logistics operations system for missions, expenses, fleet visibility and invoicing."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <main class="page-wrap">
+        <section class="hero">
+          <div>
+            <div class="eyebrow">
+              <span class="dot"></span>
+              Kepler Express — Internal Operations System
+            </div>
+            <h1>Operations, missions and cost control in one clean system.</h1>
+            <p>
+              A focused V1 designed for logistics teams: missions, expenses, fleet visibility and invoicing without Excel chaos.
+            </p>
+          </div>
+          <div class="hero-actions">
+            <button class="button button-primary" type="button">Create mission</button>
+            <button class="button button-secondary" type="button">Log expense</button>
+          </div>
+        </section>
+
+        <section class="kpi-grid" id="kpi-grid"></section>
+
+        <section class="main-grid">
+          <article class="panel">
+            <div class="panel-header panel-header-row">
+              <div>
+                <h2>Mission control</h2>
+                <p>Dispatch visibility across drivers, vehicles and routes.</p>
+              </div>
+              <label class="searchbox">
+                <span class="search-icon">⌕</span>
+                <input id="mission-search" placeholder="Search client, route, vehicle..." />
+              </label>
+            </div>
+            <div class="mission-list" id="mission-list"></div>
+          </article>
+
+          <aside class="side-column">
+            <article class="panel">
+              <div class="panel-header">
+                <h2>Operational alerts</h2>
+                <p>What needs attention now.</p>
+              </div>
+              <div class="alert-stack">
+                <div class="alert-card alert-red">
+                  <div>
+                    <strong>Missing expense receipt</strong>
+                    <p>Mission M-2404 has a driver advance without receipt attached.</p>
+                  </div>
+                  <span>⚠</span>
+                </div>
+                <div class="alert-card alert-amber">
+                  <div>
+                    <strong>Vehicle service threshold</strong>
+                    <p>Berlingo 02 is 120 km away from its service interval.</p>
+                  </div>
+                  <span>🛠</span>
+                </div>
+                <div class="alert-card alert-neutral">
+                  <div>
+                    <strong>Invoice follow-up</strong>
+                    <p>1 client invoice is overdue and requires follow-up.</p>
+                  </div>
+                  <span>📄</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-header">
+                <h2>Fleet health</h2>
+                <p>Maintenance visibility across active vehicles.</p>
+              </div>
+              <div class="fleet-list" id="fleet-list"></div>
+            </article>
+          </aside>
+        </section>
+
+        <section class="tabs-shell">
+          <div class="tabs-row" role="tablist" aria-label="Kepler tabs">
+            <button type="button" class="tab-button tab-active" data-tab="expenses">Expenses</button>
+            <button type="button" class="tab-button" data-tab="invoices">Invoices</button>
+            <button type="button" class="tab-button" data-tab="overview">System logic</button>
+          </div>
+
+          <div class="tab-panel" id="tab-expenses"></div>
+          <div class="tab-panel hidden" id="tab-invoices"></div>
+          <div class="tab-panel hidden" id="tab-overview"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
