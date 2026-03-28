@@ -24,6 +24,15 @@ Complete PostgreSQL schema for Kepler Express Ops.
 ### SCHEMA.md
 Comprehensive documentation of the data model and design decisions.
 
+### demo_seed.sql
+Resettable demo dataset for a small French logistics operation.
+
+### demo_reset.sql
+Cleanup script for removing the demo dataset.
+
+### DEMO_DATA.md
+Usage notes and scenario coverage for the demo dataset.
+
 ## Setup Checklist
 
 - [ ] Create Supabase project
@@ -47,6 +56,17 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 3. Test connection in React app
 4. Create first organization
 5. Invite team members
+
+## Demo Data
+
+To load a coherent demo environment for sales, testing, or local review:
+
+1. Create a dedicated demo user in Supabase Auth
+2. Replace the placeholder `app.demo_user_id` in `demo_seed.sql`
+3. Run `demo_seed.sql` in the SQL Editor
+4. Use `demo_reset.sql` whenever you want a clean reset
+
+See `DEMO_DATA.md` for the covered operational scenarios.
 
 ## RLS Policies
 
