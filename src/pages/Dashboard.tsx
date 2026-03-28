@@ -69,6 +69,26 @@ export function Dashboard() {
   )
   const { data, loading, error, reload } = useAsyncData(loadDashboardData, [])
 
+  const clients = data?.[0] ?? []
+  const drivers = data?.[1] ?? []
+  const missions = data?.[2] ?? []
+  const expenses = data?.[3] ?? []
+  const vehicles = data?.[4] ?? []
+  const invoices = data?.[5] ?? []
+
+  const clientNameById = useMemo(
+    () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
+    [clients]
+  )
+  const driverNameById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.driver_id, driver.name] as const)),
+    [drivers]
+  )
+  const missionReferenceById = useMemo(
+    () => new Map(missions.map((mission) => [mission.mission_id, mission.reference] as const)),
+    [missions]
+  )
+
   if (loading) {
     return (
       <PageContainer>
@@ -95,21 +115,6 @@ export function Dashboard() {
       </PageContainer>
     )
   }
-
-  const [clients, drivers, missions, expenses, vehicles, invoices] = data
-
-  const clientNameById = useMemo(
-    () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
-    [clients]
-  )
-  const driverNameById = useMemo(
-    () => new Map(drivers.map((driver) => [driver.driver_id, driver.name] as const)),
-    [drivers]
-  )
-  const missionReferenceById = useMemo(
-    () => new Map(missions.map((mission) => [mission.mission_id, mission.reference] as const)),
-    [missions]
-  )
 
   const missionsInProgress = missions.filter(
     (mission) => mission.status === MissionStatus.InProgress
