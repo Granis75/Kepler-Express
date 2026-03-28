@@ -1,5 +1,4 @@
 import { useState, ReactNode } from 'react'
-import { useLocation as _ } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 
@@ -11,15 +10,13 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-white">
-      {/* Desktop Sidebar */}
+    <div className="flex h-screen bg-neutral-50">
       <div className="hidden md:flex md:flex-col md:w-64 md:border-r md:border-gray-200">
         <div className="md:flex md:flex-col md:h-full md:overflow-y-auto">
           <Sidebar onClose={() => setSidebarOpen(false)} />
         </div>
       </div>
 
-      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
@@ -34,13 +31,9 @@ export function Layout({ children }: LayoutProps) {
         </div>
       )}
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          sidebarOpen={sidebarOpen}
-        />
-        <main className="flex-1 overflow-y-auto">
+        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="flex-1 overflow-y-auto bg-neutral-50">
           {children}
         </main>
       </div>

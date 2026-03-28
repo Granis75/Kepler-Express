@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { ChevronRight } from 'lucide-react'
+import { formatCurrencyWithDecimals } from '../lib/utils'
 
 export interface ExpenseListItemProps {
-  id: string
   mission: string
   category: string
   amount: number
@@ -27,44 +27,51 @@ export function ExpenseListItem({
   advancedByDriver,
   onClick,
 }: ExpenseListItemProps) {
+  const content = (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-medium text-gray-900">{category}</p>
+          {advancedByDriver && (
+            <span className="inline-flex text-xs font-medium px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+              Driver Advance
+            </span>
+          )}
+          <span
+            className={clsx(
+              'inline-flex text-xs font-medium px-2 py-0.5 rounded border',
+              statusStyles[status]
+            )}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        </div>
+        <p className="text-xs text-gray-600 truncate">
+          {mission} • {driver}
+        </p>
+      </div>
+      <div className="flex items-center gap-3 ml-2">
+        <div className="text-right">
+          <p className="text-sm font-semibold text-gray-900">
+            {formatCurrencyWithDecimals(amount)}
+          </p>
+        </div>
+        {onClick && <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />}
+      </div>
+    </div>
+  )
+
+  if (!onClick) {
+    return <div className="p-4 border-b border-gray-100">{content}</div>
+  }
+
   return (
     <button
       onClick={onClick}
-      className={clsx(
-        'w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-100',
-        onClick && 'cursor-pointer'
-      )}
+      className="w-full cursor-pointer text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-100"
       type="button"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <p className="text-sm font-medium text-gray-900">{category}</p>
-            {advancedByDriver && (
-              <span className="inline-flex text-xs font-medium px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                Driver Advance
-              </span>
-            )}
-            <span
-              className={clsx(
-                'inline-flex text-xs font-medium px-2 py-0.5 rounded border',
-                statusStyles[status]
-              )}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
-          </div>
-          <p className="text-xs text-gray-600 truncate">
-            {mission} • {driver}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 ml-2">
-          <div className="text-right">
-            <p className="text-sm font-semibold text-gray-900">€{amount.toFixed(2)}</p>
-          </div>
-          {onClick && <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />}
-        </div>
-      </div>
+      {content}
     </button>
   )
 }

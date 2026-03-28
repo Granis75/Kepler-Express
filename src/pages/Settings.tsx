@@ -1,44 +1,45 @@
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
+import { isSupabaseConfigured } from '../lib/data'
 
 export function Settings() {
+  const supabaseConfigured = isSupabaseConfigured()
+
   return (
     <PageContainer>
       <PageHeader
         title="Settings"
-        description="Manage your organization and preferences"
+        description="Workspace configuration and environment status"
       />
 
-      <div className="space-y-6 max-w-2xl">
-        {/* Organization Settings */}
+      <div className="space-y-6 max-w-3xl">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Organization</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900">
-                Organization Name
-              </label>
-              <input
-                type="text"
-                placeholder="Enter organization name"
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                disabled
-              />
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Environment</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                Data source
+              </p>
+              <p className="text-gray-900">
+                {supabaseConfigured ? 'Supabase configured' : 'Supabase not configured'}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                Product scope
+              </p>
+              <p className="text-gray-900">Operations modules only</p>
             </div>
           </div>
         </div>
 
-        {/* Preferences */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-900">
-                Email notifications
-              </label>
-              <input type="checkbox" defaultChecked className="rounded" />
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Administration</h2>
+          <p className="text-sm text-gray-600 leading-6">
+            Organization details, access control, and authentication are managed in
+            Supabase for this V1. This app focuses on day-to-day operations rather than
+            back-office administration.
+          </p>
         </div>
       </div>
     </PageContainer>

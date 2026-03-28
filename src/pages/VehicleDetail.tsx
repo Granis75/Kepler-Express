@@ -245,7 +245,6 @@ export function VehicleDetail() {
                 {relatedMissions.map((mission) => (
                   <MissionListItem
                     key={mission.mission_id}
-                    id={mission.mission_id}
                     reference={mission.reference}
                     client={getClientName(mission.client_id)}
                     route={`${mission.departure_location} → ${mission.arrival_location}`}

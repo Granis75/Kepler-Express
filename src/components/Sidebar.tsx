@@ -7,7 +7,6 @@ import {
   MapPin,
   CreditCard,
   Settings,
-  LogOut,
   Gauge,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -67,12 +66,8 @@ export function Sidebar({ onClose }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User Section */}
-      <div className="border-t border-gray-200 px-3 py-4">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-gray-50 transition-all duration-150 text-sm">
-          <LogOut size={20} />
-          <span>Sign Out</span>
-        </button>
+      <div className="border-t border-gray-200 px-6 py-4">
+        <p className="text-xs text-gray-500">Internal operations workspace</p>
       </div>
     </div>
   )

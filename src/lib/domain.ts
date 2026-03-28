@@ -260,7 +260,7 @@ export function getMissionStatusOptions() {
 
 export function getMissionListStatus(
   status: MissionStatus
-): 'pending' | 'in_progress' | 'delivered' | 'cancelled' {
+): 'pending' | 'in_progress' | 'delivered' | 'cancelled' | 'issue' {
   if (status === MissionStatus.InProgress) {
     return 'in_progress'
   }
@@ -271,6 +271,10 @@ export function getMissionListStatus(
 
   if (status === MissionStatus.Cancelled) {
     return 'cancelled'
+  }
+
+  if (status === MissionStatus.Issue) {
+    return 'issue'
   }
 
   return 'pending'

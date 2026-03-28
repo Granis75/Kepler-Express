@@ -289,7 +289,6 @@ export function InvoiceDetail() {
                   return (
                     <MissionListItem
                       key={mission.mission_id}
-                      id={mission.mission_id}
                       reference={mission.reference}
                       client={client?.name ?? mission.client_id}
                       route={`${mission.departure_location} → ${mission.arrival_location}`}

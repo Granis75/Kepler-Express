@@ -220,7 +220,6 @@ export function Invoices() {
             {filteredInvoices.map((invoice) => (
               <InvoiceListItem
                 key={invoice.invoice_id}
-                id={invoice.invoice_id}
                 reference={invoice.invoice_number}
                 client={clientNameById.get(invoice.client_id) ?? invoice.client_id}
                 subtitle={getMissionSummary(invoice.mission_ids)}
