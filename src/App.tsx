@@ -8,6 +8,9 @@ import { MissionEdit } from './pages/MissionEdit'
 import { Clients } from './pages/Clients'
 import { Drivers } from './pages/Drivers'
 import { Vehicles } from './pages/Vehicles'
+import { VehicleCreate } from './pages/VehicleCreate'
+import { VehicleDetail } from './pages/VehicleDetail'
+import { VehicleEdit } from './pages/VehicleEdit'
 import { Expenses } from './pages/Expenses'
 import { Invoices } from './pages/Invoices'
 import { Settings } from './pages/Settings'
@@ -25,6 +28,9 @@ function App() {
           <Route path="/clients" element={<Clients />} />
           <Route path="/drivers" element={<Drivers />} />
           <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/vehicles/new" element={<VehicleCreate />} />
+          <Route path="/vehicles/:id" element={<VehicleDetail />} />
+          <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/settings" element={<Settings />} />

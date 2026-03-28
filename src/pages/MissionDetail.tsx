@@ -1,12 +1,15 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { ArrowLeft, Edit2 } from 'lucide-react'
-import { mockMissions, mockClients, mockDrivers, mockVehicles, mockExpenses, mockInvoices } from '../lib/mockData'
-import { MissionStatus } from '../types'
+import { mockMissions, mockClients, mockDrivers, mockExpenses, mockInvoices } from '../lib/mockData'
+import { getMissionStatusConfig } from '../lib/domain'
+import { formatCurrencyWithDecimals, formatDate } from '../lib/utils'
+import { getStoredVehicles } from '../lib/vehicleStore'
 
 export function MissionDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const storedVehicles = getStoredVehicles()
 
   const mission = mockMissions.find((m) => m.mission_id === id)
   if (!mission) {
@@ -21,7 +24,9 @@ export function MissionDetail() {
 
   const client = mockClients.find((c) => c.client_id === mission.client_id)
   const driver = mission.driver_id ? mockDrivers.find((d) => d.driver_id === mission.driver_id) : null
-  const vehicle = mission.vehicle_id ? mockVehicles.find((v) => v.vehicle_id === mission.vehicle_id) : null
+  const vehicle = mission.vehicle_id
+    ? storedVehicles.find((storedVehicle) => storedVehicle.vehicle_id === mission.vehicle_id)
+    : null
   const linkedExpenses = mockExpenses.filter((e) => e.mission_id === mission.mission_id)
   const linkedInvoice = mockInvoices.find((i) => i.mission_ids.includes(mission.mission_id))
 
@@ -30,23 +35,7 @@ export function MissionDetail() {
   const profitability = mission.revenue_amount - totalExpenses
   const margin = ((profitability / mission.revenue_amount) * 100).toFixed(1)
 
-  const statusLabels: Record<MissionStatus, string> = {
-    [MissionStatus.Planned]: 'Planned',
-    [MissionStatus.Assigned]: 'Assigned',
-    [MissionStatus.InProgress]: 'In Progress',
-    [MissionStatus.Delivered]: 'Delivered',
-    [MissionStatus.Issue]: 'Issue',
-    [MissionStatus.Cancelled]: 'Cancelled',
-  }
-
-  const statusStyles: Record<MissionStatus, string> = {
-    [MissionStatus.Planned]: 'bg-gray-50 text-gray-700 border-gray-200',
-    [MissionStatus.Assigned]: 'bg-blue-50 text-blue-700 border-blue-200',
-    [MissionStatus.InProgress]: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    [MissionStatus.Delivered]: 'bg-green-50 text-green-700 border-green-200',
-    [MissionStatus.Issue]: 'bg-red-50 text-red-700 border-red-200',
-    [MissionStatus.Cancelled]: 'bg-gray-100 text-gray-600 border-gray-300',
-  }
+  const statusConfig = getMissionStatusConfig(mission.status)
 
   return (
     <PageContainer>
@@ -61,11 +50,11 @@ export function MissionDetail() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-semibold text-gray-900">{mission.reference}</h1>
-              <span className={`inline-flex text-sm font-semibold px-3 py-1 rounded border ${statusStyles[mission.status]}`}>
-                {statusLabels[mission.status]}
+              <span className={`inline-flex text-sm font-semibold px-3 py-1 rounded border ${statusConfig.color}`}>
+                {statusConfig.label}
               </span>
             </div>
-            <p className="text-sm text-gray-600">{client?.name}</p>
+            <p className="text-sm text-gray-600">{client?.name || '—'}</p>
           </div>
         </div>
         <button
@@ -94,11 +83,7 @@ export function MissionDetail() {
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Date</p>
                 <p className="text-sm text-gray-900">
-                  {new Date(mission.departure_datetime).toLocaleDateString('fr-FR', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                  {formatDate(mission.departure_datetime)}
                 </p>
               </div>
             </div>
@@ -113,7 +98,7 @@ export function MissionDetail() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Vehicle</p>
-                <p className="text-sm text-gray-900">{vehicle?.name || 'No Vehicle'}</p>
+                <p className="text-sm text-gray-900">{vehicle?.name || '—'}</p>
               </div>
             </div>
           </div>
@@ -123,17 +108,19 @@ export function MissionDetail() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Revenue</p>
-            <p className="text-2xl font-semibold text-gray-900">€{mission.revenue_amount.toFixed(2)}</p>
+            <p className="text-2xl font-semibold text-gray-900">{formatCurrencyWithDecimals(mission.revenue_amount)}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Total Costs</p>
-            <p className="text-2xl font-semibold text-gray-900">€{totalExpenses.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">Est. {mission.estimated_cost_amount} + Exp. {linkedExpenses.length}</p>
+            <p className="text-2xl font-semibold text-gray-900">{formatCurrencyWithDecimals(totalExpenses)}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Estimate {formatCurrencyWithDecimals(mission.estimated_cost_amount)} • {linkedExpenses.length} expenses
+            </p>
           </div>
           <div className={`rounded-lg p-6 ${profitability >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
             <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Profitability</p>
             <p className={`text-2xl font-semibold ${profitability >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-              €{profitability.toFixed(2)}
+              {formatCurrencyWithDecimals(profitability)}
             </p>
             <p className={`text-xs mt-1 ${profitability >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {margin}% margin
@@ -149,10 +136,10 @@ export function MissionDetail() {
               {linkedExpenses.map((expense) => (
                 <div key={expense.expense_id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div>
-                    <p className="text-sm text-gray-900">{expense.description}</p>
-                    <p className="text-xs text-gray-500">{new Date(expense.expense_date).toLocaleDateString('fr-FR')}</p>
+                    {expense.description && <p className="text-sm text-gray-900">{expense.description}</p>}
+                    <p className="text-xs text-gray-500">{formatDate(expense.expense_date)}</p>
                   </div>
-                  <p className="text-sm font-medium text-gray-900">€{expense.amount.toFixed(2)}</p>
+                  <p className="text-sm font-medium text-gray-900">{formatCurrencyWithDecimals(expense.amount)}</p>
                 </div>
               ))}
             </div>
@@ -166,9 +153,9 @@ export function MissionDetail() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900">{linkedInvoice.invoice_number}</p>
-                <p className="text-xs text-gray-500">Due: {new Date(linkedInvoice.due_date).toLocaleDateString('fr-FR')}</p>
+                <p className="text-xs text-gray-500">Due: {formatDate(linkedInvoice.due_date)}</p>
               </div>
-              <p className="text-sm font-semibold text-gray-900">€{linkedInvoice.amount_total.toFixed(2)}</p>
+              <p className="text-sm font-semibold text-gray-900">{formatCurrencyWithDecimals(linkedInvoice.amount_total)}</p>
             </div>
           </div>
         )}

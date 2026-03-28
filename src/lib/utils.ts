@@ -57,6 +57,10 @@ export function formatDistance(km: number): string {
   return `${(km / 1000).toFixed(1)} k km`
 }
 
+export function formatMileage(value: number): string {
+  return `${value.toLocaleString('fr-FR')} km`
+}
+
 export function formatPercentage(value: number, decimals = 0): string {
   return `${value.toFixed(decimals)}%`
 }

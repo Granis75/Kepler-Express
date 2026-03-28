@@ -12,6 +12,7 @@ import {
   InvoiceStatus,
   PaymentMethod,
   Currency,
+  ReimbursementStatus,
 } from './enums'
 
 // ============================================================================
@@ -110,15 +111,16 @@ export interface Vehicle {
   organization_id: string
   name: string
   license_plate: string
-  registration_number: string
+  registration_number?: string
   vehicle_type: VehicleType
   status: VehicleStatus
   mileage_current: number
-  mileage_last_service: number
+  mileage_last_service?: number
   next_service_mileage: number
   capacity_kg?: number
   capacity_m3?: number
   last_service_date?: string
+  notes?: string
   created_at: string
   updated_at: string
 }
@@ -126,10 +128,12 @@ export interface Vehicle {
 export interface CreateVehicleInput {
   name: string
   license_plate: string
-  registration_number: string
+  registration_number?: string
   vehicle_type: VehicleType
+  status: VehicleStatus
   mileage_current: number
   next_service_mileage: number
+  notes?: string
   capacity_kg?: number
   capacity_m3?: number
 }
@@ -214,6 +218,7 @@ export interface Expense {
   amount: number
   currency: Currency
   advanced_by_driver: boolean
+  reimbursement_status: ReimbursementStatus
   receipt_attached: boolean
   description?: string
   expense_date: string
@@ -229,6 +234,7 @@ export interface CreateExpenseInput {
   amount: number
   currency?: Currency
   advanced_by_driver: boolean
+  reimbursement_status?: ReimbursementStatus
   receipt_attached: boolean
   description?: string
   expense_date: string
@@ -242,7 +248,7 @@ export interface MaintenanceRecord {
   maintenance_id: string
   vehicle_id: string
   type: MaintenanceType
-  description: string
+  notes?: string
   cost_amount: number
   currency: Currency
   mileage_at_service: number
@@ -250,12 +256,13 @@ export interface MaintenanceRecord {
   service_date: string
   completed_at?: string
   created_at: string
+  updated_at?: string
 }
 
 export interface CreateMaintenanceInput {
   vehicle_id: string
   type: MaintenanceType
-  description: string
+  notes?: string
   cost_amount: number
   currency?: Currency
   mileage_at_service: number

@@ -6,10 +6,36 @@ import { ExpenseListItem } from '../components/ExpenseListItem'
 import { InvoiceListItem } from '../components/InvoiceListItem'
 import { DashboardSection } from '../components/DashboardSection'
 import { AlertCircle, TrendingUp } from 'lucide-react'
-import { mockMissions, mockExpenses, mockInvoices, mockDriverAdvances, mockFleetAlerts } from '../lib/mockData'
-import { MissionStatus, InvoiceStatus, ExpenseType } from '../types'
+import {
+  mockMissions,
+  mockExpenses,
+  mockInvoices,
+  mockDriverAdvances,
+  mockClients,
+  mockDrivers,
+} from '../lib/mockData'
+import {
+  getExpenseListStatus,
+  getExpenseTypeLabel,
+  getMissionListStatus,
+  getVehicleServiceAlert,
+} from '../lib/domain'
+import { MissionStatus, InvoiceStatus } from '../types'
+import { formatCurrencyWithDecimals } from '../lib/utils'
+import { getStoredVehicles } from '../lib/vehicleStore'
 
 export function Dashboard() {
+  const getClientName = (clientId: string) =>
+    mockClients.find((client) => client.client_id === clientId)?.name || '—'
+
+  const getDriverName = (driverId?: string) =>
+    driverId ? mockDrivers.find((driver) => driver.driver_id === driverId)?.name || '—' : 'Unassigned'
+
+  const getMissionReference = (missionId?: string) =>
+    missionId
+      ? mockMissions.find((mission) => mission.mission_id === missionId)?.reference || '—'
+      : '—'
+
   // Calculate KPIs from mock data
   const missionsInProgress = mockMissions.filter((m) => m.status === MissionStatus.InProgress).length
   const missionsDeliveredToday = mockMissions.filter(
@@ -22,7 +48,21 @@ export function Dashboard() {
     .filter((i) => i.status === InvoiceStatus.Overdue)
     .reduce((sum, i) => sum + (i.amount_total - i.amount_paid), 0)
 
-  const vehiclesNeedingService = mockFleetAlerts.length
+  const fleetVehicles = getStoredVehicles()
+  const fleetAlerts = fleetVehicles
+    .map((vehicle) => ({
+      vehicle: vehicle.name,
+      alert: getVehicleServiceAlert(vehicle.mileage_current, vehicle.next_service_mileage),
+    }))
+    .filter(({ alert }) => alert.level !== 'normal')
+
+  const vehiclesNeedingService = fleetAlerts.length
+  const activeFleetSize = fleetVehicles.length
+  const averageMissionCost =
+    mockMissions.filter((mission) => mission.actual_cost_amount !== undefined).length > 0
+      ? mockMissions.reduce((sum, mission) => sum + (mission.actual_cost_amount || 0), 0) /
+        mockMissions.filter((mission) => mission.actual_cost_amount !== undefined).length
+      : 0
 
   return (
     <PageContainer>
@@ -38,16 +78,14 @@ export function Dashboard() {
         <KPICard
           label="Delivered Today"
           value={missionsDeliveredToday}
-          change="+2 vs yesterday"
         />
         <KPICard
           label="Tracked Expenses"
-          value={`€${expensesThisWeek.toFixed(2)}`}
-          change="This week"
+          value={formatCurrencyWithDecimals(expensesThisWeek)}
         />
         <KPICard
           label="Driver Advances Due"
-          value={`€${driverAdvancesToReimburse.toFixed(2)}`}
+          value={formatCurrencyWithDecimals(driverAdvancesToReimburse)}
           variant={driverAdvancesToReimburse > 0 ? 'alert' : 'default'}
           change={`${mockDriverAdvances.length} drivers`}
           trend={driverAdvancesToReimburse > 0 ? 'up' : 'neutral'}
@@ -55,7 +93,7 @@ export function Dashboard() {
         <KPICard
           label="Overdue Invoices"
           value={overdueInvoices}
-          change={`€${overdueInvoicesAmount.toFixed(2)} outstanding`}
+          change={`${formatCurrencyWithDecimals(overdueInvoicesAmount)} outstanding`}
           variant={overdueInvoices > 0 ? 'alert' : 'default'}
           trend={overdueInvoices > 0 ? 'up' : 'neutral'}
           icon={overdueInvoices > 0 && <AlertCircle size={20} className="text-red-600" />}
@@ -79,18 +117,10 @@ export function Dashboard() {
                   key={mission.mission_id}
                   id={mission.mission_id}
                   reference={mission.reference}
-                  client={`Client`}
+                  client={getClientName(mission.client_id)}
                   route={`${mission.departure_location} → ${mission.arrival_location}`}
-                  driver={`Driver ${mission.driver_id?.split('-')[1] || 'Unassigned'}`}
-                  status={
-                    mission.status === MissionStatus.InProgress
-                      ? 'in_progress'
-                      : mission.status === MissionStatus.Delivered
-                        ? 'delivered'
-                        : mission.status === MissionStatus.Cancelled
-                          ? 'cancelled'
-                          : 'pending'
-                  }
+                  driver={getDriverName(mission.driver_id)}
+                  status={getMissionListStatus(mission.status)}
                   revenue={mission.revenue_amount}
                 />
               ))
@@ -110,21 +140,11 @@ export function Dashboard() {
                 <ExpenseListItem
                   key={expense.expense_id}
                   id={expense.expense_id}
-                  mission={`Mission ${expense.mission_id?.split('-')[3] || 'N/A'}`}
-                  category={
-                    expense.type === ExpenseType.Fuel
-                      ? 'Fuel'
-                      : expense.type === ExpenseType.Tolls
-                        ? 'Tolls'
-                        : expense.type === ExpenseType.Parking
-                          ? 'Parking'
-                          : expense.type === ExpenseType.Maintenance
-                            ? 'Maintenance'
-                            : 'Other'
-                  }
+                  mission={getMissionReference(expense.mission_id)}
+                  category={getExpenseTypeLabel(expense.type)}
                   amount={expense.amount}
-                  driver={`Driver ${expense.driver_id?.split('-')[1] || 'N/A'}`}
-                  status={expense.receipt_attached ? 'pending' : 'pending'}
+                  driver={getDriverName(expense.driver_id)}
+                  status={getExpenseListStatus(expense.reimbursement_status)}
                   advancedByDriver={expense.advanced_by_driver}
                 />
               ))
@@ -151,7 +171,7 @@ export function Dashboard() {
                     key={invoice.invoice_id}
                     id={invoice.invoice_id}
                     reference={invoice.invoice_number}
-                    client={`Client ${invoice.client_id?.split('-')[1]}`}
+                    client={getClientName(invoice.client_id)}
                     amount={invoice.amount_total - invoice.amount_paid}
                     status={
                       invoice.status === InvoiceStatus.Overdue
@@ -179,14 +199,16 @@ export function Dashboard() {
         {/* Fleet Alerts */}
         <DashboardSection title="Fleet Alerts" description="Maintenance and service reminders">
           <div className="divide-y divide-gray-100">
-            {mockFleetAlerts.length > 0 ? (
-              mockFleetAlerts.map((alert, idx) => (
+            {fleetAlerts.length > 0 ? (
+              fleetAlerts.map((alert, idx) => (
                 <div key={idx} className="p-4 hover:bg-gray-50 transition-colors duration-100">
                   <div className="flex items-start gap-3">
                     <AlertCircle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{alert.vehicle}</p>
-                      <p className="text-xs text-gray-600 mt-1">{alert.alert}</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {alert.alert.label} • {alert.alert.detail}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -200,14 +222,16 @@ export function Dashboard() {
         </DashboardSection>
 
         {/* Operational Summary */}
-        <DashboardSection title="Operational Summary" description={`Data as of 28 mars 2026, 15:30`}>
+        <DashboardSection title="Operational Summary" description="Current operating snapshot">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
             <div>
               <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                 Weekly Revenue
               </p>
               <p className="text-xl font-semibold text-gray-900 mt-1">
-                €{mockMissions.reduce((sum, m) => sum + m.revenue_amount, 0).toFixed(2)}
+                {formatCurrencyWithDecimals(
+                  mockMissions.reduce((sum, mission) => sum + mission.revenue_amount, 0)
+                )}
               </p>
             </div>
             <div>
@@ -215,7 +239,7 @@ export function Dashboard() {
                 Average Mission Cost
               </p>
               <p className="text-xl font-semibold text-gray-900 mt-1">
-                €{(mockMissions.reduce((sum, m) => sum + (m.actual_cost_amount || 0), 0) / mockMissions.filter(m => m.actual_cost_amount).length).toFixed(2)}
+                {formatCurrencyWithDecimals(averageMissionCost)}
               </p>
             </div>
             <div>
@@ -223,7 +247,7 @@ export function Dashboard() {
                 Fleet Utilization
               </p>
               <p className="text-xl font-semibold text-gray-900 mt-1">
-                {((missionsInProgress / 5) * 100).toFixed(0)}%
+                {activeFleetSize > 0 ? ((missionsInProgress / activeFleetSize) * 100).toFixed(0) : 0}%
               </p>
             </div>
           </div>

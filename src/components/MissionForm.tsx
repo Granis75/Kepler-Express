@@ -4,7 +4,9 @@ import { TextInput } from './TextInput'
 import { SelectInput } from './SelectInput'
 import { Mission } from '../types'
 import { MissionStatus } from '../types'
-import { mockClients, mockDrivers, mockVehicles } from '../lib/mockData'
+import { mockClients, mockDrivers } from '../lib/mockData'
+import { getMissionStatusOptions } from '../lib/domain'
+import { getStoredVehicles } from '../lib/vehicleStore'
 
 interface MissionFormProps {
   initialData?: Mission
@@ -55,15 +57,11 @@ export function MissionForm({ initialData, onSubmit, isLoading = false }: Missio
 
   const clientOptions = mockClients.map((c) => ({ value: c.client_id, label: c.name }))
   const driverOptions = mockDrivers.map((d) => ({ value: d.driver_id, label: d.name }))
-  const vehicleOptions = mockVehicles.map((v) => ({ value: v.vehicle_id, label: v.name }))
-  const statusOptions = [
-    { value: MissionStatus.Planned, label: 'Planned' },
-    { value: MissionStatus.Assigned, label: 'Assigned' },
-    { value: MissionStatus.InProgress, label: 'In Progress' },
-    { value: MissionStatus.Delivered, label: 'Delivered' },
-    { value: MissionStatus.Issue, label: 'Issue' },
-    { value: MissionStatus.Cancelled, label: 'Cancelled' },
-  ]
+  const vehicleOptions = getStoredVehicles().map((vehicle) => ({
+    value: vehicle.vehicle_id,
+    label: vehicle.name,
+  }))
+  const statusOptions = getMissionStatusOptions()
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -128,13 +126,13 @@ export function MissionForm({ initialData, onSubmit, isLoading = false }: Missio
         <div className="space-y-4">
           <SelectInput
             label="Driver"
-            options={[{ value: '', label: 'Unassigned' }, ...driverOptions]}
+            options={[{ value: '', label: 'None' }, ...driverOptions]}
             value={formData.driver_id || ''}
             onChange={(e) => setFormData({ ...formData, driver_id: e.target.value || undefined })}
           />
           <SelectInput
             label="Vehicle"
-            options={[{ value: '', label: 'No Vehicle' }, ...vehicleOptions]}
+            options={[{ value: '', label: 'None' }, ...vehicleOptions]}
             value={formData.vehicle_id || ''}
             onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value || undefined })}
           />

@@ -205,7 +205,6 @@ export function validateDriverCreation(data: {
 export function validateVehicleCreation(data: {
   name: string
   license_plate: string
-  registration_number: string
   mileage_current: number
   next_service_mileage: number
 }): ValidationResult {
@@ -219,16 +218,12 @@ export function validateVehicleCreation(data: {
     errors.push({ field: 'license_plate', message: 'License plate is required' })
   }
 
-  if (!data.registration_number?.trim()) {
-    errors.push({ field: 'registration_number', message: 'Registration number is required' })
-  }
-
   if (data.mileage_current < 0) {
     errors.push({ field: 'mileage_current', message: 'Current mileage cannot be negative' })
   }
 
-  if (data.next_service_mileage <= data.mileage_current) {
-    errors.push({ field: 'next_service_mileage', message: 'Next service mileage must be greater than current mileage' })
+  if (data.next_service_mileage <= 0) {
+    errors.push({ field: 'next_service_mileage', message: 'Next service mileage must be greater than 0' })
   }
 
   return {
@@ -249,8 +244,8 @@ export function validateExpenseCreation(data: {
 }): ValidationResult {
   const errors: ValidationError[] = []
 
-  if (data.amount <= 0) {
-    errors.push({ field: 'amount', message: 'Amount must be greater than 0' })
+  if (!Number.isFinite(data.amount) || data.amount <= 0) {
+    errors.push({ field: 'amount', message: 'Amount must be a valid number greater than 0' })
   }
 
   if (data.amount > 5000) {
@@ -261,10 +256,6 @@ export function validateExpenseCreation(data: {
     errors.push({ field: 'expense_date', message: 'Expense date is required' })
   } else if (new Date(data.expense_date) > new Date()) {
     errors.push({ field: 'expense_date', message: 'Expense date cannot be in the future' })
-  }
-
-  if (data.advanced_by_driver && !data.receipt_attached) {
-    errors.push({ field: 'receipt_attached', message: 'Receipt is required for driver advances' })
   }
 
   return {

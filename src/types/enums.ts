@@ -62,6 +62,7 @@ export enum ExpenseType {
   Maintenance = 'maintenance',
   MissionExpense = 'mission_expense',
   Parking = 'parking',
+  Meal = 'meal',
   Other = 'other',
 }
 
@@ -93,4 +94,11 @@ export enum Currency {
   EUR = 'EUR',
   USD = 'USD',
   GBP = 'GBP',
+}
+
+export enum ReimbursementStatus {
+  Pending = 'pending',
+  Approved = 'approved',
+  Paid = 'paid',
+  Rejected = 'rejected',
 }
