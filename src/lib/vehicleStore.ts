@@ -4,34 +4,10 @@ import type {
   Vehicle,
 } from '../types'
 import { seedMaintenanceRecords, seedVehicles } from './vehicleSeeds'
+import { readStorage, writeStorage } from './storage'
 
 const VEHICLES_STORAGE_KEY = 'kepler_ops_vehicles'
 const MAINTENANCE_STORAGE_KEY = 'kepler_ops_maintenance'
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
-}
-
-function readStorage<T>(key: string, fallback: T): T {
-  if (!canUseStorage()) {
-    return fallback
-  }
-
-  try {
-    const storedValue = window.localStorage.getItem(key)
-    return storedValue ? (JSON.parse(storedValue) as T) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function writeStorage<T>(key: string, value: T) {
-  if (!canUseStorage()) {
-    return
-  }
-
-  window.localStorage.setItem(key, JSON.stringify(value))
-}
 
 function getNextVehicleId(vehicles: Vehicle[]) {
   const highestId = vehicles.reduce((max, vehicle) => {

@@ -294,9 +294,11 @@ export interface Invoice {
 }
 
 export interface CreateInvoiceInput {
+  invoice_number: string
   client_id: string
   mission_ids: string[]
   amount_total: number
+  status: InvoiceStatus
   currency?: Currency
   issued_date: string
   due_date: string
@@ -304,8 +306,14 @@ export interface CreateInvoiceInput {
 }
 
 export interface UpdateInvoiceInput {
+  invoice_number?: string
+  client_id?: string
+  mission_ids?: string[]
+  amount_total?: number
   status?: InvoiceStatus
   amount_paid?: number
+  issued_date?: string
+  due_date?: string
   sent_date?: string
   paid_date?: string
   notes?: string
@@ -325,6 +333,7 @@ export interface Payment {
   reference?: string
   notes?: string
   created_at: string
+  updated_at?: string
 }
 
 export interface CreatePaymentInput {

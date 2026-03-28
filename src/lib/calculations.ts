@@ -1,7 +1,11 @@
-// Financial and operational calculations
-
+import { InvoiceStatus, ReimbursementStatus } from '../types'
 import type { Mission, Expense, Invoice, Payment } from '../types'
 import type { MissionProfitability, DriverPerformance, VehicleHealthStatus, FinancialSnapshot } from '../types/relationships'
+
+const unsettledReimbursementStatuses = new Set([
+  ReimbursementStatus.Pending,
+  ReimbursementStatus.Approved,
+])
 
 // ============================================================================
 // MISSION PROFITABILITY CALCULATIONS
@@ -21,8 +25,8 @@ export function calculateMissionProfitability(
     estimated_cost: estimatedCost,
     actual_cost: actualCost,
     estimated_margin: revenue - estimatedCost,
-    actual_margin: actualCost ? revenue - actualCost : undefined,
-    margin_percentage: costToUse > 0 ? ((revenue - costToUse) / revenue) * 100 : 0,
+    actual_margin: actualCost !== undefined ? revenue - actualCost : undefined,
+    margin_percentage: revenue > 0 ? ((revenue - costToUse) / revenue) * 100 : 0,
     is_profitable: revenue > costToUse,
   }
 }
@@ -59,6 +63,55 @@ export function calculateTotalPayments(payments: Payment[]): number {
   return payments.reduce((sum, p) => sum + p.amount, 0)
 }
 
+export function calculateInvoiceSummary(invoices: Invoice[]) {
+  return invoices.reduce(
+    (summary, invoice) => {
+      const amountRemaining = calculateInvoiceAmountRemaining(
+        invoice.amount_total,
+        invoice.amount_paid
+      )
+
+      summary.totalBilled += invoice.amount_total
+      summary.totalCollected += invoice.amount_paid
+      summary.totalOutstanding += amountRemaining
+
+      if (invoice.status === InvoiceStatus.Draft) {
+        summary.draftCount += 1
+      }
+
+      if (invoice.status === InvoiceStatus.Sent) {
+        summary.sentCount += 1
+      }
+
+      if (invoice.status === InvoiceStatus.Partial) {
+        summary.partialCount += 1
+      }
+
+      if (invoice.status === InvoiceStatus.Paid) {
+        summary.paidCount += 1
+      }
+
+      if (invoice.status === InvoiceStatus.Overdue) {
+        summary.overdueCount += 1
+        summary.overdueTotal += amountRemaining
+      }
+
+      return summary
+    },
+    {
+      totalBilled: 0,
+      totalCollected: 0,
+      totalOutstanding: 0,
+      overdueTotal: 0,
+      draftCount: 0,
+      sentCount: 0,
+      partialCount: 0,
+      paidCount: 0,
+      overdueCount: 0,
+    }
+  )
+}
+
 // ============================================================================
 // DRIVER PERFORMANCE CALCULATIONS
 // ============================================================================
@@ -75,6 +128,9 @@ export function calculateDriverPerformance(
   const totalRevenue = completedMissions.reduce((sum, m) => sum + m.revenue_amount, 0)
   const advancedExpenses = driverExpenses.filter((e) => e.advanced_by_driver)
   const totalAdvanced = advancedExpenses.reduce((sum, e) => sum + e.amount, 0)
+  const pendingAdvancedExpenses = advancedExpenses.filter((expense) =>
+    unsettledReimbursementStatuses.has(expense.reimbursement_status)
+  )
   const inProgressMissions = driverMissions.filter((m) => m.status === 'in_progress')
 
   return {
@@ -83,7 +139,7 @@ export function calculateDriverPerformance(
     missions_in_progress: inProgressMissions.length,
     total_revenue_driven: totalRevenue,
     total_expenses_advanced: totalAdvanced,
-    pending_reimbursements: totalAdvanced,
+    pending_reimbursements: pendingAdvancedExpenses.reduce((sum, expense) => sum + expense.amount, 0),
     average_mission_value: completedMissions.length > 0 ? totalRevenue / completedMissions.length : 0,
   }
 }
@@ -160,7 +216,11 @@ export function calculateFinancialSnapshot(
     .reduce((sum, i) => sum + (i.amount_total - i.amount_paid), 0)
 
   const unpaidAdvances = periodExpenses
-    .filter((e) => e.advanced_by_driver)
+    .filter(
+      (expense) =>
+        expense.advanced_by_driver &&
+        unsettledReimbursementStatuses.has(expense.reimbursement_status)
+    )
     .reduce((sum, e) => sum + e.amount, 0)
 
   return {

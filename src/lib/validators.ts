@@ -1,6 +1,7 @@
 // Business rule validators
 
 import { Mission, Driver, Vehicle, MissionStatus, DriverStatus, VehicleStatus } from '../types'
+import { parseDateInput } from './utils'
 
 // ============================================================================
 // MISSION VALIDATORS
@@ -269,12 +270,18 @@ export function validateExpenseCreation(data: {
 // ============================================================================
 
 export function validateInvoiceCreation(data: {
+  invoice_number: string
   client_id: string
   mission_ids: string[]
   amount_total: number
+  issued_date: string
   due_date: string
 }): ValidationResult {
   const errors: ValidationError[] = []
+
+  if (!data.invoice_number?.trim()) {
+    errors.push({ field: 'invoice_number', message: 'Invoice number is required' })
+  }
 
   if (!data.client_id?.trim()) {
     errors.push({ field: 'client_id', message: 'Client is required' })
@@ -288,10 +295,21 @@ export function validateInvoiceCreation(data: {
     errors.push({ field: 'amount_total', message: 'Invoice amount must be greater than 0' })
   }
 
+  if (!data.issued_date) {
+    errors.push({ field: 'issued_date', message: 'Issue date is required' })
+  }
+
   if (!data.due_date) {
     errors.push({ field: 'due_date', message: 'Due date is required' })
-  } else if (new Date(data.due_date) <= new Date()) {
-    errors.push({ field: 'due_date', message: 'Due date must be in the future' })
+  }
+
+  if (data.issued_date && data.due_date) {
+    const issuedDate = parseDateInput(data.issued_date)
+    const dueDate = parseDateInput(data.due_date)
+
+    if (dueDate.getTime() < issuedDate.getTime()) {
+      errors.push({ field: 'due_date', message: 'Due date cannot be before the issue date' })
+    }
   }
 
   return {
@@ -303,7 +321,7 @@ export function validateInvoiceCreation(data: {
 export function validatePaymentAmount(amountTotal: number, amountAlreadyPaid: number, paymentAmount: number): ValidationResult {
   const errors: ValidationError[] = []
 
-  if (paymentAmount <= 0) {
+  if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
     errors.push({ field: 'amount', message: 'Payment amount must be greater than 0' })
   }
 
@@ -312,6 +330,35 @@ export function validatePaymentAmount(amountTotal: number, amountAlreadyPaid: nu
       field: 'amount',
       message: `Payment exceeds remaining balance of ${amountTotal - amountAlreadyPaid} EUR`,
     })
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  }
+}
+
+export function validatePaymentCreation(data: {
+  amount_total: number
+  amount_paid: number
+  amount: number
+  payment_date: string
+  payment_method: string
+}): ValidationResult {
+  const errors = validatePaymentAmount(
+    data.amount_total,
+    data.amount_paid,
+    data.amount,
+  ).errors
+
+  if (!data.payment_method?.trim()) {
+    errors.push({ field: 'payment_method', message: 'Payment method is required' })
+  }
+
+  if (!data.payment_date) {
+    errors.push({ field: 'payment_date', message: 'Payment date is required' })
+  } else if (parseDateInput(data.payment_date, true).getTime() > Date.now()) {
+    errors.push({ field: 'payment_date', message: 'Payment date cannot be in the future' })
   }
 
   return {

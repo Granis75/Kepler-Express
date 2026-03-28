@@ -1,22 +1,18 @@
 import clsx from 'clsx'
 import { ChevronRight } from 'lucide-react'
+import { InvoiceStatus } from '../types'
+import { getInvoiceStatusConfig } from '../lib/domain'
+import { formatCurrencyWithDecimals, formatDate } from '../lib/utils'
 
 export interface InvoiceListItemProps {
   id: string
   reference: string
   client: string
   amount: number
-  status: 'draft' | 'sent' | 'partial' | 'paid' | 'overdue'
+  status: InvoiceStatus
   dueDate: string
+  subtitle?: string
   onClick?: () => void
-}
-
-const statusStyles = {
-  draft: 'bg-gray-50 text-gray-700 border-gray-200',
-  sent: 'bg-blue-50 text-blue-700 border-blue-200',
-  partial: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  paid: 'bg-green-50 text-green-700 border-green-200',
-  overdue: 'bg-red-50 text-red-700 border-red-200',
 }
 
 export function InvoiceListItem({
@@ -25,8 +21,11 @@ export function InvoiceListItem({
   amount,
   status,
   dueDate,
+  subtitle,
   onClick,
 }: InvoiceListItemProps) {
+  const statusConfig = getInvoiceStatusConfig(status)
+
   return (
     <button
       onClick={onClick}
@@ -43,18 +42,21 @@ export function InvoiceListItem({
             <span
               className={clsx(
                 'inline-flex text-xs font-medium px-2 py-0.5 rounded border',
-                statusStyles[status]
+                statusConfig.color
               )}
             >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {statusConfig.label}
             </span>
           </div>
           <p className="text-xs text-gray-600 truncate">{client}</p>
-          <p className="text-xs text-gray-500 mt-1">Due: {dueDate}</p>
+          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+          <p className="text-xs text-gray-500 mt-1">Due: {formatDate(dueDate)}</p>
         </div>
         <div className="flex items-center gap-3 ml-2">
           <div className="text-right">
-            <p className="text-sm font-semibold text-gray-900">€{amount.toFixed(2)}</p>
+            <p className="text-sm font-semibold text-gray-900">
+              {formatCurrencyWithDecimals(amount)}
+            </p>
           </div>
           {onClick && <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />}
         </div>

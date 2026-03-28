@@ -11,12 +11,13 @@ import {
   MaintenanceType,
   UserRole,
   ReimbursementStatus,
+  PaymentMethod,
 } from '../types/enums'
 import {
   SERVICE_WARNING_THRESHOLD_KM,
   SERVICE_CRITICAL_THRESHOLD_KM,
 } from './constants'
-import { formatMileage } from './utils'
+import { formatMileage, parseDateInput } from './utils'
 
 // ============================================================================
 // STATUS CONFIGURATIONS
@@ -206,6 +207,29 @@ export const maintenanceTypeConfig = {
   [MaintenanceType.Inspection]: { label: 'Inspection', color: 'bg-green-100 text-green-700' },
 }
 
+export const paymentMethodConfig = {
+  [PaymentMethod.BankTransfer]: {
+    label: 'Bank transfer',
+    color: 'bg-blue-100 text-blue-700',
+  },
+  [PaymentMethod.Check]: {
+    label: 'Check',
+    color: 'bg-amber-100 text-amber-700',
+  },
+  [PaymentMethod.Cash]: {
+    label: 'Cash',
+    color: 'bg-green-100 text-green-700',
+  },
+  [PaymentMethod.Card]: {
+    label: 'Card',
+    color: 'bg-indigo-100 text-indigo-700',
+  },
+  [PaymentMethod.Other]: {
+    label: 'Other',
+    color: 'bg-neutral-100 text-neutral-700',
+  },
+}
+
 export const clientStatusConfig = {
   [ClientStatus.Active]: { label: 'Active', color: 'bg-green-100 text-green-700' },
   [ClientStatus.Inactive]: { label: 'Inactive', color: 'bg-neutral-100 text-neutral-700' },
@@ -262,6 +286,32 @@ export function isActiveMissionStatus(status: MissionStatus) {
 
 export function getInvoiceStatusConfig(status: InvoiceStatus) {
   return invoiceStatusConfig[status]
+}
+
+export function getInvoiceStatusLabel(status: InvoiceStatus) {
+  return invoiceStatusConfig[status]?.label ?? '—'
+}
+
+export function getInvoiceStatusOptions() {
+  const supportedStatuses = [
+    InvoiceStatus.Draft,
+    InvoiceStatus.Sent,
+    InvoiceStatus.Partial,
+    InvoiceStatus.Paid,
+    InvoiceStatus.Overdue,
+  ]
+
+  return supportedStatuses.map((status) => ({
+    value: status,
+    label: getInvoiceStatusLabel(status),
+  }))
+}
+
+export function getInvoiceWorkflowStatusOptions() {
+  return [InvoiceStatus.Draft, InvoiceStatus.Sent].map((status) => ({
+    value: status,
+    label: getInvoiceStatusLabel(status),
+  }))
 }
 
 export function getVehicleStatusConfig(status: VehicleStatus) {
@@ -321,6 +371,21 @@ export function getMaintenanceTypeOptions() {
   }))
 }
 
+export function getPaymentMethodConfig(method: PaymentMethod) {
+  return paymentMethodConfig[method]
+}
+
+export function getPaymentMethodLabel(method: PaymentMethod) {
+  return paymentMethodConfig[method]?.label ?? '—'
+}
+
+export function getPaymentMethodOptions() {
+  return Object.values(PaymentMethod).map((method) => ({
+    value: method,
+    label: getPaymentMethodLabel(method),
+  }))
+}
+
 export function getClientStatusConfig(status: ClientStatus) {
   return clientStatusConfig[status]
 }
@@ -342,17 +407,32 @@ export function canEditInvoice(status: InvoiceStatus): boolean {
 }
 
 export function isInvoiceOverdue(dueDate: string): boolean {
-  return new Date(dueDate) < new Date()
+  return parseDateInput(dueDate, true).getTime() < Date.now()
 }
 
-export function getInvoiceStatusFromPayment(amountTotal: number, amountPaid: number, dueDate: string): InvoiceStatus {
+export function getInvoiceStatusFromPayment(
+  workflowStatus: InvoiceStatus,
+  amountTotal: number,
+  amountPaid: number,
+  dueDate: string,
+): InvoiceStatus {
+  if (workflowStatus === InvoiceStatus.Cancelled) {
+    return InvoiceStatus.Cancelled
+  }
+
+  if (workflowStatus === InvoiceStatus.Draft && amountPaid === 0) {
+    return InvoiceStatus.Draft
+  }
+
   if (amountPaid === 0) {
     return isInvoiceOverdue(dueDate) ? InvoiceStatus.Overdue : InvoiceStatus.Sent
   }
+
   if (amountPaid >= amountTotal) {
     return InvoiceStatus.Paid
   }
-  return InvoiceStatus.Partial
+
+  return isInvoiceOverdue(dueDate) ? InvoiceStatus.Overdue : InvoiceStatus.Partial
 }
 
 export function isVehicleMaintenanceOverdue(mileageCurrent: number, nextServiceMileage: number): boolean {

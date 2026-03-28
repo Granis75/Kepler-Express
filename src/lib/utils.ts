@@ -61,6 +61,19 @@ export function formatMileage(value: number): string {
   return `${value.toLocaleString('fr-FR')} km`
 }
 
+export function parseDateInput(value: string, endOfDay = false): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999)
+  } else {
+    date.setHours(0, 0, 0, 0)
+  }
+
+  return date
+}
+
 export function formatPercentage(value: number, decimals = 0): string {
   return `${value.toFixed(decimals)}%`
 }

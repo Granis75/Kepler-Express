@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { KPICard } from '../components/KPICard'
@@ -9,11 +10,11 @@ import { AlertCircle, TrendingUp } from 'lucide-react'
 import {
   mockMissions,
   mockExpenses,
-  mockInvoices,
   mockDriverAdvances,
   mockClients,
   mockDrivers,
 } from '../lib/mockData'
+import { calculateInvoiceAmountRemaining, calculateInvoiceSummary } from '../lib/calculations'
 import {
   getExpenseListStatus,
   getExpenseTypeLabel,
@@ -22,9 +23,11 @@ import {
 } from '../lib/domain'
 import { MissionStatus, InvoiceStatus } from '../types'
 import { formatCurrencyWithDecimals } from '../lib/utils'
+import { getStoredInvoices } from '../lib/financialStore'
 import { getStoredVehicles } from '../lib/vehicleStore'
 
 export function Dashboard() {
+  const navigate = useNavigate()
   const getClientName = (clientId: string) =>
     mockClients.find((client) => client.client_id === clientId)?.name || '—'
 
@@ -43,10 +46,13 @@ export function Dashboard() {
   ).length
   const expensesThisWeek = mockExpenses.reduce((sum, e) => sum + e.amount, 0)
   const driverAdvancesToReimburse = mockDriverAdvances.reduce((sum, da) => sum + da.amount, 0)
-  const overdueInvoices = mockInvoices.filter((i) => i.status === InvoiceStatus.Overdue).length
-  const overdueInvoicesAmount = mockInvoices
-    .filter((i) => i.status === InvoiceStatus.Overdue)
-    .reduce((sum, i) => sum + (i.amount_total - i.amount_paid), 0)
+  const storedInvoices = getStoredInvoices()
+  const invoiceSummary = calculateInvoiceSummary(storedInvoices)
+  const overdueInvoices = invoiceSummary.overdueCount
+  const overdueInvoicesAmount = invoiceSummary.overdueTotal
+  const followUpInvoices = storedInvoices.filter((invoice) =>
+    [InvoiceStatus.Sent, InvoiceStatus.Partial, InvoiceStatus.Overdue].includes(invoice.status)
+  )
 
   const fleetVehicles = getStoredVehicles()
   const fleetAlerts = fleetVehicles
@@ -162,30 +168,17 @@ export function Dashboard() {
           description="Sent, overdue, and partial payments"
         >
           <div className="divide-y divide-gray-100">
-            {mockInvoices.filter((i) => [InvoiceStatus.Sent, InvoiceStatus.Overdue, InvoiceStatus.Partial].includes(i.status))
-              .length > 0 ? (
-              mockInvoices
-                .filter((i) => [InvoiceStatus.Sent, InvoiceStatus.Overdue, InvoiceStatus.Partial].includes(i.status))
-                .map((invoice) => (
+            {followUpInvoices.length > 0 ? (
+              followUpInvoices.map((invoice) => (
                   <InvoiceListItem
                     key={invoice.invoice_id}
                     id={invoice.invoice_id}
                     reference={invoice.invoice_number}
                     client={getClientName(invoice.client_id)}
-                    amount={invoice.amount_total - invoice.amount_paid}
-                    status={
-                      invoice.status === InvoiceStatus.Overdue
-                        ? 'overdue'
-                        : invoice.status === InvoiceStatus.Sent
-                          ? 'sent'
-                          : invoice.status === InvoiceStatus.Partial
-                            ? 'partial'
-                            : 'draft'
-                    }
-                    dueDate={new Date(invoice.due_date).toLocaleDateString('fr-FR', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    amount={calculateInvoiceAmountRemaining(invoice.amount_total, invoice.amount_paid)}
+                    status={invoice.status}
+                    dueDate={invoice.due_date}
+                    onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
                   />
                 ))
             ) : (

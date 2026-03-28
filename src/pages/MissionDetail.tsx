@@ -1,8 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { ArrowLeft, Edit2 } from 'lucide-react'
-import { mockMissions, mockClients, mockDrivers, mockExpenses, mockInvoices } from '../lib/mockData'
-import { getMissionStatusConfig } from '../lib/domain'
+import { mockMissions, mockClients, mockDrivers, mockExpenses } from '../lib/mockData'
+import { calculateInvoiceAmountRemaining } from '../lib/calculations'
+import { getMissionStatusConfig, getInvoiceStatusConfig } from '../lib/domain'
+import { getStoredInvoices } from '../lib/financialStore'
 import { formatCurrencyWithDecimals, formatDate } from '../lib/utils'
 import { getStoredVehicles } from '../lib/vehicleStore'
 
@@ -28,7 +30,9 @@ export function MissionDetail() {
     ? storedVehicles.find((storedVehicle) => storedVehicle.vehicle_id === mission.vehicle_id)
     : null
   const linkedExpenses = mockExpenses.filter((e) => e.mission_id === mission.mission_id)
-  const linkedInvoice = mockInvoices.find((i) => i.mission_ids.includes(mission.mission_id))
+  const linkedInvoice = getStoredInvoices().find((invoice) =>
+    invoice.mission_ids.includes(mission.mission_id)
+  )
 
   // Calculate profitability
   const totalExpenses = linkedExpenses.reduce((sum, e) => sum + e.amount, 0) + (mission.actual_cost_amount || mission.estimated_cost_amount || 0)
@@ -148,16 +152,39 @@ export function MissionDetail() {
 
         {/* Linked Invoice */}
         {linkedInvoice && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <button
+            type="button"
+            onClick={() => navigate(`/invoices/${linkedInvoice.invoice_id}`)}
+            className="w-full text-left bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors"
+          >
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Linked Invoice</h2>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">{linkedInvoice.invoice_number}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900">{linkedInvoice.invoice_number}</p>
+                  <span
+                    className={`inline-flex text-xs font-medium px-2 py-0.5 rounded border ${getInvoiceStatusConfig(linkedInvoice.status).color}`}
+                  >
+                    {getInvoiceStatusConfig(linkedInvoice.status).label}
+                  </span>
+                </div>
                 <p className="text-xs text-gray-500">Due: {formatDate(linkedInvoice.due_date)}</p>
               </div>
-              <p className="text-sm font-semibold text-gray-900">{formatCurrencyWithDecimals(linkedInvoice.amount_total)}</p>
+              <div className="text-right">
+                <p className="text-sm font-semibold text-gray-900">
+                  {formatCurrencyWithDecimals(linkedInvoice.amount_total)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Due {formatCurrencyWithDecimals(
+                    calculateInvoiceAmountRemaining(
+                      linkedInvoice.amount_total,
+                      linkedInvoice.amount_paid
+                    )
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
+          </button>
         )}
 
         {/* Notes */}

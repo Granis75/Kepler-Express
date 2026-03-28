@@ -13,6 +13,9 @@ import { VehicleDetail } from './pages/VehicleDetail'
 import { VehicleEdit } from './pages/VehicleEdit'
 import { Expenses } from './pages/Expenses'
 import { Invoices } from './pages/Invoices'
+import { InvoiceCreate } from './pages/InvoiceCreate'
+import { InvoiceDetail } from './pages/InvoiceDetail'
+import { InvoiceEdit } from './pages/InvoiceEdit'
 import { Settings } from './pages/Settings'
 
 function App() {
@@ -33,6 +36,9 @@ function App() {
           <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/invoices/new" element={<InvoiceCreate />} />
+          <Route path="/invoices/:id" element={<InvoiceDetail />} />
+          <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>
