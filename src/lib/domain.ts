@@ -390,6 +390,13 @@ export function getClientStatusConfig(status: ClientStatus) {
   return clientStatusConfig[status]
 }
 
+export function getClientStatusOptions() {
+  return Object.values(ClientStatus).map((status) => ({
+    value: status,
+    label: clientStatusConfig[status].label,
+  }))
+}
+
 export function getUserRoleConfig(role: UserRole) {
   return userRoleConfig[role]
 }
@@ -501,6 +508,15 @@ export function isDriverAdvanceWarning(amountTotal: number, warningThreshold = 5
 
 export function isOutstandingReimbursementStatus(status: ReimbursementStatus): boolean {
   return status === ReimbursementStatus.Pending || status === ReimbursementStatus.Approved
+}
+
+export function normalizeExpenseReimbursementStatus(
+  advancedByDriver: boolean,
+  reimbursementStatus?: ReimbursementStatus,
+) {
+  return advancedByDriver
+    ? reimbursementStatus ?? ReimbursementStatus.Pending
+    : ReimbursementStatus.Paid
 }
 
 export function getExpenseListStatus(

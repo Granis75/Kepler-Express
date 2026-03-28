@@ -72,6 +72,7 @@ export interface CreateClientInput {
   postal_code: string
   country: string
   vat_number?: string
+  status?: ClientStatus
   notes?: string
 }
 
@@ -111,7 +112,7 @@ export interface Vehicle {
   organization_id: string
   name: string
   license_plate: string
-  registration_number?: string
+  registration_number: string
   vehicle_type: VehicleType
   status: VehicleStatus
   mileage_current: number
@@ -128,7 +129,7 @@ export interface Vehicle {
 export interface CreateVehicleInput {
   name: string
   license_plate: string
-  registration_number?: string
+  registration_number: string
   vehicle_type: VehicleType
   status: VehicleStatus
   mileage_current: number

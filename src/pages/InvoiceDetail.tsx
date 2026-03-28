@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Edit2, Plus } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
@@ -9,42 +9,87 @@ import {
   calculateInvoicePaymentPercentage,
 } from '../lib/calculations'
 import {
-  addStoredPayment,
-  getStoredInvoiceById,
-  getStoredPaymentsByInvoiceId,
-} from '../lib/financialStore'
-import { mockClients, mockDrivers, mockMissions } from '../lib/mockData'
+  createPayment,
+  getInvoiceById,
+  listClients,
+  listDrivers,
+  listMissions,
+  listPaymentsByInvoiceId,
+  useAsyncData,
+} from '../lib/data'
 import {
   getInvoiceStatusConfig,
   getMissionListStatus,
   getPaymentMethodConfig,
 } from '../lib/domain'
-import { formatCurrencyWithDecimals, formatDate, formatPercentage } from '../lib/utils'
-import { InvoiceStatus } from '../types'
+import {
+  formatCurrencyWithDecimals,
+  formatDate,
+  formatPercentage,
+} from '../lib/utils'
+import { InvoiceStatus, type CreatePaymentInput } from '../types'
 
 export function InvoiceDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const [showPaymentForm, setShowPaymentForm] = useState(false)
-  const [refreshToken, setRefreshToken] = useState(0)
+  const [isSavingPayment, setIsSavingPayment] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
 
-  void refreshToken
+  const loadInvoiceDetailData = useCallback(async () => {
+    if (!id) {
+      throw new Error('Invoice ID is required.')
+    }
 
-  const invoice = id ? getStoredInvoiceById(id) : undefined
+    const [invoice, payments, clients, missions, drivers] = await Promise.all([
+      getInvoiceById(id),
+      listPaymentsByInvoiceId(id),
+      listClients(),
+      listMissions(),
+      listDrivers(),
+    ])
 
-  if (!invoice) {
+    return {
+      invoice,
+      payments,
+      clients,
+      missions,
+      drivers,
+    }
+  }, [id])
+
+  const { data, loading, error, reload } = useAsyncData(loadInvoiceDetailData, [id])
+
+  if (loading) {
     return (
       <PageContainer>
         <div className="text-center py-12">
-          <p className="text-gray-500">Invoice not found</p>
+          <p className="text-gray-500">Loading invoice...</p>
         </div>
       </PageContainer>
     )
   }
 
-  const payments = getStoredPaymentsByInvoiceId(invoice.invoice_id)
-  const client = mockClients.find((item) => item.client_id === invoice.client_id)
-  const relatedMissions = mockMissions.filter((mission) =>
+  if (error || !data) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-red-700">{error || 'Unable to load the invoice.'}</p>
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  const { invoice, payments, clients, missions, drivers } = data
+  const client = clients.find((item) => item.client_id === invoice.client_id)
+  const relatedMissions = missions.filter((mission) =>
     invoice.mission_ids.includes(mission.mission_id)
   )
   const amountRemaining = calculateInvoiceAmountRemaining(
@@ -58,10 +103,24 @@ export function InvoiceDetail() {
   const statusConfig = getInvoiceStatusConfig(invoice.status)
   const latestPayment = payments[0]
 
-  const handlePaymentSubmit = (data: Parameters<typeof addStoredPayment>[0]) => {
-    addStoredPayment(data)
-    setShowPaymentForm(false)
-    setRefreshToken((value) => value + 1)
+  const paymentHistory = [...payments].sort(
+    (left, right) =>
+      new Date(right.payment_date).getTime() - new Date(left.payment_date).getTime()
+  )
+
+  const handlePaymentSubmit = async (payment: CreatePaymentInput) => {
+    setIsSavingPayment(true)
+    setPaymentError(null)
+
+    try {
+      await createPayment(payment)
+      setShowPaymentForm(false)
+      reload()
+    } catch (err) {
+      setPaymentError(err instanceof Error ? err.message : 'Unable to save the payment.')
+    } finally {
+      setIsSavingPayment(false)
+    }
   }
 
   return (
@@ -77,27 +136,28 @@ export function InvoiceDetail() {
           </button>
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-semibold text-gray-900">
-                {invoice.invoice_number}
-              </h1>
+              <h1 className="text-3xl font-semibold text-gray-900">{invoice.invoice_number}</h1>
               <span
                 className={`inline-flex text-sm font-semibold px-3 py-1 rounded border ${statusConfig.color}`}
               >
                 {statusConfig.label}
               </span>
             </div>
-            <p className="text-sm text-gray-600">{client?.name || '—'}</p>
+            <p className="text-sm text-gray-600">{client?.name ?? invoice.client_id}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {invoice.status !== InvoiceStatus.Draft && amountRemaining > 0 && (
             <button
               type="button"
-              onClick={() => setShowPaymentForm((value) => !value)}
+              onClick={() => {
+                setPaymentError(null)
+                setShowPaymentForm((value) => !value)
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
             >
               <Plus size={16} />
-              Add Payment
+              Add payment
             </button>
           )}
           <button
@@ -114,7 +174,7 @@ export function InvoiceDetail() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Total Amount
+            Total amount
           </p>
           <p className="text-2xl font-semibold text-gray-900">
             {formatCurrencyWithDecimals(invoice.amount_total)}
@@ -122,7 +182,7 @@ export function InvoiceDetail() {
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Paid To Date
+            Paid to date
           </p>
           <p className="text-2xl font-semibold text-gray-900">
             {formatCurrencyWithDecimals(invoice.amount_paid)}
@@ -130,7 +190,7 @@ export function InvoiceDetail() {
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Remaining Due
+            Remaining due
           </p>
           <p className="text-2xl font-semibold text-gray-900">
             {formatCurrencyWithDecimals(amountRemaining)}
@@ -146,23 +206,27 @@ export function InvoiceDetail() {
           }`}
         >
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Collection Progress
+            Collection progress
           </p>
           <p className="text-2xl font-semibold text-gray-900">
             {formatPercentage(paymentProgress, 0)}
           </p>
-          <p className="text-xs text-gray-500 mt-2">
-            {payments.length} payments recorded
-          </p>
+          <p className="text-xs text-gray-500 mt-2">{payments.length} payments recorded</p>
         </div>
       </div>
 
       {showPaymentForm && (
         <div className="mb-6">
+          {paymentError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {paymentError}
+            </div>
+          )}
           <PaymentForm
             invoice={invoice}
             onSubmit={handlePaymentSubmit}
             onCancel={() => setShowPaymentForm(false)}
+            isLoading={isSavingPayment}
           />
         </div>
       )}
@@ -171,33 +235,33 @@ export function InvoiceDetail() {
         <div className="space-y-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Invoice Info
+              Invoice info
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                   Client
                 </p>
-                <p className="text-gray-900">{client?.name || '—'}</p>
+                <p className="text-gray-900">{client?.name ?? invoice.client_id}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Issue Date
+                  Issue date
                 </p>
                 <p className="text-gray-900">{formatDate(invoice.issued_date)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Due Date
+                  Due date
                 </p>
                 <p className="text-gray-900">{formatDate(invoice.due_date)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Last Payment
+                  Last payment
                 </p>
                 <p className="text-gray-900">
-                  {latestPayment ? formatDate(latestPayment.payment_date) : '—'}
+                  {latestPayment ? formatDate(latestPayment.payment_date) : 'No payment yet'}
                 </p>
               </div>
             </div>
@@ -213,13 +277,13 @@ export function InvoiceDetail() {
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Linked Missions
+              Linked missions
             </h2>
             {relatedMissions.length > 0 ? (
               <div className="space-y-3">
                 {relatedMissions.map((mission) => {
                   const driver = mission.driver_id
-                    ? mockDrivers.find((item) => item.driver_id === mission.driver_id)
+                    ? drivers.find((item) => item.driver_id === mission.driver_id)
                     : undefined
 
                   return (
@@ -227,9 +291,9 @@ export function InvoiceDetail() {
                       key={mission.mission_id}
                       id={mission.mission_id}
                       reference={mission.reference}
-                      client={client?.name || '—'}
+                      client={client?.name ?? mission.client_id}
                       route={`${mission.departure_location} → ${mission.arrival_location}`}
-                      driver={driver?.name || 'Unassigned'}
+                      driver={driver?.name ?? 'No driver assigned'}
                       status={getMissionListStatus(mission.status)}
                       revenue={mission.revenue_amount}
                       onClick={() => navigate(`/missions/${mission.mission_id}`)}
@@ -238,7 +302,7 @@ export function InvoiceDetail() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No missions linked to this invoice.</p>
+              <p className="text-sm text-gray-500">No missions are linked to this invoice.</p>
             )}
           </div>
         </div>
@@ -246,7 +310,7 @@ export function InvoiceDetail() {
         <div className="space-y-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Collection Summary
+              Collection summary
             </h2>
             <div className="space-y-4 text-sm">
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -258,12 +322,12 @@ export function InvoiceDetail() {
                         ? 'bg-red-500'
                         : 'bg-blue-500'
                   }`}
-                  style={{ width: `${Math.min(paymentProgress, 100)}%` }}
+                  style={{ width: `${Math.min(100, paymentProgress)}%` }}
                 />
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-gray-500">Status</span>
-                <span className="font-medium text-gray-900">{statusConfig.label}</span>
+                <span className="text-gray-500">Payments recorded</span>
+                <span className="font-medium text-gray-900">{payments.length}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-gray-500">Collected</span>
@@ -272,15 +336,9 @@ export function InvoiceDetail() {
                 </span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-gray-500">Balance due</span>
+                <span className="text-gray-500">Outstanding</span>
                 <span className="font-medium text-gray-900">
                   {formatCurrencyWithDecimals(amountRemaining)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-gray-500">Payment progress</span>
-                <span className="font-medium text-gray-900">
-                  {formatPercentage(paymentProgress, 0)}
                 </span>
               </div>
             </div>
@@ -290,9 +348,9 @@ export function InvoiceDetail() {
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
               Payments
             </h2>
-            {payments.length > 0 ? (
+            {paymentHistory.length > 0 ? (
               <div className="space-y-3">
-                {payments.map((payment) => {
+                {paymentHistory.map((payment) => {
                   const methodConfig = getPaymentMethodConfig(payment.payment_method)
 
                   return (
@@ -302,27 +360,22 @@ export function InvoiceDetail() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2">
                             <span
-                              className={`inline-flex text-xs font-medium px-2 py-0.5 rounded ${methodConfig.color}`}
+                              className={`inline-flex text-xs font-medium px-2 py-0.5 rounded border ${methodConfig.color}`}
                             >
                               {methodConfig.label}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500">
                               {formatDate(payment.payment_date)}
-                            </span>
+                            </p>
                           </div>
                           {payment.notes && (
-                            <p className="text-sm text-gray-900">{payment.notes}</p>
-                          )}
-                          {payment.reference && (
-                            <p className="text-xs text-gray-500 mt-2">
-                              Ref {payment.reference}
-                            </p>
+                            <p className="text-sm text-gray-600 mt-2">{payment.notes}</p>
                           )}
                         </div>
                         <p className="text-sm font-semibold text-gray-900">
-                          {formatCurrencyWithDecimals(payment.amount)}
+                          {formatCurrencyWithDecimals(payment.amount, payment.currency)}
                         </p>
                       </div>
                     </div>
@@ -330,7 +383,7 @@ export function InvoiceDetail() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No payments logged yet.</p>
+              <p className="text-sm text-gray-500">No payments have been recorded yet.</p>
             )}
           </div>
         </div>

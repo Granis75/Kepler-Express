@@ -1,17 +1,16 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, Plus, Search } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { VehicleListItem } from '../components/VehicleListItem'
 import { SelectInput } from '../components/SelectInput'
-import { mockMissions } from '../lib/mockData'
+import { listMissions, listVehicles, useAsyncData } from '../lib/data'
 import {
   getVehicleServiceAlert,
   getVehicleStatusOptions,
   isActiveMissionStatus,
 } from '../lib/domain'
-import { getStoredVehicles } from '../lib/vehicleStore'
 import { VehicleStatus } from '../types'
 
 export function Vehicles() {
@@ -19,54 +18,67 @@ export function Vehicles() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<VehicleStatus | ''>('')
 
-  const vehicles = getStoredVehicles()
+  const loadVehicleData = useCallback(
+    () => Promise.all([listVehicles(), listMissions()]),
+    []
+  )
+  const { data, loading, error, reload } = useAsyncData(loadVehicleData, [])
+
+  const vehicles = data?.[0] ?? []
+  const missions = data?.[1] ?? []
   const statusOptions = getVehicleStatusOptions()
 
-  const vehiclesWithContext = vehicles
-    .map((vehicle) => {
-      const serviceAlert = getVehicleServiceAlert(
-        vehicle.mileage_current,
-        vehicle.next_service_mileage
-      )
-      const activeMissions = mockMissions.filter(
-        (mission) =>
-          mission.vehicle_id === vehicle.vehicle_id && isActiveMissionStatus(mission.status)
-      )
+  const vehiclesWithContext = useMemo(() => {
+    return vehicles
+      .map((vehicle) => {
+        const serviceAlert = getVehicleServiceAlert(
+          vehicle.mileage_current,
+          vehicle.next_service_mileage
+        )
+        const activeMissions = missions.filter(
+          (mission) =>
+            mission.vehicle_id === vehicle.vehicle_id && isActiveMissionStatus(mission.status)
+        )
 
-      return {
-        vehicle,
-        serviceAlert,
-        activeMissions,
-      }
-    })
-    .sort((left, right) => {
-      const severityOrder = {
-        due: 0,
-        critical: 1,
-        warning: 2,
-        normal: 3,
-      }
+        return {
+          vehicle,
+          serviceAlert,
+          activeMissions,
+        }
+      })
+      .sort((left, right) => {
+        const severityOrder = {
+          due: 0,
+          critical: 1,
+          warning: 2,
+          normal: 3,
+        }
 
-      const leftSeverity = severityOrder[left.serviceAlert.level]
-      const rightSeverity = severityOrder[right.serviceAlert.level]
+        const leftSeverity = severityOrder[left.serviceAlert.level]
+        const rightSeverity = severityOrder[right.serviceAlert.level]
 
-      if (leftSeverity !== rightSeverity) {
-        return leftSeverity - rightSeverity
-      }
+        if (leftSeverity !== rightSeverity) {
+          return leftSeverity - rightSeverity
+        }
 
-      return left.vehicle.name.localeCompare(right.vehicle.name)
-    })
+        return left.vehicle.name.localeCompare(right.vehicle.name)
+      })
+  }, [missions, vehicles])
 
-  const filteredVehicles = vehiclesWithContext.filter(({ vehicle }) => {
-    const matchesStatus = !statusFilter || vehicle.status === statusFilter
+  const filteredVehicles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    const matchesSearch =
-      !query ||
-      vehicle.name.toLowerCase().includes(query) ||
-      vehicle.license_plate.toLowerCase().includes(query)
 
-    return matchesStatus && matchesSearch
-  })
+    return vehiclesWithContext.filter(({ vehicle }) => {
+      const matchesStatus = !statusFilter || vehicle.status === statusFilter
+      const matchesSearch =
+        !query ||
+        vehicle.name.toLowerCase().includes(query) ||
+        vehicle.license_plate.toLowerCase().includes(query) ||
+        vehicle.registration_number.toLowerCase().includes(query)
+
+      return matchesStatus && matchesSearch
+    })
+  }, [searchQuery, statusFilter, vehiclesWithContext])
 
   const alertVehicles = vehiclesWithContext.filter(
     ({ serviceAlert }) => serviceAlert.level !== 'normal'
@@ -88,7 +100,7 @@ export function Vehicles() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
           >
             <Plus size={18} />
-            Add Vehicle
+            Add vehicle
           </button>
         }
       />
@@ -113,7 +125,7 @@ export function Vehicles() {
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle size={16} className="text-red-600" />
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-              Maintenance Alerts
+              Maintenance alerts
             </h2>
           </div>
           <div className="space-y-2">
@@ -146,8 +158,8 @@ export function Vehicles() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by vehicle or plate number"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by vehicle, plate number, or registration"
               className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -155,14 +167,31 @@ export function Vehicles() {
             label="Status"
             options={[{ value: '', label: 'All statuses' }, ...statusOptions]}
             value={statusFilter}
-            onChange={(e) => setStatusFilter((e.target.value || '') as VehicleStatus | '')}
+            onChange={(event) =>
+              setStatusFilter((event.target.value || '') as VehicleStatus | '')
+            }
           />
         </div>
       </div>
 
-      <div className="space-y-3">
-        {filteredVehicles.length > 0 ? (
-          filteredVehicles.map(({ vehicle, activeMissions }) => (
+      {loading ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Loading vehicles...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      ) : filteredVehicles.length > 0 ? (
+        <div className="space-y-3">
+          {filteredVehicles.map(({ vehicle, activeMissions }) => (
             <VehicleListItem
               key={vehicle.vehicle_id}
               vehicle={vehicle}
@@ -170,13 +199,17 @@ export function Vehicles() {
               activeMissionReference={activeMissions[0]?.reference}
               onClick={() => navigate(`/vehicles/${vehicle.vehicle_id}`)}
             />
-          ))
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-            <p className="text-sm text-gray-500">No vehicles match the current filters.</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">
+            {vehicles.length > 0
+              ? 'No vehicles match the current filters.'
+              : 'No vehicles found in Supabase yet.'}
+          </p>
+        </div>
+      )}
     </PageContainer>
   )
 }

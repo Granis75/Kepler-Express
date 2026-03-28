@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import type { CreateInvoiceInput, Invoice } from '../types'
+import type { Client, CreateInvoiceInput, Invoice, Mission } from '../types'
 import { InvoiceStatus, MissionStatus } from '../types'
 import { TextInput } from './TextInput'
 import { SelectInput } from './SelectInput'
-import { mockClients, mockMissions } from '../lib/mockData'
 import {
   getInvoiceStatusConfig,
   getInvoiceWorkflowStatusOptions,
@@ -11,6 +10,8 @@ import {
 import { validateInvoiceCreation } from '../lib/validators'
 
 interface InvoiceFormProps {
+  clients: Client[]
+  missions: Mission[]
   initialData?: Invoice
   defaultInvoiceNumber?: string
   existingPaidAmount?: number
@@ -54,6 +55,8 @@ function getInitialFormData(
 }
 
 export function InvoiceForm({
+  clients,
+  missions,
   initialData,
   defaultInvoiceNumber,
   existingPaidAmount = 0,
@@ -67,12 +70,12 @@ export function InvoiceForm({
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const clientOptions = mockClients.map((client) => ({
+  const clientOptions = clients.map((client) => ({
     value: client.client_id,
     label: client.name,
   }))
 
-  const missionOptions = mockMissions
+  const missionOptions = missions
     .filter(
       (mission) =>
         (!formData.client_id || mission.client_id === formData.client_id) &&
@@ -112,7 +115,7 @@ export function InvoiceForm({
   }
 
   const handleClientChange = (clientId: string) => {
-    const selectedMission = mockMissions.find(
+    const selectedMission = missions.find(
       (mission) => mission.mission_id === formData.mission_id
     )
 
@@ -135,7 +138,7 @@ export function InvoiceForm({
   }
 
   const handleMissionChange = (missionId: string) => {
-    const selectedMission = mockMissions.find((mission) => mission.mission_id === missionId)
+    const selectedMission = missions.find((mission) => mission.mission_id === missionId)
 
     setFormData((prev) => ({
       ...prev,

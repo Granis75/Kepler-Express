@@ -206,6 +206,7 @@ export function validateDriverCreation(data: {
 export function validateVehicleCreation(data: {
   name: string
   license_plate: string
+  registration_number: string
   mileage_current: number
   next_service_mileage: number
 }): ValidationResult {
@@ -219,12 +220,16 @@ export function validateVehicleCreation(data: {
     errors.push({ field: 'license_plate', message: 'License plate is required' })
   }
 
+  if (!data.registration_number?.trim()) {
+    errors.push({ field: 'registration_number', message: 'Registration number is required' })
+  }
+
   if (data.mileage_current < 0) {
     errors.push({ field: 'mileage_current', message: 'Current mileage cannot be negative' })
   }
 
-  if (data.next_service_mileage <= 0) {
-    errors.push({ field: 'next_service_mileage', message: 'Next service mileage must be greater than 0' })
+  if (data.next_service_mileage <= data.mileage_current) {
+    errors.push({ field: 'next_service_mileage', message: 'Next service mileage must be greater than current mileage' })
   }
 
   return {

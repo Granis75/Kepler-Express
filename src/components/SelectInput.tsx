@@ -7,6 +7,8 @@ interface SelectInputProps extends React.SelectHTMLAttributes<HTMLSelectElement>
 }
 
 export function SelectInput({ label, options, error, className, ...props }: SelectInputProps) {
+  const hasEmptyOption = options.some((option) => option.value === '')
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-900 mb-1.5">
@@ -20,7 +22,7 @@ export function SelectInput({ label, options, error, className, ...props }: Sele
         )}
         {...props}
       >
-        <option value="">Select an option</option>
+        {!hasEmptyOption && <option value="">Select an option</option>}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

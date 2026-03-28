@@ -12,6 +12,7 @@ interface PaymentFormProps {
   onSubmit: (data: CreatePaymentInput) => void
   onCancel: () => void
   submitLabel?: string
+  isLoading?: boolean
 }
 
 interface PaymentFormState {
@@ -35,6 +36,7 @@ export function PaymentForm({
   onSubmit,
   onCancel,
   submitLabel = 'Log payment',
+  isLoading = false,
 }: PaymentFormProps) {
   const [formData, setFormData] = useState<PaymentFormState>(() =>
     getInitialFormData(invoice)
@@ -158,9 +160,10 @@ export function PaymentForm({
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          disabled={isLoading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          {submitLabel}
+          {isLoading ? 'Saving...' : submitLabel}
         </button>
       </div>
     </form>

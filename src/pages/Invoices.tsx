@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, Plus, Search } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
@@ -6,9 +6,8 @@ import { PageHeader } from '../components/PageHeader'
 import { InvoiceListItem } from '../components/InvoiceListItem'
 import { SelectInput } from '../components/SelectInput'
 import { calculateInvoiceAmountRemaining, calculateInvoiceSummary } from '../lib/calculations'
+import { listClients, listInvoices, listMissions, useAsyncData } from '../lib/data'
 import { getInvoiceStatusOptions } from '../lib/domain'
-import { getStoredInvoices } from '../lib/financialStore'
-import { mockClients, mockMissions } from '../lib/mockData'
 import { formatCurrencyWithDecimals } from '../lib/utils'
 import { InvoiceStatus } from '../types'
 
@@ -26,16 +25,32 @@ export function Invoices() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('')
 
-  const invoices = getStoredInvoices()
+  const loadInvoiceData = useCallback(
+    () => Promise.all([listInvoices(), listClients(), listMissions()]),
+    []
+  )
+  const { data, loading, error, reload } = useAsyncData(loadInvoiceData, [])
+
+  const invoices = data?.[0] ?? []
+  const clients = data?.[1] ?? []
+  const missions = data?.[2] ?? []
+
   const summary = calculateInvoiceSummary(invoices)
 
-  const getClientName = (clientId: string) =>
-    mockClients.find((client) => client.client_id === clientId)?.name || '—'
+  const clientNameById = useMemo(
+    () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
+    [clients]
+  )
+
+  const missionReferenceById = useMemo(
+    () => new Map(missions.map((mission) => [mission.mission_id, mission.reference] as const)),
+    [missions]
+  )
 
   const getMissionSummary = (missionIds: string[]) => {
-    const missionReferences = mockMissions
-      .filter((mission) => missionIds.includes(mission.mission_id))
-      .map((mission) => mission.reference)
+    const missionReferences = missionIds
+      .map((missionId) => missionReferenceById.get(missionId))
+      .filter(Boolean) as string[]
 
     if (missionReferences.length === 0) {
       return undefined
@@ -48,32 +63,35 @@ export function Invoices() {
     return `${missionReferences[0]} +${missionReferences.length - 1}`
   }
 
-  const filteredInvoices = [...invoices]
-    .filter((invoice) => {
-      const clientName = getClientName(invoice.client_id).toLowerCase()
-      const missionSummary = getMissionSummary(invoice.mission_ids)?.toLowerCase() || ''
-      const query = searchQuery.trim().toLowerCase()
+  const filteredInvoices = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
 
-      const matchesSearch =
-        !query ||
-        invoice.invoice_number.toLowerCase().includes(query) ||
-        clientName.includes(query) ||
-        missionSummary.includes(query)
+    return [...invoices]
+      .filter((invoice) => {
+        const clientName = clientNameById.get(invoice.client_id)?.toLowerCase() ?? ''
+        const missionSummary = getMissionSummary(invoice.mission_ids)?.toLowerCase() ?? ''
 
-      const matchesStatus = !statusFilter || invoice.status === statusFilter
+        const matchesSearch =
+          !query ||
+          invoice.invoice_number.toLowerCase().includes(query) ||
+          clientName.includes(query) ||
+          missionSummary.includes(query)
 
-      return matchesSearch && matchesStatus
-    })
-    .sort((left, right) => {
-      const leftRank = statusRank[left.status]
-      const rightRank = statusRank[right.status]
+        const matchesStatus = !statusFilter || invoice.status === statusFilter
 
-      if (leftRank !== rightRank) {
-        return leftRank - rightRank
-      }
+        return matchesSearch && matchesStatus
+      })
+      .sort((left, right) => {
+        const leftRank = statusRank[left.status]
+        const rightRank = statusRank[right.status]
 
-      return right.invoice_number.localeCompare(left.invoice_number)
-    })
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank
+        }
+
+        return right.invoice_number.localeCompare(left.invoice_number)
+      })
+  }, [clientNameById, invoices, searchQuery, statusFilter])
 
   const overdueInvoices = invoices.filter((invoice) => invoice.status === InvoiceStatus.Overdue)
 
@@ -89,7 +107,7 @@ export function Invoices() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
           >
             <Plus size={18} />
-            Create Invoice
+            Create invoice
           </button>
         }
       />
@@ -125,7 +143,7 @@ export function Invoices() {
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle size={16} className="text-red-600" />
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-              Overdue Invoices
+              Overdue invoices
             </h2>
           </div>
           <div className="space-y-2">
@@ -138,11 +156,9 @@ export function Invoices() {
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {invoice.invoice_number}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">{invoice.invoice_number}</p>
                     <p className="text-xs text-red-700 mt-1">
-                      {getClientName(invoice.client_id)}
+                      {clientNameById.get(invoice.client_id) ?? invoice.client_id}
                     </p>
                   </div>
                   <p className="text-sm font-semibold text-red-700">
@@ -183,15 +199,30 @@ export function Invoices() {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {filteredInvoices.length > 0 ? (
+      {loading ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Loading invoices...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      ) : filteredInvoices.length > 0 ? (
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="divide-y divide-gray-100">
             {filteredInvoices.map((invoice) => (
               <InvoiceListItem
                 key={invoice.invoice_id}
                 id={invoice.invoice_id}
                 reference={invoice.invoice_number}
-                client={getClientName(invoice.client_id)}
+                client={clientNameById.get(invoice.client_id) ?? invoice.client_id}
                 subtitle={getMissionSummary(invoice.mission_ids)}
                 amount={calculateInvoiceAmountRemaining(invoice.amount_total, invoice.amount_paid)}
                 status={invoice.status}
@@ -200,12 +231,16 @@ export function Invoices() {
               />
             ))}
           </div>
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-gray-500 text-sm">No invoices match the current filters.</p>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">
+            {invoices.length > 0
+              ? 'No invoices match the current filters.'
+              : 'No invoices found in Supabase yet.'}
+          </p>
+        </div>
+      )}
     </PageContainer>
   )
 }

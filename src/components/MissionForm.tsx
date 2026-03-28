@@ -2,22 +2,51 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TextInput } from './TextInput'
 import { SelectInput } from './SelectInput'
-import { Mission } from '../types'
+import { Client, Driver, Mission, Vehicle } from '../types'
 import { MissionStatus } from '../types'
-import { mockClients, mockDrivers } from '../lib/mockData'
 import { getMissionStatusOptions } from '../lib/domain'
-import { getStoredVehicles } from '../lib/vehicleStore'
 
 interface MissionFormProps {
+  clients: Client[]
+  drivers: Driver[]
+  vehicles: Vehicle[]
   initialData?: Mission
-  onSubmit: (data: Partial<Mission>) => void
+  onSubmit: (data: MissionFormInput) => void
   isLoading?: boolean
 }
 
-export function MissionForm({ initialData, onSubmit, isLoading = false }: MissionFormProps) {
-  const navigate = useNavigate()
-  const [formData, setFormData] = useState<Partial<Mission>>(
-    initialData || {
+export interface MissionFormInput {
+  reference: string
+  client_id: string
+  driver_id?: string
+  vehicle_id?: string
+  departure_location: string
+  arrival_location: string
+  departure_datetime: string
+  revenue_amount: number
+  estimated_cost_amount: number
+  status: MissionStatus
+  notes?: string
+}
+
+function toDateTimeLocalValue(value?: string) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 16)
+  }
+
+  const timezoneOffset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16)
+}
+
+function getInitialFormData(initialData?: Mission): MissionFormInput {
+  if (!initialData) {
+    return {
       reference: '',
       client_id: '',
       driver_id: '',
@@ -30,6 +59,34 @@ export function MissionForm({ initialData, onSubmit, isLoading = false }: Missio
       status: MissionStatus.Planned,
       notes: '',
     }
+  }
+
+  return {
+    reference: initialData.reference,
+    client_id: initialData.client_id,
+    driver_id: initialData.driver_id,
+    vehicle_id: initialData.vehicle_id,
+    departure_location: initialData.departure_location,
+    arrival_location: initialData.arrival_location,
+    departure_datetime: toDateTimeLocalValue(initialData.departure_datetime),
+    revenue_amount: initialData.revenue_amount,
+    estimated_cost_amount: initialData.estimated_cost_amount,
+    status: initialData.status,
+    notes: initialData.notes ?? '',
+  }
+}
+
+export function MissionForm({
+  clients,
+  drivers,
+  vehicles,
+  initialData,
+  onSubmit,
+  isLoading = false,
+}: MissionFormProps) {
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState<MissionFormInput>(() =>
+    getInitialFormData(initialData)
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -55,9 +112,9 @@ export function MissionForm({ initialData, onSubmit, isLoading = false }: Missio
     }
   }
 
-  const clientOptions = mockClients.map((c) => ({ value: c.client_id, label: c.name }))
-  const driverOptions = mockDrivers.map((d) => ({ value: d.driver_id, label: d.name }))
-  const vehicleOptions = getStoredVehicles().map((vehicle) => ({
+  const clientOptions = clients.map((c) => ({ value: c.client_id, label: c.name }))
+  const driverOptions = drivers.map((d) => ({ value: d.driver_id, label: d.name }))
+  const vehicleOptions = vehicles.map((vehicle) => ({
     value: vehicle.vehicle_id,
     label: vehicle.name,
   }))

@@ -18,12 +18,11 @@ function getInitialFormData(vehicle?: Vehicle): CreateVehicleInput {
   return {
     name: vehicle?.name ?? '',
     license_plate: vehicle?.license_plate ?? '',
-    registration_number: vehicle?.registration_number,
+    registration_number: vehicle?.registration_number ?? '',
     vehicle_type: vehicle?.vehicle_type ?? VehicleType.Van,
     status: vehicle?.status ?? VehicleStatus.Active,
     mileage_current: vehicle?.mileage_current ?? 0,
     next_service_mileage: vehicle?.next_service_mileage ?? 0,
-    notes: vehicle?.notes ?? '',
   }
 }
 
@@ -64,6 +63,7 @@ export function VehicleForm({
       validateVehicleCreation({
         name: formData.name,
         license_plate: formData.license_plate,
+        registration_number: formData.registration_number,
         mileage_current: formData.mileage_current,
         next_service_mileage: formData.next_service_mileage,
       }).errors.map((error) => [error.field, error.message])
@@ -77,10 +77,7 @@ export function VehicleForm({
     event.preventDefault()
 
     if (validate()) {
-      onSubmit({
-        ...formData,
-        notes: formData.notes?.trim() || undefined,
-      })
+      onSubmit(formData)
     }
   }
 
@@ -102,6 +99,12 @@ export function VehicleForm({
             value={formData.license_plate}
             onChange={(e) => handleChange('license_plate', e.target.value)}
             error={errors.license_plate}
+          />
+          <TextInput
+            label="Registration Number"
+            value={formData.registration_number}
+            onChange={(e) => handleChange('registration_number', e.target.value)}
+            error={errors.registration_number}
           />
           <SelectInput
             label="Type"
@@ -152,18 +155,6 @@ export function VehicleForm({
             error={errors.next_service_mileage}
           />
         </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-          Notes
-        </h2>
-        <textarea
-          value={formData.notes || ''}
-          onChange={(e) => handleChange('notes', e.target.value)}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
       </div>
 
       <div className="flex gap-3 sticky bottom-0 bg-white py-4 border-t border-gray-200">

@@ -52,7 +52,8 @@ export function upsertStoredVehicle(
     updated_at: now,
     name: input.name,
     license_plate: input.license_plate,
-    registration_number: input.registration_number || existingVehicle?.registration_number,
+    registration_number:
+      input.registration_number || existingVehicle?.registration_number || '',
     vehicle_type: input.vehicle_type,
     status: input.status,
     mileage_current: input.mileage_current,

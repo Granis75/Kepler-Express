@@ -1,43 +1,102 @@
+import { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { ArrowLeft, Edit2 } from 'lucide-react'
-import { mockMissions, mockClients, mockDrivers, mockExpenses } from '../lib/mockData'
 import { calculateInvoiceAmountRemaining } from '../lib/calculations'
 import { getMissionStatusConfig, getInvoiceStatusConfig } from '../lib/domain'
-import { getStoredInvoices } from '../lib/financialStore'
+import {
+  getMissionById,
+  listClients,
+  listDrivers,
+  listExpenses,
+  listInvoices,
+  listVehicles,
+  useAsyncData,
+} from '../lib/data'
 import { formatCurrencyWithDecimals, formatDate } from '../lib/utils'
-import { getStoredVehicles } from '../lib/vehicleStore'
 
 export function MissionDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const storedVehicles = getStoredVehicles()
 
-  const mission = mockMissions.find((m) => m.mission_id === id)
-  if (!mission) {
+  const loadMissionDetailData = useCallback(async () => {
+    if (!id) {
+      throw new Error('Mission ID is required.')
+    }
+
+    const [mission, clients, drivers, vehicles, expenses, invoices] = await Promise.all([
+      getMissionById(id),
+      listClients(),
+      listDrivers(),
+      listVehicles(),
+      listExpenses(),
+      listInvoices(),
+    ])
+
+    return {
+      mission,
+      clients,
+      drivers,
+      vehicles,
+      expenses,
+      invoices,
+    }
+  }, [id])
+
+  const { data, loading, error, reload } = useAsyncData(loadMissionDetailData, [id])
+
+  if (loading) {
     return (
       <PageContainer>
         <div className="text-center py-12">
-          <p className="text-gray-500">Mission not found</p>
+          <p className="text-gray-500">Loading mission...</p>
         </div>
       </PageContainer>
     )
   }
 
-  const client = mockClients.find((c) => c.client_id === mission.client_id)
-  const driver = mission.driver_id ? mockDrivers.find((d) => d.driver_id === mission.driver_id) : null
+  if (error || !data) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-red-700">{error || 'Unable to load the mission.'}</p>
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  const { mission, clients, drivers, vehicles, expenses, invoices } = data
+
+  const client = clients.find((item) => item.client_id === mission.client_id)
+  const driver = mission.driver_id
+    ? drivers.find((item) => item.driver_id === mission.driver_id)
+    : undefined
   const vehicle = mission.vehicle_id
-    ? storedVehicles.find((storedVehicle) => storedVehicle.vehicle_id === mission.vehicle_id)
-    : null
-  const linkedExpenses = mockExpenses.filter((e) => e.mission_id === mission.mission_id)
-  const linkedInvoice = getStoredInvoices().find((invoice) =>
+    ? vehicles.find((item) => item.vehicle_id === mission.vehicle_id)
+    : undefined
+
+  const linkedExpenses = expenses.filter(
+    (expense) => expense.mission_id === mission.mission_id
+  )
+  const linkedInvoice = invoices.find((invoice) =>
     invoice.mission_ids.includes(mission.mission_id)
   )
 
-  // Calculate profitability
-  const totalExpenses = linkedExpenses.reduce((sum, e) => sum + e.amount, 0) + (mission.actual_cost_amount || mission.estimated_cost_amount || 0)
+  const totalExpenses =
+    linkedExpenses.reduce((sum, expense) => sum + expense.amount, 0) +
+    (mission.actual_cost_amount ?? mission.estimated_cost_amount ?? 0)
   const profitability = mission.revenue_amount - totalExpenses
-  const margin = ((profitability / mission.revenue_amount) * 100).toFixed(1)
+  const margin =
+    mission.revenue_amount > 0
+      ? ((profitability / mission.revenue_amount) * 100).toFixed(1)
+      : '0.0'
 
   const statusConfig = getMissionStatusConfig(mission.status)
 
@@ -98,11 +157,11 @@ export function MissionDetail() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Driver</p>
-                <p className="text-sm text-gray-900">{driver?.name || 'Unassigned'}</p>
+                <p className="text-sm text-gray-900">{driver?.name || 'No driver assigned'}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Vehicle</p>
-                <p className="text-sm text-gray-900">{vehicle?.name || '—'}</p>
+                <p className="text-sm text-gray-900">{vehicle?.name || 'No vehicle assigned'}</p>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { Search, FilterX } from 'lucide-react'
-import { MissionStatus } from '../types'
+import { getMissionStatusOptions } from '../lib/domain'
 
 interface MissionFilterProps {
   searchQuery: string
@@ -9,15 +9,6 @@ interface MissionFilterProps {
   onClearFilters: () => void
 }
 
-const statusOptions = [
-  { value: MissionStatus.Planned, label: 'Planned' },
-  { value: MissionStatus.Assigned, label: 'Assigned' },
-  { value: MissionStatus.InProgress, label: 'In Progress' },
-  { value: MissionStatus.Delivered, label: 'Delivered' },
-  { value: MissionStatus.Issue, label: 'Issue' },
-  { value: MissionStatus.Cancelled, label: 'Cancelled' },
-]
-
 export function MissionFilter({
   searchQuery,
   onSearchChange,
@@ -25,6 +16,7 @@ export function MissionFilter({
   onStatusChange,
   onClearFilters,
 }: MissionFilterProps) {
+  const statusOptions = getMissionStatusOptions()
   const hasFilters = searchQuery || statusFilter
 
   return (
@@ -58,6 +50,7 @@ export function MissionFilter({
 
         {hasFilters && (
           <button
+            type="button"
             onClick={onClearFilters}
             className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors duration-100"
           >

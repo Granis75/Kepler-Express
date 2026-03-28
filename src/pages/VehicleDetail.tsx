@@ -1,8 +1,16 @@
+import { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Edit2 } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { MissionListItem } from '../components/MissionListItem'
-import { mockClients, mockDrivers, mockMissions } from '../lib/mockData'
+import {
+  getVehicleById,
+  listClients,
+  listDrivers,
+  listMaintenanceRecordsByVehicleId,
+  listMissions,
+  useAsyncData,
+} from '../lib/data'
 import {
   getMaintenanceTypeConfig,
   getMissionListStatus,
@@ -12,28 +20,69 @@ import {
   isActiveMissionStatus,
 } from '../lib/domain'
 import {
-  getStoredMaintenanceRecords,
-  getStoredVehicleById,
-} from '../lib/vehicleStore'
-import { formatCurrencyWithDecimals, formatDate, formatMileage } from '../lib/utils'
+  formatCurrencyWithDecimals,
+  formatDate,
+  formatMileage,
+} from '../lib/utils'
 
 export function VehicleDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
 
-  const vehicle = id ? getStoredVehicleById(id) : undefined
+  const loadVehicleDetailData = useCallback(async () => {
+    if (!id) {
+      throw new Error('Vehicle ID is required.')
+    }
 
-  if (!vehicle) {
+    const [vehicle, maintenanceRecords, missions, clients, drivers] = await Promise.all([
+      getVehicleById(id),
+      listMaintenanceRecordsByVehicleId(id),
+      listMissions(),
+      listClients(),
+      listDrivers(),
+    ])
+
+    return {
+      vehicle,
+      maintenanceRecords,
+      missions,
+      clients,
+      drivers,
+    }
+  }, [id])
+
+  const { data, loading, error, reload } = useAsyncData(loadVehicleDetailData, [id])
+
+  if (loading) {
     return (
       <PageContainer>
         <div className="text-center py-12">
-          <p className="text-gray-500">Vehicle not found</p>
+          <p className="text-gray-500">Loading vehicle...</p>
         </div>
       </PageContainer>
     )
   }
 
-  const relatedMissions = mockMissions
+  if (error || !data) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-red-700">{error || 'Unable to load the vehicle.'}</p>
+          <button
+            type="button"
+            onClick={reload}
+            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  const { vehicle, maintenanceRecords, missions, clients, drivers } = data
+
+  const relatedMissions = [...missions]
     .filter((mission) => mission.vehicle_id === vehicle.vehicle_id)
     .sort((left, right) => {
       const leftActive = isActiveMissionStatus(left.status) ? 0 : 1
@@ -52,14 +101,6 @@ export function VehicleDetail() {
   const activeMissions = relatedMissions.filter((mission) =>
     isActiveMissionStatus(mission.status)
   )
-
-  const maintenanceRecords = getStoredMaintenanceRecords()
-    .filter((record) => record.vehicle_id === vehicle.vehicle_id)
-    .sort(
-      (left, right) =>
-        new Date(right.service_date).getTime() - new Date(left.service_date).getTime()
-    )
-
   const latestMaintenance = maintenanceRecords[0]
   const totalMaintenanceCost = maintenanceRecords.reduce(
     (sum, record) => sum + record.cost_amount,
@@ -72,12 +113,15 @@ export function VehicleDetail() {
   const statusConfig = getVehicleStatusConfig(vehicle.status)
 
   const getClientName = (clientId: string) =>
-    mockClients.find((client) => client.client_id === clientId)?.name || '—'
+    clients.find((client) => client.client_id === clientId)?.name ?? clientId
 
-  const getDriverName = (driverId?: string) =>
-    driverId
-      ? mockDrivers.find((driver) => driver.driver_id === driverId)?.name || '—'
-      : '—'
+  const getDriverName = (driverId?: string) => {
+    if (!driverId) {
+      return 'No driver assigned'
+    }
+
+    return drivers.find((driver) => driver.driver_id === driverId)?.name ?? driverId
+  }
 
   return (
     <PageContainer>
@@ -115,14 +159,14 @@ export function VehicleDetail() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className={`rounded-lg border p-6 ${serviceAlert.surface}`}>
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Service Alert
+            Service alert
           </p>
           <p className={`text-2xl font-semibold ${serviceAlert.text}`}>{serviceAlert.label}</p>
           <p className={`text-sm mt-2 ${serviceAlert.text}`}>{serviceAlert.detail}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Current Mileage
+            Current mileage
           </p>
           <p className="text-2xl font-semibold text-gray-900">
             {formatMileage(vehicle.mileage_current)}
@@ -133,7 +177,7 @@ export function VehicleDetail() {
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-            Maintenance Cost
+            Maintenance cost
           </p>
           <p className="text-2xl font-semibold text-gray-900">
             {formatCurrencyWithDecimals(totalMaintenanceCost)}
@@ -148,14 +192,20 @@ export function VehicleDetail() {
         <div className="space-y-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Vehicle Info
+              Vehicle info
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Plate Number
+                  Plate number
                 </p>
                 <p className="text-gray-900">{vehicle.license_plate}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Registration number
+                </p>
+                <p className="text-gray-900">{vehicle.registration_number}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
@@ -165,38 +215,30 @@ export function VehicleDetail() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Current Mileage
+                  Current mileage
                 </p>
                 <p className="text-gray-900">{formatMileage(vehicle.mileage_current)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Next Service Mileage
+                  Next service mileage
                 </p>
                 <p className="text-gray-900">{formatMileage(vehicle.next_service_mileage)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                  Last Service
+                  Last service
                 </p>
                 <p className="text-gray-900">
-                  {latestMaintenance ? formatDate(latestMaintenance.service_date) : '—'}
+                  {latestMaintenance ? formatDate(latestMaintenance.service_date) : 'No record yet'}
                 </p>
               </div>
             </div>
-            {vehicle.notes && (
-              <div className="mt-6">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                  Notes
-                </p>
-                <p className="text-sm text-gray-700">{vehicle.notes}</p>
-              </div>
-            )}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Assigned Missions
+              Assigned missions
             </h2>
             {relatedMissions.length > 0 ? (
               <div className="space-y-3">
@@ -215,7 +257,7 @@ export function VehicleDetail() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No missions linked to this vehicle.</p>
+              <p className="text-sm text-gray-500">No missions are linked to this vehicle yet.</p>
             )}
           </div>
         </div>
@@ -223,7 +265,7 @@ export function VehicleDetail() {
         <div className="space-y-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Service Summary
+              Service summary
             </h2>
             <div className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-4">
@@ -237,7 +279,7 @@ export function VehicleDetail() {
               <div className="flex items-center justify-between gap-4">
                 <span className="text-gray-500">Latest maintenance</span>
                 <span className="font-medium text-gray-900">
-                  {latestMaintenance ? formatDate(latestMaintenance.service_date) : '—'}
+                  {latestMaintenance ? formatDate(latestMaintenance.service_date) : 'No record yet'}
                 </span>
               </div>
             </div>
@@ -245,7 +287,7 @@ export function VehicleDetail() {
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-              Maintenance History
+              Maintenance history
             </h2>
             {maintenanceRecords.length > 0 ? (
               <div className="space-y-3">
@@ -259,26 +301,28 @@ export function VehicleDetail() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2">
                             <span
-                              className={`inline-flex text-xs font-medium px-2 py-0.5 rounded ${typeConfig.color}`}
+                              className={`inline-flex text-xs font-medium px-2 py-0.5 rounded border ${typeConfig.color}`}
                             >
                               {typeConfig.label}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500">
                               {formatDate(record.service_date)}
-                            </span>
+                            </p>
                           </div>
-                          {record.notes && (
-                            <p className="text-sm text-gray-900">{record.notes}</p>
-                          )}
-                          <p className="text-xs text-gray-500 mt-2">
-                            {formatMileage(record.mileage_at_service)} • Next service{' '}
-                            {formatMileage(record.next_service_mileage)}
+                          <p className="text-sm text-gray-900 mt-2">
+                            {formatMileage(record.mileage_at_service)}
                           </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Next service {formatMileage(record.next_service_mileage)}
+                          </p>
+                          {record.notes && (
+                            <p className="text-sm text-gray-600 mt-2">{record.notes}</p>
+                          )}
                         </div>
                         <p className="text-sm font-semibold text-gray-900">
-                          {formatCurrencyWithDecimals(record.cost_amount)}
+                          {formatCurrencyWithDecimals(record.cost_amount, record.currency)}
                         </p>
                       </div>
                     </div>
@@ -286,7 +330,9 @@ export function VehicleDetail() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No maintenance logged for this vehicle.</p>
+              <p className="text-sm text-gray-500">
+                No maintenance records are available for this vehicle yet.
+              </p>
             )}
           </div>
         </div>
