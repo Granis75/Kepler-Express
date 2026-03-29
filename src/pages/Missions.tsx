@@ -3,18 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { MissionFilter } from '../components/MissionFilter'
 import { MissionListItem } from '../components/MissionListItem'
+import { MissionListSkeleton } from '../components/MissionListSkeleton'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
-import {
-  listClients,
-  listDrivers,
-  listMissions,
-  useAsyncData,
-} from '../lib/data'
-import {
-  getMissionListStatus,
-  isActiveMissionStatus,
-} from '../lib/domain'
+import { useMissions } from '../lib/hooks'
+import { listClients, listDrivers, useAsyncData } from '../lib/data'
+import { getMissionListStatus, isActiveMissionStatus } from '../lib/domain'
 import { toSearchValue } from '../lib/utils'
 import { MissionStatus, type Client, type Driver, type Mission } from '../types'
 
@@ -51,15 +45,27 @@ export function Missions() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<MissionStatus | ''>('')
 
-  const loadMissionData = useCallback(
-    () => Promise.all([listMissions(), listClients(), listDrivers()]),
+  // Missions via React Query
+  const {
+    data: missions = [],
+    isLoading: missionsLoading,
+    isError: missionsError,
+    refetch: refetchMissions,
+  } = useMissions()
+
+  // Clients and drivers via old pattern (kept for safety)
+  const loadClientDriverData = useCallback(
+    () => Promise.all([listClients(), listDrivers()]),
     []
   )
-  const { data, loading, error, reload } = useAsyncData(loadMissionData, [])
+  const { data: clientDriverData, loading: clientDriverLoading, error: clientDriverError, reload: reloadClientDriver } = useAsyncData(loadClientDriverData, [])
 
-  const missions = data?.[0] ?? []
-  const clients = data?.[1] ?? []
-  const drivers = data?.[2] ?? []
+  const clients = clientDriverData?.[0] ?? []
+  const drivers = clientDriverData?.[1] ?? []
+
+  const loading = missionsLoading || clientDriverLoading
+  const error = missionsError ? 'Unable to load missions' : clientDriverError
+  const allReady = !loading && !missionsError && !clientDriverError
 
   const summary = useMemo(() => {
     return missions.reduce(
@@ -168,29 +174,38 @@ export function Missions() {
       </div>
 
       {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-gray-500">Loading missions...</p>
-        </div>
+        <MissionListSkeleton />
       ) : error ? (
         <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
           <p className="text-sm text-red-700">{error}</p>
-          <button
-            type="button"
-            onClick={reload}
-            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
-          >
-            Retry
-          </button>
+          <div className="mt-4 flex gap-2 justify-center">
+            <button
+              type="button"
+              onClick={() => refetchMissions()}
+              className="px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+            >
+              Retry Missions
+            </button>
+            {clientDriverError && (
+              <button
+                type="button"
+                onClick={reloadClientDriver}
+                className="px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+              >
+                Retry Data
+              </button>
+            )}
+          </div>
         </div>
       ) : filteredMissions.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
           <p className="text-sm text-gray-500">
             {missions.length > 0
               ? 'No missions match the current filters.'
-              : 'No missions found in Supabase yet.'}
+              : 'No missions found in Supabase yet. Create your first mission to get started.'}
           </p>
         </div>
-      ) : (
+      ) : allReady ? (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="divide-y divide-gray-100">
             {filteredMissions.map((mission) => (
@@ -207,7 +222,7 @@ export function Missions() {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
     </PageContainer>
   )
 }
