@@ -145,10 +145,11 @@ Cost tracking.
 - `mission_id` — Optional foreign key
 - `driver_id` — Optional foreign key
 - `vehicle_id` — Optional foreign key
-- `type` — fuel | tolls | maintenance | mission_expense | parking | other
+- `type` — fuel | tolls | maintenance | mission_expense | parking | meal | other
 - `amount` — 1-5,000 EUR
 - `currency` — EUR | USD | GBP
 - `advanced_by_driver` — Driver paid upfront?
+- `reimbursement_status` — pending | approved | paid | rejected
 - `receipt_attached` — Documentation
 - `description`
 - `expense_date` — Must be past or today
@@ -156,12 +157,12 @@ Cost tracking.
 
 **Constraints:**
 - Amount: 1-5,000 EUR per transaction
-- Driver advances require receipt
 - expense_date cannot be future
 
 **Business Logic:**
 - Driver advances create reimbursement liability
-- Receipt required for audit trail
+- Company-paid expenses should default to `paid`
+- Missing receipts should be visible for follow-up
 
 **Security:** Users see expenses from org. Members can create/update.
 
@@ -395,9 +396,6 @@ CHECK (departure_location != arrival_location)
 ```sql
 -- Amount range
 CHECK (amount > 0 AND amount <= 5000)
-
--- Driver advances require receipt
-CHECK (NOT advanced_by_driver OR receipt_attached)
 ```
 
 ### Vehicles

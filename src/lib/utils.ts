@@ -1,48 +1,100 @@
 // Utility functions for formatting and shared helpers
 
-export function formatCurrency(value: number, currency = 'EUR'): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
+function formatWithCurrency(
+  value: number | null | undefined,
+  currency: string,
+  minimumFractionDigits: number,
+  maximumFractionDigits: number,
+): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '-'
+  }
+
+  try {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits,
+      maximumFractionDigits,
+    }).format(value)
+  } catch {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits,
+      maximumFractionDigits,
+    }).format(value)
+  }
 }
 
-export function formatCurrencyWithDecimals(value: number, currency = 'EUR'): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
+function parseValidDate(value: string | Date | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
-export function formatDate(date: string | Date): string {
+export function formatCurrency(value: number | null | undefined, currency = 'EUR'): string {
+  return formatWithCurrency(value, currency, 0, 0)
+}
+
+export function formatCurrencyWithDecimals(
+  value: number | null | undefined,
+  currency = 'EUR'
+): string {
+  return formatWithCurrency(value, currency, 2, 2)
+}
+
+export function formatDate(date: string | Date | null | undefined): string {
+  const parsedDate = parseValidDate(date)
+
+  if (!parsedDate) {
+    return '-'
+  }
+
   return new Intl.DateTimeFormat('fr-FR', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  }).format(new Date(date))
+  }).format(parsedDate)
 }
 
-export function formatDateTime(date: string | Date): string {
+export function formatDateTime(date: string | Date | null | undefined): string {
+  const parsedDate = parseValidDate(date)
+
+  if (!parsedDate) {
+    return '-'
+  }
+
   return new Intl.DateTimeFormat('fr-FR', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(date))
+  }).format(parsedDate)
 }
 
-export function formatTime(date: string | Date): string {
+export function formatTime(date: string | Date | null | undefined): string {
+  const parsedDate = parseValidDate(date)
+
+  if (!parsedDate) {
+    return '-'
+  }
+
   return new Intl.DateTimeFormat('fr-FR', {
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(date))
+  }).format(parsedDate)
 }
 
-export function formatPhoneNumber(phone: string): string {
+export function formatPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) {
+    return '-'
+  }
+
   const cleaned = phone.replace(/\D/g, '')
   if (cleaned.length === 10) {
     return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`
@@ -57,7 +109,11 @@ export function formatDistance(km: number): string {
   return `${(km / 1000).toFixed(1)} k km`
 }
 
-export function formatMileage(value: number): string {
+export function formatMileage(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '-'
+  }
+
   return `${value.toLocaleString('fr-FR')} km`
 }
 
@@ -76,6 +132,22 @@ export function parseDateInput(value: string, endOfDay = false): Date {
 
 export function formatPercentage(value: number, decimals = 0): string {
   return `${value.toFixed(decimals)}%`
+}
+
+export function toSearchValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.toLowerCase()
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value).toLowerCase()
+  }
+
+  return value == null ? '' : String(value).toLowerCase()
+}
+
+export function toFiniteNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
 export function truncateString(str: string, length: number): string {

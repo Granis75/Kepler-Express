@@ -26,7 +26,7 @@ import {
   useAsyncData,
 } from '../lib/data'
 import { InvoiceStatus, MissionStatus } from '../types'
-import { formatCurrencyWithDecimals } from '../lib/utils'
+import { formatCurrencyWithDecimals, toFiniteNumber } from '../lib/utils'
 
 function isSameDay(dateValue?: string) {
   if (!dateValue) {
@@ -34,6 +34,10 @@ function isSameDay(dateValue?: string) {
   }
 
   const candidate = new Date(dateValue)
+  if (Number.isNaN(candidate.getTime())) {
+    return false
+  }
+
   const today = new Date()
 
   return (
@@ -45,6 +49,10 @@ function isSameDay(dateValue?: string) {
 
 function isWithinLastSevenDays(dateValue: string) {
   const candidate = new Date(dateValue)
+  if (Number.isNaN(candidate.getTime())) {
+    return false
+  }
+
   const threshold = new Date()
   threshold.setHours(0, 0, 0, 0)
   threshold.setDate(threshold.getDate() - 6)
@@ -126,7 +134,7 @@ export function Dashboard() {
   ).length
   const expensesLast7Days = expenses
     .filter((expense) => isWithinLastSevenDays(expense.expense_date))
-    .reduce((sum, expense) => sum + expense.amount, 0)
+    .reduce((sum, expense) => sum + toFiniteNumber(expense.amount), 0)
 
   const outstandingAdvances = expenses.filter(
     (expense) =>
@@ -134,7 +142,7 @@ export function Dashboard() {
       isOutstandingReimbursementStatus(expense.reimbursement_status)
   )
   const driverAdvancesToReimburse = outstandingAdvances.reduce(
-    (sum, expense) => sum + expense.amount,
+    (sum, expense) => sum + toFiniteNumber(expense.amount),
     0
   )
   const driversAwaitingReimbursement = new Set(

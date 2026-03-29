@@ -40,7 +40,7 @@ function mapInvoiceRow(row: InvoiceRow): Invoice {
     client_id: row.client_id,
     invoice_number: row.invoice_number,
     status: row.status as InvoiceStatus,
-    mission_ids: row.mission_ids,
+    mission_ids: Array.isArray(row.mission_ids) ? row.mission_ids : [],
     amount_total: Number(row.amount_total),
     amount_paid: Number(row.amount_paid),
     currency: row.currency as Currency,

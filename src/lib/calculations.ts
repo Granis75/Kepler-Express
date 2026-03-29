@@ -7,6 +7,10 @@ const unsettledReimbursementStatuses = new Set([
   ReimbursementStatus.Approved,
 ])
 
+function normalizeNumber(value: number | null | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
 // ============================================================================
 // MISSION PROFITABILITY CALCULATIONS
 // ============================================================================
@@ -51,16 +55,19 @@ export function calculateMissionMarginPercentage(revenue: number, cost: number):
 // ============================================================================
 
 export function calculateInvoiceAmountRemaining(amountTotal: number, amountPaid: number): number {
-  return Math.max(0, amountTotal - amountPaid)
+  return Math.max(0, normalizeNumber(amountTotal) - normalizeNumber(amountPaid))
 }
 
 export function calculateInvoicePaymentPercentage(amountTotal: number, amountPaid: number): number {
-  if (amountTotal === 0) return 0
-  return (amountPaid / amountTotal) * 100
+  const total = normalizeNumber(amountTotal)
+
+  if (total === 0) return 0
+
+  return (normalizeNumber(amountPaid) / total) * 100
 }
 
 export function calculateTotalPayments(payments: Payment[]): number {
-  return payments.reduce((sum, p) => sum + p.amount, 0)
+  return payments.reduce((sum, payment) => sum + normalizeNumber(payment.amount), 0)
 }
 
 export function calculateInvoiceSummary(invoices: Invoice[]) {
@@ -70,9 +77,11 @@ export function calculateInvoiceSummary(invoices: Invoice[]) {
         invoice.amount_total,
         invoice.amount_paid
       )
+      const totalBilled = normalizeNumber(invoice.amount_total)
+      const totalCollected = normalizeNumber(invoice.amount_paid)
 
-      summary.totalBilled += invoice.amount_total
-      summary.totalCollected += invoice.amount_paid
+      summary.totalBilled += totalBilled
+      summary.totalCollected += totalCollected
       summary.totalOutstanding += amountRemaining
 
       if (invoice.status === InvoiceStatus.Draft) {

@@ -301,10 +301,11 @@ interface Expense {
   mission_id?: string         // FK → Mission (optional)
   driver_id?: string          // FK → Driver (optional)
   vehicle_id?: string         // FK → Vehicle (optional)
-  type: ExpenseType           // fuel | tolls | maintenance | mission_expense | parking | other
+  type: ExpenseType           // fuel | tolls | maintenance | mission_expense | parking | meal | other
   amount: number              // Cost in currency (EUR)
   currency: Currency          // EUR (default) | USD | GBP
   advanced_by_driver: boolean // True = driver paid upfront (reimbursement needed)
+  reimbursement_status: ReimbursementStatus // pending | approved | paid | rejected
   receipt_attached: boolean   // Documentation status
   description?: string        // Note about expense
   expense_date: string        // ISO date when expense occurred
@@ -318,7 +319,15 @@ enum ExpenseType {
   Maintenance = 'maintenance',
   MissionExpense = 'mission_expense',
   Parking = 'parking',
+  Meal = 'meal',
   Other = 'other',
+}
+
+enum ReimbursementStatus {
+  Pending = 'pending',
+  Approved = 'approved',
+  Paid = 'paid',
+  Rejected = 'rejected',
 }
 
 enum Currency {
@@ -337,7 +346,8 @@ enum Currency {
 **Business Rules:**
 - Amount cannot exceed 5,000 EUR
 - Daily total cannot exceed 50,000 EUR
-- Driver advances require receipt
+- Driver-advanced expenses create reimbursement liability
+- Missing receipts should be flagged for follow-up
 - expense_date cannot be in future
 
 **Driver Advance Logic:**
@@ -575,10 +585,10 @@ interface FinancialSnapshot {
 
 ### Expense Rules
 
-- Amount 50 EUR - 5,000 EUR per transaction
+- Amount must be greater than 0 EUR and no more than 5,000 EUR per transaction
 - Daily limit: 50,000 EUR
-- Driver advances require receipt
-- Receipt required if advanced_by_driver = true
+- Driver-advanced expenses can be pending, approved, paid, or rejected
+- Missing receipts should remain visible for operational follow-up
 
 ### Vehicle Rules
 
@@ -668,4 +678,3 @@ When implementing in Supabase, use:
 5. ⏳ Form components with validation
 6. ⏳ Dashboard with real data
 7. ⏳ Data seeding for development
-

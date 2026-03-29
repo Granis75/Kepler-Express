@@ -13,7 +13,7 @@ import {
   listVehicles,
   useAsyncData,
 } from '../lib/data'
-import { formatCurrencyWithDecimals, formatDate } from '../lib/utils'
+import { formatCurrencyWithDecimals, formatDate, toFiniteNumber } from '../lib/utils'
 
 export function MissionDetail() {
   const navigate = useNavigate()
@@ -90,12 +90,12 @@ export function MissionDetail() {
   )
 
   const totalExpenses =
-    linkedExpenses.reduce((sum, expense) => sum + expense.amount, 0) +
-    (mission.actual_cost_amount ?? mission.estimated_cost_amount ?? 0)
-  const profitability = mission.revenue_amount - totalExpenses
+    linkedExpenses.reduce((sum, expense) => sum + toFiniteNumber(expense.amount), 0) +
+    toFiniteNumber(mission.actual_cost_amount ?? mission.estimated_cost_amount)
+  const profitability = toFiniteNumber(mission.revenue_amount) - totalExpenses
   const margin =
-    mission.revenue_amount > 0
-      ? ((profitability / mission.revenue_amount) * 100).toFixed(1)
+    toFiniteNumber(mission.revenue_amount) > 0
+      ? ((profitability / toFiniteNumber(mission.revenue_amount)) * 100).toFixed(1)
       : '0.0'
 
   const statusConfig = getMissionStatusConfig(mission.status)

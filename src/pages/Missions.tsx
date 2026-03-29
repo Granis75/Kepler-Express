@@ -15,6 +15,7 @@ import {
   getMissionListStatus,
   isActiveMissionStatus,
 } from '../lib/domain'
+import { toSearchValue } from '../lib/utils'
 import { MissionStatus, type Client, type Driver, type Mission } from '../types'
 
 function sortMissions(missions: Mission[]) {
@@ -99,13 +100,15 @@ export function Missions() {
           return matchesStatus
         }
 
-        const clientName = getClientName(clients, mission.client_id).toLowerCase()
-        const driverName = getDriverName(drivers, mission.driver_id).toLowerCase()
-        const route =
-          `${mission.departure_location} ${mission.arrival_location}`.toLowerCase()
+        const reference = toSearchValue(mission.reference)
+        const clientName = toSearchValue(getClientName(clients, mission.client_id))
+        const driverName = toSearchValue(getDriverName(drivers, mission.driver_id))
+        const route = toSearchValue(
+          `${mission.departure_location ?? ''} ${mission.arrival_location ?? ''}`
+        )
 
         const matchesSearch =
-          mission.reference.toLowerCase().includes(normalizedQuery) ||
+          reference.includes(normalizedQuery) ||
           clientName.includes(normalizedQuery) ||
           driverName.includes(normalizedQuery) ||
           route.includes(normalizedQuery)

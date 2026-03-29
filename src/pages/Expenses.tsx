@@ -20,7 +20,13 @@ import {
   getReimbursementStatusConfig,
   isOutstandingReimbursementStatus,
 } from '../lib/domain'
-import { classNames, formatCurrency, formatDate } from '../lib/utils'
+import {
+  classNames,
+  formatCurrency,
+  formatDate,
+  toFiniteNumber,
+  toSearchValue,
+} from '../lib/utils'
 
 export function Expenses() {
   const [showForm, setShowForm] = useState(false)
@@ -94,17 +100,16 @@ export function Expenses() {
     return [...expenses]
       .filter((expense) => {
         if (filters.search) {
-          const searchTerm = filters.search.toLowerCase()
-          const missionReference =
-            missionReferenceById.get(expense.mission_id ?? '')?.toLowerCase() ?? ''
-          const driverName =
-            driverNameById.get(expense.driver_id ?? '')?.toLowerCase() ?? ''
-          const vehicleName =
-            vehicleNameById.get(expense.vehicle_id ?? '')?.toLowerCase() ?? ''
+          const searchTerm = toSearchValue(filters.search)
+          const missionReference = toSearchValue(
+            missionReferenceById.get(expense.mission_id ?? '')
+          )
+          const driverName = toSearchValue(driverNameById.get(expense.driver_id ?? ''))
+          const vehicleName = toSearchValue(vehicleNameById.get(expense.vehicle_id ?? ''))
 
           const matchesSearch =
-            expense.amount.toString().includes(searchTerm) ||
-            (expense.description?.toLowerCase().includes(searchTerm) ?? false) ||
+            toSearchValue(expense.amount).includes(searchTerm) ||
+            toSearchValue(expense.description).includes(searchTerm) ||
             missionReference.includes(searchTerm) ||
             driverName.includes(searchTerm) ||
             vehicleName.includes(searchTerm)
@@ -144,14 +149,17 @@ export function Expenses() {
       )
   }, [driverNameById, expenses, filters, missionReferenceById, vehicleNameById])
 
-  const totalAmount = sortedExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+  const totalAmount = sortedExpenses.reduce(
+    (sum, expense) => sum + toFiniteNumber(expense.amount),
+    0
+  )
   const driverAdvancedAmount = sortedExpenses
     .filter(
       (expense) =>
         expense.advanced_by_driver &&
         isOutstandingReimbursementStatus(expense.reimbursement_status)
     )
-    .reduce((sum, expense) => sum + expense.amount, 0)
+    .reduce((sum, expense) => sum + toFiniteNumber(expense.amount), 0)
   const missingReceiptCount = sortedExpenses.filter(
     (expense) => !expense.receipt_attached
   ).length

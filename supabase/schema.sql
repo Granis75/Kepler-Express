@@ -274,16 +274,16 @@ CREATE TABLE IF NOT EXISTS expenses (
   mission_id UUID REFERENCES missions(mission_id) ON DELETE SET NULL,
   driver_id UUID REFERENCES drivers(driver_id) ON DELETE SET NULL,
   vehicle_id UUID REFERENCES vehicles(vehicle_id) ON DELETE SET NULL,
-  type TEXT NOT NULL CHECK (type IN ('fuel', 'tolls', 'maintenance', 'mission_expense', 'parking', 'other')),
+  type TEXT NOT NULL CHECK (type IN ('fuel', 'tolls', 'maintenance', 'mission_expense', 'parking', 'meal', 'other')),
   amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0 AND amount <= 5000),
   currency TEXT NOT NULL DEFAULT 'EUR' CHECK (currency IN ('EUR', 'USD', 'GBP')),
   advanced_by_driver BOOLEAN NOT NULL DEFAULT FALSE,
+  reimbursement_status TEXT NOT NULL DEFAULT 'paid' CHECK (reimbursement_status IN ('pending', 'approved', 'paid', 'rejected')),
   receipt_attached BOOLEAN NOT NULL DEFAULT FALSE,
   description TEXT,
   expense_date DATE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  CONSTRAINT driver_advance_requires_receipt CHECK (NOT advanced_by_driver OR receipt_attached)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses
@@ -295,6 +295,7 @@ CREATE INDEX idx_expenses_driver_id ON expenses(driver_id);
 CREATE INDEX idx_expenses_vehicle_id ON expenses(vehicle_id);
 CREATE INDEX idx_expenses_type ON expenses(type);
 CREATE INDEX idx_expenses_advanced_by_driver ON expenses(advanced_by_driver);
+CREATE INDEX idx_expenses_reimbursement_status ON expenses(reimbursement_status);
 CREATE INDEX idx_expenses_expense_date ON expenses(expense_date);
 
 -- RLS: Users can view expenses from their organization

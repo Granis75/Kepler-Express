@@ -4,7 +4,7 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { listDrivers, useAsyncData } from '../lib/data'
 import { getDriverStatusConfig } from '../lib/domain'
-import { formatDate, formatPhoneNumber } from '../lib/utils'
+import { formatDate, formatPhoneNumber, toSearchValue } from '../lib/utils'
 
 export function Drivers() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -25,9 +25,9 @@ export function Drivers() {
       }
 
       return (
-        driver.name.toLowerCase().includes(query) ||
-        driver.phone.toLowerCase().includes(query) ||
-        driver.license_number.toLowerCase().includes(query)
+        toSearchValue(driver.name).includes(query) ||
+        toSearchValue(driver.phone).includes(query) ||
+        toSearchValue(driver.license_number).includes(query)
       )
     })
   }, [drivers, searchQuery])

@@ -1,25 +1,34 @@
-# Kepler Express — Operations System V1
-
-Static deployable version for GitHub + Vercel.
+# Kepler Express Ops
 
 ## Stack
 
-- HTML
-- CSS
-- Vanilla JavaScript
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- Supabase-ready domain model and schema docs
 
-## Included in this V1
+## Included
 
 - Dashboard with operational KPIs
 - Mission control view with search
-- Expense tracking
+- Expense tracking with reimbursement status
 - Fleet health / maintenance visibility
 - Invoice follow-up
-- System logic overview
+- Settings and entity management pages
 
-## Local preview
+## Local development
 
-Open `index.html` directly in the browser.
+```bash
+npm install
+npm run dev
+```
+
+## Production build
+
+```bash
+npm run build
+```
 
 ## Deploy on GitHub + Vercel
 
@@ -27,14 +36,12 @@ Open `index.html` directly in the browser.
 2. Upload all files from this folder.
 3. Import the repository into Vercel.
 4. In Vercel:
-   - Framework Preset: `Other`
-   - Build Command: leave empty
-   - Output Directory: leave empty
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
 5. Deploy.
 
-## Recommended next step
+## Notes
 
-Move this V1 to a real app stack with:
-- React + TypeScript
-- Supabase tables for clients, missions, drivers, vehicles, expenses, invoices
-- Authentication and real create / edit flows
+- `supabase/schema.sql` and `supabase/SCHEMA.md` describe the target backend schema.
+- `src/lib/mockData.ts` powers the current UI until the real backend is connected.

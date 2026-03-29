@@ -23,6 +23,7 @@ import {
   formatCurrencyWithDecimals,
   formatDate,
   formatMileage,
+  toFiniteNumber,
 } from '../lib/utils'
 
 export function VehicleDetail() {
@@ -103,7 +104,7 @@ export function VehicleDetail() {
   )
   const latestMaintenance = maintenanceRecords[0]
   const totalMaintenanceCost = maintenanceRecords.reduce(
-    (sum, record) => sum + record.cost_amount,
+    (sum, record) => sum + toFiniteNumber(record.cost_amount),
     0
   )
   const serviceAlert = getVehicleServiceAlert(

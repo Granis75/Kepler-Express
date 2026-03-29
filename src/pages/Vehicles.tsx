@@ -11,6 +11,7 @@ import {
   getVehicleStatusOptions,
   isActiveMissionStatus,
 } from '../lib/domain'
+import { toSearchValue } from '../lib/utils'
 import { VehicleStatus } from '../types'
 
 export function Vehicles() {
@@ -72,9 +73,9 @@ export function Vehicles() {
       const matchesStatus = !statusFilter || vehicle.status === statusFilter
       const matchesSearch =
         !query ||
-        vehicle.name.toLowerCase().includes(query) ||
-        vehicle.license_plate.toLowerCase().includes(query) ||
-        vehicle.registration_number.toLowerCase().includes(query)
+        toSearchValue(vehicle.name).includes(query) ||
+        toSearchValue(vehicle.license_plate).includes(query) ||
+        toSearchValue(vehicle.registration_number).includes(query)
 
       return matchesStatus && matchesSearch
     })

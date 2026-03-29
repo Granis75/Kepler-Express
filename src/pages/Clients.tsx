@@ -3,7 +3,7 @@ import { Plus, Search } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { ClientForm } from '../components/ClientForm'
-import { formatPhoneNumber } from '../lib/utils'
+import { formatPhoneNumber, toSearchValue } from '../lib/utils'
 import { getClientStatusConfig } from '../lib/domain'
 import { createClient, listClients, updateClient, useAsyncData } from '../lib/data'
 import type { Client, CreateClientInput } from '../types'
@@ -31,9 +31,9 @@ export function Clients() {
       }
 
       return (
-        client.name.toLowerCase().includes(query) ||
-        client.email.toLowerCase().includes(query) ||
-        client.city.toLowerCase().includes(query)
+        toSearchValue(client.name).includes(query) ||
+        toSearchValue(client.email).includes(query) ||
+        toSearchValue(client.city).includes(query)
       )
     })
   }, [clients, searchQuery])

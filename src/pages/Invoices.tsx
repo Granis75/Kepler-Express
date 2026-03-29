@@ -8,7 +8,7 @@ import { SelectInput } from '../components/SelectInput'
 import { calculateInvoiceAmountRemaining, calculateInvoiceSummary } from '../lib/calculations'
 import { listClients, listInvoices, listMissions, useAsyncData } from '../lib/data'
 import { getInvoiceStatusOptions } from '../lib/domain'
-import { formatCurrencyWithDecimals } from '../lib/utils'
+import { formatCurrencyWithDecimals, toSearchValue } from '../lib/utils'
 import { InvoiceStatus } from '../types'
 
 const statusRank = {
@@ -68,12 +68,13 @@ export function Invoices() {
 
     return [...invoices]
       .filter((invoice) => {
-        const clientName = clientNameById.get(invoice.client_id)?.toLowerCase() ?? ''
-        const missionSummary = getMissionSummary(invoice.mission_ids)?.toLowerCase() ?? ''
+        const invoiceNumber = toSearchValue(invoice.invoice_number)
+        const clientName = toSearchValue(clientNameById.get(invoice.client_id))
+        const missionSummary = toSearchValue(getMissionSummary(invoice.mission_ids))
 
         const matchesSearch =
           !query ||
-          invoice.invoice_number.toLowerCase().includes(query) ||
+          invoiceNumber.includes(query) ||
           clientName.includes(query) ||
           missionSummary.includes(query)
 
