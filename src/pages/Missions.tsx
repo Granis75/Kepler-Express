@@ -7,6 +7,7 @@ import { MissionListSkeleton } from '../components/MissionListSkeleton'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { useMissions } from '../lib/hooks'
+import { useAuthState } from '../lib/auth'
 import { listClients, listDrivers, useAsyncData } from '../lib/data'
 import { getMissionListStatus, isActiveMissionStatus } from '../lib/domain'
 import { toSearchValue } from '../lib/utils'
@@ -42,6 +43,8 @@ function getDriverName(drivers: Driver[], driverId?: string) {
 
 export function Missions() {
   const navigate = useNavigate()
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<MissionStatus | ''>('')
 
@@ -51,14 +54,21 @@ export function Missions() {
     isLoading: missionsLoading,
     isError: missionsError,
     refetch: refetchMissions,
-  } = useMissions()
+  } = useMissions(canLoadProtectedData)
 
   // Clients and drivers via old pattern (kept for safety)
   const loadClientDriverData = useCallback(
     () => Promise.all([listClients(), listDrivers()]),
     []
   )
-  const { data: clientDriverData, loading: clientDriverLoading, error: clientDriverError, reload: reloadClientDriver } = useAsyncData(loadClientDriverData, [])
+  const {
+    data: clientDriverData,
+    loading: clientDriverLoading,
+    error: clientDriverError,
+    reload: reloadClientDriver,
+  } = useAsyncData(loadClientDriverData, [], {
+    enabled: canLoadProtectedData,
+  })
 
   const clients = clientDriverData?.[0] ?? []
   const drivers = clientDriverData?.[1] ?? []
@@ -123,6 +133,26 @@ export function Missions() {
       })
     )
   }, [clients, drivers, missions, searchQuery, statusFilter])
+
+  if (!authReady) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Checking Supabase session...</p>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!user) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      </PageContainer>
+    )
+  }
 
   return (
     <PageContainer>

@@ -4,6 +4,7 @@ import { ArrowLeft, Edit2, Plus } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { MissionListItem } from '../components/MissionListItem'
 import { PaymentForm } from '../components/PaymentForm'
+import { useAuthState } from '../lib/auth'
 import {
   calculateInvoiceAmountRemaining,
   calculateInvoicePaymentPercentage,
@@ -32,6 +33,8 @@ import { InvoiceStatus, type CreatePaymentInput } from '../types'
 export function InvoiceDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [isSavingPayment, setIsSavingPayment] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
@@ -58,7 +61,29 @@ export function InvoiceDetail() {
     }
   }, [id])
 
-  const { data, loading, error, reload } = useAsyncData(loadInvoiceDetailData, [id])
+  const { data, loading, error, reload } = useAsyncData(loadInvoiceDetailData, [id], {
+    enabled: canLoadProtectedData,
+  })
+
+  if (!authReady) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Checking Supabase session...</p>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!user) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      </PageContainer>
+    )
+  }
 
   if (loading) {
     return (

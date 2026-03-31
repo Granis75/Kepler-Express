@@ -8,7 +8,7 @@ import { Currency, InvoiceStatus, PaymentMethod } from '../../types'
 import { calculateTotalPayments } from '../calculations'
 import { getInvoiceStatusFromPayment } from '../domain'
 import type { Database } from './database'
-import { toDataLayerError } from './errors'
+import { DataLayerError, toDataLayerError } from './errors'
 import { getCurrentOrganizationId } from './session'
 import { getSupabaseClient } from './supabase'
 
@@ -160,6 +160,15 @@ export async function getInvoiceById(invoiceId: string) {
   ])
 
   if (invoiceError) {
+    if (invoiceError.code === 'PGRST116') {
+      throw new DataLayerError('Invoice inaccessible or session required.', {
+        code: invoiceError.code ?? undefined,
+        details: invoiceError.details ?? undefined,
+        hint: invoiceError.hint ?? undefined,
+        raw: invoiceError,
+      })
+    }
+
     throw toDataLayerError(invoiceError, 'Unable to load the invoice.')
   }
 

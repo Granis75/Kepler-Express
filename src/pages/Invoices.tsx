@@ -5,6 +5,7 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { InvoiceListItem } from '../components/InvoiceListItem'
 import { SelectInput } from '../components/SelectInput'
+import { useAuthState } from '../lib/auth'
 import { calculateInvoiceAmountRemaining, calculateInvoiceSummary } from '../lib/calculations'
 import { listClients, listInvoices, listMissions, useAsyncData } from '../lib/data'
 import { getInvoiceStatusOptions } from '../lib/domain'
@@ -22,6 +23,8 @@ const statusRank = {
 
 export function Invoices() {
   const navigate = useNavigate()
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('')
 
@@ -29,7 +32,9 @@ export function Invoices() {
     () => Promise.all([listInvoices(), listClients(), listMissions()]),
     []
   )
-  const { data, loading, error, reload } = useAsyncData(loadInvoiceData, [])
+  const { data, loading, error, reload } = useAsyncData(loadInvoiceData, [], {
+    enabled: canLoadProtectedData,
+  })
 
   const invoices = data?.[0] ?? []
   const clients = data?.[1] ?? []
@@ -95,6 +100,26 @@ export function Invoices() {
   }, [clientNameById, invoices, searchQuery, statusFilter])
 
   const overdueInvoices = invoices.filter((invoice) => invoice.status === InvoiceStatus.Overdue)
+
+  if (!authReady) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Checking Supabase session...</p>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!user) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      </PageContainer>
+    )
+  }
 
   return (
     <PageContainer>

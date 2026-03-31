@@ -3,12 +3,15 @@ import { Plus, Search } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { ClientForm } from '../components/ClientForm'
+import { useAuthState } from '../lib/auth'
 import { formatPhoneNumber, toSearchValue } from '../lib/utils'
 import { getClientStatusConfig } from '../lib/domain'
 import { createClient, listClients, updateClient, useAsyncData } from '../lib/data'
 import type { Client, CreateClientInput } from '../types'
 
 export function Clients() {
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
   const [searchQuery, setSearchQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
@@ -16,7 +19,9 @@ export function Clients() {
   const [isSaving, setIsSaving] = useState(false)
 
   const loadClients = useCallback(() => listClients(), [])
-  const { data: clients, loading, error, reload } = useAsyncData(loadClients, [])
+  const { data: clients, loading, error, reload } = useAsyncData(loadClients, [], {
+    enabled: canLoadProtectedData,
+  })
 
   const filteredClients = useMemo(() => {
     if (!clients) {
@@ -66,6 +71,16 @@ export function Clients() {
 
   return (
     <PageContainer>
+      {!authReady ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Checking Supabase session...</p>
+        </div>
+      ) : !user ? (
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      ) : (
+        <>
       <PageHeader
         title="Clients"
         description="Manage customer accounts from live Supabase data"
@@ -192,6 +207,8 @@ export function Clients() {
             })}
           </div>
         </div>
+      )}
+        </>
       )}
     </PageContainer>
   )

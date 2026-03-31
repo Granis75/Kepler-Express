@@ -26,6 +26,7 @@ import {
   useAsyncData,
 } from '../lib/data'
 import { InvoiceStatus, MissionStatus } from '../types'
+import { useAuthState } from '../lib/auth'
 import { formatCurrencyWithDecimals, toFiniteNumber } from '../lib/utils'
 
 function isSameDay(dateValue?: string) {
@@ -62,6 +63,8 @@ function isWithinLastSevenDays(dateValue: string) {
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
 
   const loadDashboardData = useCallback(
     () =>
@@ -75,7 +78,9 @@ export function Dashboard() {
       ]),
     []
   )
-  const { data, loading, error, reload } = useAsyncData(loadDashboardData, [])
+  const { data, loading, error, reload } = useAsyncData(loadDashboardData, [], {
+    enabled: canLoadProtectedData,
+  })
 
   const clients = data?.[0] ?? []
   const drivers = data?.[1] ?? []
@@ -96,6 +101,26 @@ export function Dashboard() {
     () => new Map(missions.map((mission) => [mission.mission_id, mission.reference] as const)),
     [missions]
   )
+
+  if (!authReady) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Checking Supabase session...</p>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!user) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      </PageContainer>
+    )
+  }
 
   if (loading) {
     return (

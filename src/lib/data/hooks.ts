@@ -20,11 +20,15 @@ interface AsyncDataState<T> {
 export function useAsyncData<T>(
   loader: () => Promise<T>,
   dependencies: DependencyList,
+  options: {
+    enabled?: boolean
+  } = {},
 ): AsyncDataState<T> {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
+  const enabled = options.enabled ?? true
 
   const reload = useCallback(() => {
     setReloadToken((value) => value + 1)
@@ -32,6 +36,16 @@ export function useAsyncData<T>(
 
   useEffect(() => {
     let isCancelled = false
+
+    if (!enabled) {
+      setData(null)
+      setError(null)
+      setLoading(false)
+
+      return () => {
+        isCancelled = true
+      }
+    }
 
     async function run() {
       setLoading(true)
@@ -59,7 +73,7 @@ export function useAsyncData<T>(
     return () => {
       isCancelled = true
     }
-  }, [loader, reloadToken, ...dependencies])
+  }, [enabled, loader, reloadToken, ...dependencies])
 
   return {
     data,

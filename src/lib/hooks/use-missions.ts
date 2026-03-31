@@ -4,10 +4,11 @@ import * as missionsService from '../data/missions'
 import { toast } from 'react-hot-toast'
 
 // Queries
-export function useMissions() {
+export function useMissions(enabled = true) {
   return useQuery({
     queryKey: queryKeys.missions.list(),
     queryFn: () => missionsService.listMissions(),
+    enabled,
   })
 }
 

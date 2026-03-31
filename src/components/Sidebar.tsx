@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
@@ -8,8 +9,11 @@ import {
   CreditCard,
   Settings,
   Gauge,
+  LogOut,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { useAuthState } from '../lib/auth'
+import { getSupabaseClient } from '../lib/data'
 
 interface NavItem {
   label: string
@@ -33,6 +37,33 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onClose }: SidebarProps) {
+  const navigate = useNavigate()
+  const { user } = useAuthState()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState<string | null>(null)
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    setSignOutError(null)
+
+    try {
+      const supabase = getSupabaseClient()
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        setSignOutError(error.message)
+        return
+      }
+
+      onClose?.()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : 'Unable to sign out.')
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Logo Area */}
@@ -66,7 +97,21 @@ export function Sidebar({ onClose }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="border-t border-gray-200 px-6 py-4">
+      <div className="border-t border-gray-200 px-6 py-4 space-y-3">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Session</p>
+          <p className="text-sm text-gray-900 mt-1 truncate">{user?.email ?? 'Signed in'}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          disabled={isSigningOut}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          <LogOut size={16} />
+          {isSigningOut ? 'Signing out...' : 'Sign out'}
+        </button>
+        {signOutError && <p className="text-xs text-red-600">{signOutError}</p>}
         <p className="text-xs text-gray-500">Internal operations workspace</p>
       </div>
     </div>
