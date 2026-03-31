@@ -1,7 +1,7 @@
 import type { Mission } from '../../types'
 import { Currency, MissionStatus } from '../../types'
 import type { Database } from './database'
-import { toDataLayerError } from './errors'
+import { DataLayerError, toDataLayerError } from './errors'
 import { getCurrentOrganizationId } from './session'
 import { getSupabaseClient } from './supabase'
 
@@ -85,10 +85,14 @@ export async function getMissionById(missionId: string) {
     .from('missions')
     .select('*')
     .eq('mission_id', missionId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to load the mission.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Mission not found or inaccessible.')
   }
 
   return mapMissionRow(data)
@@ -121,10 +125,14 @@ export async function updateMission(missionId: string, input: MissionWriteInput)
     .update(getMissionPayload(input))
     .eq('mission_id', missionId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to update the mission.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Mission not found or inaccessible.')
   }
 
   return mapMissionRow(data)

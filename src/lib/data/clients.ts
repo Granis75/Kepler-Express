@@ -1,6 +1,6 @@
 import { ClientStatus, type Client, type CreateClientInput } from '../../types'
 import type { Database } from './database'
-import { toDataLayerError } from './errors'
+import { DataLayerError, toDataLayerError } from './errors'
 import { getCurrentOrganizationId } from './session'
 import { getSupabaseClient } from './supabase'
 
@@ -90,10 +90,14 @@ export async function updateClient(clientId: string, input: CreateClientInput) {
     .update(payload)
     .eq('client_id', clientId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to update the client.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Client not found or inaccessible.')
   }
 
   return mapClientRow(data)

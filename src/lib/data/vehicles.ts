@@ -99,10 +99,14 @@ export async function getVehicleById(vehicleId: string) {
     .from('vehicles')
     .select('*')
     .eq('vehicle_id', vehicleId)
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to load the vehicle.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Vehicle not found or inaccessible.')
   }
 
   return mapVehicleRow(data)
@@ -138,10 +142,14 @@ export async function updateVehicle(
     .update(getVehiclePayload(input, existingVehicle))
     .eq('vehicle_id', vehicleId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to update the vehicle.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Vehicle not found or inaccessible.')
   }
 
   return mapVehicleRow(data)

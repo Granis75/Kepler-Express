@@ -30,7 +30,7 @@ export async function getCurrentOrganizationId() {
         .from('profiles')
         .select('organization_id')
         .eq('user_id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) {
         throw toDataLayerError(error, 'Unable to resolve the current organization.')

@@ -155,21 +155,16 @@ export async function listInvoices() {
 export async function getInvoiceById(invoiceId: string) {
   const supabase = getSupabaseClient()
   const [{ data: invoiceRow, error: invoiceError }, payments] = await Promise.all([
-    supabase.from('invoices').select('*').eq('invoice_id', invoiceId).single(),
+    supabase.from('invoices').select('*').eq('invoice_id', invoiceId).maybeSingle(),
     listPaymentsByInvoiceId(invoiceId),
   ])
 
   if (invoiceError) {
-    if (invoiceError.code === 'PGRST116') {
-      throw new DataLayerError('Invoice inaccessible or session required.', {
-        code: invoiceError.code ?? undefined,
-        details: invoiceError.details ?? undefined,
-        hint: invoiceError.hint ?? undefined,
-        raw: invoiceError,
-      })
-    }
-
     throw toDataLayerError(invoiceError, 'Unable to load the invoice.')
+  }
+
+  if (!invoiceRow) {
+    throw new DataLayerError('Invoice not found or inaccessible.')
   }
 
   return hydrateInvoice(invoiceRow, payments)
@@ -205,10 +200,14 @@ export async function updateInvoice(
     .update(getInvoicePayload(input, existingInvoice))
     .eq('invoice_id', invoiceId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to update the invoice.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Invoice not found or inaccessible.')
   }
 
   const payments = await listPaymentsByInvoiceId(invoiceId)
@@ -230,10 +229,14 @@ async function syncInvoicePaymentState(invoiceId: string) {
     .update(payload)
     .eq('invoice_id', invoiceId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to synchronize invoice payment status.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Invoice not found or inaccessible.')
   }
 
   const payments = await listPaymentsByInvoiceId(invoiceId)

@@ -2,7 +2,7 @@ import type { CreateExpenseInput, Expense } from '../../types'
 import { Currency, ExpenseType, ReimbursementStatus } from '../../types'
 import { normalizeExpenseReimbursementStatus } from '../domain'
 import type { Database } from './database'
-import { toDataLayerError } from './errors'
+import { DataLayerError, toDataLayerError } from './errors'
 import { getCurrentOrganizationId } from './session'
 import { getSupabaseClient } from './supabase'
 
@@ -93,10 +93,14 @@ export async function updateExpense(expenseId: string, input: CreateExpenseInput
     .update(getExpensePayload(input))
     .eq('expense_id', expenseId)
     .select('*')
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw toDataLayerError(error, 'Unable to update the expense.')
+  }
+
+  if (!data) {
+    throw new DataLayerError('Expense not found or inaccessible.')
   }
 
   return mapExpenseRow(data)

@@ -99,7 +99,7 @@ export function InvoiceDetail() {
     return (
       <PageContainer>
         <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-red-700">{error || 'Unable to load the invoice.'}</p>
+          <p className="text-sm text-red-700">{error || 'Invoice not found or inaccessible'}</p>
           <button
             type="button"
             onClick={reload}
