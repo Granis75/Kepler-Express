@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, X } from 'lucide-react'
 
 export function SectionCard({
   children,
@@ -139,6 +139,54 @@ export function StatusBadge({
     >
       {label}
     </span>
+  )
+}
+
+export function ActiveFilterBar({
+  items,
+  onClearAll,
+}: {
+  items: Array<{
+    id: string
+    label: string
+    value: string
+    onClear: () => void
+  }>
+  onClearAll?: () => void
+}) {
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="rounded-[1.15rem] border border-stone-200/90 bg-white/88 px-4 py-3 shadow-[0_8px_20px_rgba(28,25,23,0.04)]">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-500">
+          {items.length} active filter{items.length === 1 ? '' : 's'}
+        </span>
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={item.onClear}
+            className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50/90 px-3 py-1.5 text-xs text-stone-600 transition hover:border-stone-300 hover:bg-white"
+          >
+            <span className="text-stone-500">{item.label}</span>
+            <span className="font-medium text-stone-900">{item.value}</span>
+            <X className="h-3 w-3 text-stone-400" />
+          </button>
+        ))}
+        {onClearAll ? (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+          >
+            Clear all
+          </button>
+        ) : null}
+      </div>
+    </div>
   )
 }
 

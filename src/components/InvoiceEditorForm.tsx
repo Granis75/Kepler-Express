@@ -18,6 +18,7 @@ interface InvoiceEditorFormProps {
   clients: Client[]
   missions: Mission[]
   initialData?: Invoice
+  initialValues?: Partial<InvoiceEditorInput>
   onSubmit: (data: InvoiceEditorInput) => void
   onCancel: () => void
   isLoading?: boolean
@@ -29,16 +30,27 @@ function getDefaultDueDate() {
   return nextDate.toISOString().slice(0, 10)
 }
 
-function getInitialState(initialData?: Invoice): InvoiceEditorInput {
+function getInitialState(
+  initialData?: Invoice,
+  initialValues?: Partial<InvoiceEditorInput>
+): InvoiceEditorInput {
   return {
-    client_id: initialData?.client_id ?? '',
-    invoice_number: initialData?.invoice_number ?? '',
-    mission_ids: initialData?.mission_ids ?? [],
-    amount_total: initialData?.amount_total ?? 0,
-    status: initialData?.status === 'draft' ? 'draft' : 'sent',
-    issue_date: initialData?.issue_date ?? new Date().toISOString().slice(0, 10),
-    due_date: initialData?.due_date ?? getDefaultDueDate(),
-    notes: initialData?.notes ?? '',
+    client_id: initialData?.client_id ?? initialValues?.client_id ?? '',
+    invoice_number: initialData?.invoice_number ?? initialValues?.invoice_number ?? '',
+    mission_ids: initialData?.mission_ids ?? initialValues?.mission_ids ?? [],
+    amount_total: initialData?.amount_total ?? initialValues?.amount_total ?? 0,
+    status:
+      initialData?.status === 'draft'
+        ? 'draft'
+        : initialData?.status === 'sent'
+          ? 'sent'
+          : initialValues?.status ?? 'sent',
+    issue_date:
+      initialData?.issue_date ??
+      initialValues?.issue_date ??
+      new Date().toISOString().slice(0, 10),
+    due_date: initialData?.due_date ?? initialValues?.due_date ?? getDefaultDueDate(),
+    notes: initialData?.notes ?? initialValues?.notes ?? '',
   }
 }
 
@@ -51,12 +63,13 @@ export function InvoiceEditorForm({
   clients,
   missions,
   initialData,
+  initialValues,
   onSubmit,
   onCancel,
   isLoading = false,
 }: InvoiceEditorFormProps) {
   const [formData, setFormData] = useState<InvoiceEditorInput>(() =>
-    getInitialState(initialData)
+    getInitialState(initialData, initialValues)
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
 

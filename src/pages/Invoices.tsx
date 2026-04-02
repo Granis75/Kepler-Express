@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -7,6 +7,7 @@ import { InvoiceEditorForm, type InvoiceEditorInput } from '../components/Invoic
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
+  ActiveFilterBar,
   ModalSurface,
   PageLoadingSkeleton,
   SectionCard,
@@ -21,7 +22,12 @@ import {
   mergeSearchParams,
 } from '../lib/operations'
 import { appRoutes } from '../lib/routes'
-import { formatCurrencyWithDecimals, formatDate, toSearchValue } from '../lib/utils'
+import {
+  formatCurrencyWithDecimals,
+  formatDate,
+  toSearchValue,
+  truncateString,
+} from '../lib/utils'
 import { useWorkspaceState } from '../lib/workspace'
 import { useClients, useInvoices, useMissions } from '../hooks'
 import type { Invoice } from '../types/domain'
@@ -45,6 +51,15 @@ function isEditableInvoice(status: Invoice['status']) {
   return status === 'draft' || status === 'sent'
 }
 
+const invoiceStatusLabels: Record<Invoice['status'], string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  partial: 'Partial',
+  paid: 'Paid',
+  overdue: 'Overdue',
+  cancelled: 'Cancelled',
+}
+
 const invoiceQueueOptions = [
   { value: 'all', label: 'All invoices' },
   { value: 'unpaid', label: 'Collection queue' },
@@ -53,6 +68,12 @@ const invoiceQueueOptions = [
   { value: 'draft', label: 'Drafts' },
   { value: 'paid', label: 'Paid' },
 ] as const
+
+const inlineLinkButtonClasses =
+  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+
+const secondaryActionButtonClasses =
+  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
 
 export function Invoices() {
   const navigate = useNavigate()
@@ -83,6 +104,7 @@ export function Invoices() {
   const clientFilter = searchParams.get('client') ?? ''
   const missionFilter = searchParams.get('mission') ?? ''
   const focusInvoiceId = searchParams.get('focus') ?? ''
+  const composeIntent = searchParams.get('compose') ?? ''
 
   const clientNameById = useMemo(
     () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
@@ -97,6 +119,11 @@ export function Invoices() {
   const missionById = useMemo(
     () => new Map(missions.map((mission) => [mission.mission_id, mission] as const)),
     [missions]
+  )
+
+  const invoiceById = useMemo(
+    () => new Map(invoices.map((invoice) => [invoice.invoice_id, invoice] as const)),
+    [invoices]
   )
 
   const summary = useMemo(
@@ -127,8 +154,7 @@ export function Invoices() {
 
         const matchesStatus = !statusFilter || invoice.status === statusFilter
         const matchesClient = !clientFilter || invoice.client_id === clientFilter
-        const matchesMission =
-          !missionFilter || invoice.mission_ids.includes(missionFilter)
+        const matchesMission = !missionFilter || invoice.mission_ids.includes(missionFilter)
 
         const matchesQueue =
           queue === 'all'
@@ -188,6 +214,12 @@ export function Invoices() {
     })
   }
 
+  const clearFocus = () => {
+    setSearchParams(mergeSearchParams(searchParams, { focus: null }), {
+      replace: true,
+    })
+  }
+
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
   }
@@ -243,6 +275,99 @@ export function Invoices() {
   }
 
   const filteredMission = missionFilter ? missionById.get(missionFilter) : null
+  const focusedInvoice = focusInvoiceId ? invoiceById.get(focusInvoiceId) : null
+  const queueLabel =
+    invoiceQueueOptions.find((option) => option.value === queue)?.label ?? 'All invoices'
+
+  const draftInvoiceValues = filteredMission
+    ? {
+        client_id: filteredMission.client_id,
+        mission_ids: [filteredMission.mission_id],
+        amount_total: filteredMission.revenue_amount,
+      }
+    : undefined
+
+  useEffect(() => {
+    if (composeIntent !== 'new' || showForm || selectedInvoice || isLoading) {
+      return
+    }
+
+    if (clients.length === 0 || missions.length === 0) {
+      return
+    }
+
+    setSelectedInvoice(null)
+    setActionError(null)
+    setShowForm(true)
+    setSearchParams(mergeSearchParams(searchParams, { compose: null }), {
+      replace: true,
+    })
+  }, [
+    clients.length,
+    composeIntent,
+    isLoading,
+    missions.length,
+    searchParams,
+    selectedInvoice,
+    setSearchParams,
+    showForm,
+  ])
+
+  const activeFilterItems = [
+    queue !== 'all'
+      ? {
+          id: 'queue',
+          label: 'Queue',
+          value: queueLabel,
+          onClear: () => updateFilters({ queue: null }),
+        }
+      : null,
+    clientFilter
+      ? {
+          id: 'client',
+          label: 'Client',
+          value: clientNameById.get(clientFilter) ?? 'Unknown client',
+          onClear: () => updateFilters({ client: null }),
+        }
+      : null,
+    statusFilter
+      ? {
+          id: 'status',
+          label: 'Status',
+          value: invoiceStatusLabels[statusFilter] ?? statusFilter,
+          onClear: () => updateFilters({ status: null }),
+        }
+      : null,
+    filteredMission
+      ? {
+          id: 'mission',
+          label: 'Mission',
+          value: filteredMission.reference,
+          onClear: () => updateFilters({ mission: null }),
+        }
+      : null,
+    focusedInvoice
+      ? {
+          id: 'invoice',
+          label: 'Invoice',
+          value: focusedInvoice.invoice_number,
+          onClear: clearFocus,
+        }
+      : null,
+    searchQuery
+      ? {
+          id: 'search',
+          label: 'Search',
+          value: truncateString(searchQuery, 28),
+          onClear: () => updateFilters({ q: null }),
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    id: string
+    label: string
+    value: string
+    onClear: () => void
+  }>
 
   return (
     <PageContainer>
@@ -274,9 +399,11 @@ export function Invoices() {
             </div>
           ) : null}
           <InvoiceEditorForm
+            key={selectedInvoice?.invoice_id ?? `draft-${filteredMission?.mission_id ?? 'default'}`}
             clients={clients}
             missions={missions}
             initialData={selectedInvoice ?? undefined}
+            initialValues={selectedInvoice ? undefined : draftInvoiceValues}
             onSubmit={handleSave}
             onCancel={closeForm}
             isLoading={isSaving}
@@ -358,7 +485,9 @@ export function Invoices() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => updateFilters({ queue: option.value === 'all' ? null : option.value })}
+                      onClick={() =>
+                        updateFilters({ queue: option.value === 'all' ? null : option.value })
+                      }
                       className={clsx(
                         'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
                         queue === option.value || (!queue && option.value === 'all')
@@ -376,9 +505,7 @@ export function Invoices() {
               <div className="mt-5 space-y-4">
                 <select
                   value={clientFilter}
-                  onChange={(event) =>
-                    updateFilters({ client: event.target.value || null })
-                  }
+                  onChange={(event) => updateFilters({ client: event.target.value || null })}
                   className="input-shell"
                 >
                   <option value="">All clients</option>
@@ -407,215 +534,255 @@ export function Invoices() {
                 </select>
               </div>
 
-              {filteredMission ? (
-                <div className="mt-5 rounded-[1.2rem] border border-stone-200 bg-stone-50 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                    Mission context
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-stone-950">
-                    {filteredMission.reference}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-500">
-                    Only invoices linked to this mission are visible.
-                  </p>
-                </div>
-              ) : null}
-
               <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
                 Reset filters
               </button>
             </SectionCard>
           </div>
 
-          {isLoading ? (
-            <PageLoadingSkeleton stats={4} rows={4} />
-          ) : error ? (
-            <StatePanel
-              tone="danger"
-              title="Unable to load invoices"
-              message={error}
-              action={
-                <button
-                  type="button"
-                  onClick={() => {
-                    void Promise.all([
-                      invoicesQuery.refetch(),
-                      clientsQuery.refetch(),
-                      missionsQuery.refetch(),
-                    ])
-                  }}
-                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
-                >
-                  Retry
-                </button>
-              }
-            />
-          ) : filteredInvoices.length === 0 ? (
-            <StatePanel
-              title={invoices.length === 0 ? 'No invoices yet' : 'No matching invoices'}
-              message={
-                invoices.length === 0
-                  ? clients.length === 0 || missions.length === 0
-                    ? 'Create clients and missions first so invoice creation has real billing context.'
-                    : 'Create the first invoice to start tracking cash collection.'
-                  : 'Adjust the queue or filters to surface another billing record.'
-              }
-              action={
-                invoices.length === 0 ? (
+          <div className="space-y-3">
+            <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+
+            {isLoading ? (
+              <PageLoadingSkeleton stats={4} rows={4} />
+            ) : error ? (
+              <StatePanel
+                tone="danger"
+                title="Unable to load invoices"
+                message={error}
+                action={
                   <button
                     type="button"
                     onClick={() => {
-                      if (clients.length === 0) {
-                        navigate(appRoutes.clients)
-                        return
-                      }
-
-                      if (missions.length === 0) {
-                        navigate(appRoutes.missions)
-                        return
-                      }
-
-                      openCreate()
+                      void Promise.all([
+                        invoicesQuery.refetch(),
+                        clientsQuery.refetch(),
+                        missionsQuery.refetch(),
+                      ])
                     }}
                     className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
                   >
-                    {clients.length === 0
-                      ? 'Open clients'
-                      : missions.length === 0
-                        ? 'Open missions'
-                        : 'Create invoice'}
+                    Retry
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
-                  >
-                    Reset filters
-                  </button>
-                )
-              }
-            />
-          ) : (
-            <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Invoice queue
-                  </h2>
-                  <p className="mt-1 text-sm text-stone-500">
-                    {filteredInvoices.length} visible invoice
-                    {filteredInvoices.length === 1 ? '' : 's'} with linked mission navigation
-                    and collection state kept in one row.
-                  </p>
+                }
+              />
+            ) : filteredInvoices.length === 0 ? (
+              <StatePanel
+                title={invoices.length === 0 ? 'No invoices yet' : 'No matching invoices'}
+                message={
+                  invoices.length === 0
+                    ? clients.length === 0 || missions.length === 0
+                      ? 'Create clients and missions first so invoice creation has real billing context.'
+                      : 'Create the first invoice to start tracking cash collection.'
+                    : 'Adjust the queue or filters to surface another billing record.'
+                }
+                action={
+                  invoices.length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (clients.length === 0) {
+                          navigate(appRoutes.clients)
+                          return
+                        }
+
+                        if (missions.length === 0) {
+                          navigate(appRoutes.missions)
+                          return
+                        }
+
+                        openCreate()
+                      }}
+                      className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                    >
+                      {clients.length === 0
+                        ? 'Open clients'
+                        : missions.length === 0
+                          ? 'Open missions'
+                          : 'Create invoice'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                    >
+                      Reset filters
+                    </button>
+                  )
+                }
+              />
+            ) : (
+              <SectionCard className="overflow-hidden p-0">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4 py-3">
+                  <div>
+                    <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                      Invoice queue
+                    </h2>
+                    <p className="mt-1 text-sm text-stone-500">
+                      Showing {filteredInvoices.length} of {invoices.length} invoice
+                      {filteredInvoices.length === 1 ? '' : 's'}.
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+                    {queueLabel}
+                  </div>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
-                  {queue === 'all' ? 'All invoices' : `Queue: ${queue.replace('-', ' ')}`}
+
+                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 md:grid md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:gap-3">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Invoice
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Dates
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Amounts
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Linked missions
+                  </span>
+                  <span className="text-right text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Actions
+                  </span>
                 </div>
-              </div>
 
-              <div className="divide-y divide-stone-200">
-                {filteredInvoices.map((invoice) => (
-                  <article
-                    key={invoice.invoice_id}
-                    className={clsx(
-                      'grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1.1fr)_150px_180px_260px_auto] md:items-start',
-                      focusInvoiceId === invoice.invoice_id && 'bg-amber-50/50'
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-sm font-semibold text-stone-950">
-                          {invoice.invoice_number}
-                        </h2>
-                        <StatusBadge label={invoice.status} tone={invoiceTone(invoice.status)} />
-                        {getInvoiceBalance(invoice) > 0 ? (
-                          <StatusBadge label="open balance" tone="warning" />
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-sm text-stone-900">
-                        {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
-                      </p>
-                      {invoice.notes ? (
-                        <p className="mt-2 text-sm text-stone-500">{invoice.notes}</p>
-                      ) : null}
-                    </div>
+                <div className="divide-y divide-stone-200">
+                  {filteredInvoices.map((invoice) => {
+                    const visibleMissionIds = invoice.mission_ids.slice(0, 2)
+                    const remainingMissionCount =
+                      invoice.mission_ids.length - visibleMissionIds.length
+                    const firstMissionId = invoice.mission_ids[0]
 
-                    <div className="text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                        Dates
-                      </p>
-                      <p className="mt-1 font-medium text-stone-900">
-                        {formatDate(invoice.issue_date)}
-                      </p>
-                      <p className="mt-1">Due {formatDate(invoice.due_date)}</p>
-                    </div>
+                    return (
+                      <article
+                        key={invoice.invoice_id}
+                        className={clsx(
+                          'grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:items-center',
+                          focusInvoiceId === invoice.invoice_id && 'bg-amber-50/40'
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-sm font-semibold text-stone-950">
+                              {invoice.invoice_number}
+                            </h2>
+                            <StatusBadge label={invoice.status} tone={invoiceTone(invoice.status)} />
+                            {getInvoiceBalance(invoice) > 0 ? (
+                              <StatusBadge label="open balance" tone="warning" />
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-sm text-stone-900">
+                            {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
+                          </p>
+                          {invoice.notes ? (
+                            <p className="mt-1.5 line-clamp-1 text-sm text-stone-500">
+                              {invoice.notes}
+                            </p>
+                          ) : null}
+                        </div>
 
-                    <div className="text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                        Amounts
-                      </p>
-                      <p className="mt-1 font-medium text-stone-900">
-                        {formatCurrencyWithDecimals(invoice.amount_total)}
-                      </p>
-                      <p className="mt-1">
-                        Paid {formatCurrencyWithDecimals(invoice.amount_paid)}
-                      </p>
-                      <p className="mt-1">
-                        Outstanding {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
-                      </p>
-                    </div>
+                        <div className="text-sm text-stone-500">
+                          <p className="font-medium text-stone-900">
+                            {formatDate(invoice.issue_date)}
+                          </p>
+                          <p className="mt-1 text-stone-500">Due {formatDate(invoice.due_date)}</p>
+                        </div>
 
-                    <div className="text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                        Linked missions
-                      </p>
-                      {invoice.mission_ids.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {invoice.mission_ids.map((missionId) => (
+                        <div className="text-sm text-stone-500">
+                          <p className="font-medium text-stone-900 tabular-nums">
+                            {formatCurrencyWithDecimals(invoice.amount_total)}
+                          </p>
+                          <p className="mt-1">Paid {formatCurrencyWithDecimals(invoice.amount_paid)}</p>
+                          <p className="mt-1">
+                            Outstanding {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-stone-500">
+                          {invoice.mission_ids.length > 0 ? (
+                            <>
+                              <p className="font-medium text-stone-900">
+                                {invoice.mission_ids.length} linked mission
+                                {invoice.mission_ids.length === 1 ? '' : 's'}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {visibleMissionIds.map((missionId) => (
+                                  <button
+                                    key={missionId}
+                                    type="button"
+                                    onClick={() =>
+                                      navigate({
+                                        pathname: appRoutes.missions,
+                                        search: createSearchParams({
+                                          invoice: invoice.invoice_id,
+                                          focus: missionId,
+                                        }).toString(),
+                                      })
+                                    }
+                                    className={inlineLinkButtonClasses}
+                                  >
+                                    <Link2 className="h-3 w-3" />
+                                    <span>
+                                      {missionReferenceById.get(missionId) ?? 'Unknown mission'}
+                                    </span>
+                                  </button>
+                                ))}
+                                {remainingMissionCount > 0 ? (
+                                  <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-500">
+                                    +{remainingMissionCount} more
+                                  </span>
+                                ) : null}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="mt-1 text-sm text-stone-500">No linked missions</p>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-stretch gap-2 md:items-end">
+                          {firstMissionId ? (
                             <button
-                              key={missionId}
                               type="button"
                               onClick={() =>
                                 navigate({
                                   pathname: appRoutes.missions,
                                   search: createSearchParams({
                                     invoice: invoice.invoice_id,
-                                    focus: missionId,
+                                    focus: firstMissionId,
                                   }).toString(),
                                 })
                               }
-                              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
+                              className={secondaryActionButtonClasses}
                             >
-                              {missionReferenceById.get(missionId) ?? 'Unknown mission'}
+                              <span>
+                                {invoice.mission_ids.length === 1 ? 'Open mission' : 'Open missions'}
+                              </span>
+                              <ArrowRight className="h-3.5 w-3.5" />
                             </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-sm text-stone-500">No linked missions</p>
-                      )}
-                    </div>
+                          ) : null}
 
-                    <div className="flex items-start justify-end">
-                      {isEditableInvoice(invoice.status) ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedInvoice(invoice)
-                            setActionError(null)
-                            setShowForm(true)
-                          }}
-                          className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
-                        >
-                          Edit
-                        </button>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </SectionCard>
-          )}
+                          {isEditableInvoice(invoice.status) ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedInvoice(invoice)
+                                setActionError(null)
+                                setShowForm(true)
+                              }}
+                              className={secondaryActionButtonClasses}
+                            >
+                              Edit
+                            </button>
+                          ) : null}
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </SectionCard>
+            )}
+          </div>
         </div>
       </div>
     </PageContainer>

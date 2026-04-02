@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { ArrowRight, FilePlus2, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -7,6 +7,7 @@ import { MissionEditorForm, type MissionEditorInput } from '../components/Missio
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
+  ActiveFilterBar,
   ModalSurface,
   PageLoadingSkeleton,
   SectionCard,
@@ -28,6 +29,7 @@ import {
   formatDateTime,
   formatPercentage,
   toSearchValue,
+  truncateString,
 } from '../lib/utils'
 import { useWorkspaceState } from '../lib/workspace'
 import type { Mission } from '../types/domain'
@@ -48,6 +50,15 @@ function missionTone(status: Mission['status']) {
   }
 }
 
+const missionStatusLabels: Record<Mission['status'], string> = {
+  planned: 'Planned',
+  assigned: 'Assigned',
+  in_progress: 'In progress',
+  delivered: 'Delivered',
+  issue: 'Issue',
+  cancelled: 'Cancelled',
+}
+
 const missionQueueOptions = [
   { value: 'all', label: 'All missions' },
   { value: 'active', label: 'Active queue' },
@@ -55,6 +66,15 @@ const missionQueueOptions = [
   { value: 'margin', label: 'Margin-sensitive' },
   { value: 'issues', label: 'Issue status' },
 ] as const
+
+const inlineLinkButtonClasses =
+  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+
+const secondaryActionButtonClasses =
+  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+
+const primaryActionButtonClasses =
+  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-2 text-xs font-medium text-white transition hover:bg-stone-800'
 
 export function Missions() {
   const navigate = useNavigate()
@@ -91,6 +111,11 @@ export function Missions() {
     [clients]
   )
 
+  const missionById = useMemo(
+    () => new Map(missions.map((mission) => [mission.mission_id, mission] as const)),
+    [missions]
+  )
+
   const invoiceById = useMemo(
     () => new Map(invoices.map((invoice) => [invoice.invoice_id, invoice] as const)),
     [invoices]
@@ -109,6 +134,7 @@ export function Missions() {
       marginSensitive: missions.filter((mission) =>
         getMissionMarginSnapshot(mission).isSensitive
       ).length,
+      issues: missions.filter((mission) => mission.status === MissionStatus.Issue).length,
     }),
     [missionInvoiceMap, missions]
   )
@@ -205,6 +231,12 @@ export function Missions() {
     })
   }
 
+  const clearFocus = () => {
+    setSearchParams(mergeSearchParams(searchParams, { focus: null }), {
+      replace: true,
+    })
+  }
+
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
   }
@@ -254,6 +286,65 @@ export function Missions() {
   }
 
   const filteredInvoice = invoiceFilter ? invoiceById.get(invoiceFilter) : null
+  const focusedMission = focusMissionId ? missionById.get(focusMissionId) : null
+  const queueLabel =
+    missionQueueOptions.find((option) => option.value === queue)?.label ?? 'All missions'
+
+  const activeFilterItems = [
+    queue !== 'all'
+      ? {
+          id: 'queue',
+          label: 'Queue',
+          value: queueLabel,
+          onClear: () => updateFilters({ queue: null }),
+        }
+      : null,
+    clientFilter
+      ? {
+          id: 'client',
+          label: 'Client',
+          value: clientNameById.get(clientFilter) ?? 'Unknown client',
+          onClear: () => updateFilters({ client: null }),
+        }
+      : null,
+    statusFilter
+      ? {
+          id: 'status',
+          label: 'Status',
+          value: missionStatusLabels[statusFilter] ?? statusFilter,
+          onClear: () => updateFilters({ status: null }),
+        }
+      : null,
+    filteredInvoice
+      ? {
+          id: 'invoice',
+          label: 'Invoice',
+          value: filteredInvoice.invoice_number,
+          onClear: () => updateFilters({ invoice: null }),
+        }
+      : null,
+    focusedMission
+      ? {
+          id: 'mission',
+          label: 'Mission',
+          value: focusedMission.reference,
+          onClear: clearFocus,
+        }
+      : null,
+    searchQuery
+      ? {
+          id: 'search',
+          label: 'Search',
+          value: truncateString(searchQuery, 28),
+          onClear: () => updateFilters({ q: null }),
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    id: string
+    label: string
+    value: string
+    onClear: () => void
+  }>
 
   return (
     <PageContainer>
@@ -348,45 +439,43 @@ export function Missions() {
               </label>
 
               <div className="mt-5 space-y-2">
-                {missionQueueOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => updateFilters({ queue: option.value === 'all' ? null : option.value })}
-                    className={clsx(
-                      'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
-                      queue === option.value || (!queue && option.value === 'all')
-                        ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
-                    )}
-                  >
-                    <span>{option.label}</span>
-                    {option.value === 'active' ? (
-                      <span>{summary.active}</span>
-                    ) : option.value === 'uninvoiced' ? (
-                      <span>{summary.uninvoiced}</span>
-                    ) : option.value === 'margin' ? (
-                      <span>{summary.marginSensitive}</span>
-                    ) : option.value === 'issues' ? (
-                      <span>
-                        {
-                          missions.filter((mission) => mission.status === MissionStatus.Issue)
-                            .length
-                        }
-                      </span>
-                    ) : (
-                      <span>{summary.total}</span>
-                    )}
-                  </button>
-                ))}
+                {missionQueueOptions.map((option) => {
+                  const count =
+                    option.value === 'active'
+                      ? summary.active
+                      : option.value === 'uninvoiced'
+                        ? summary.uninvoiced
+                        : option.value === 'margin'
+                          ? summary.marginSensitive
+                          : option.value === 'issues'
+                            ? summary.issues
+                            : summary.total
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        updateFilters({ queue: option.value === 'all' ? null : option.value })
+                      }
+                      className={clsx(
+                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
+                        queue === option.value || (!queue && option.value === 'all')
+                          ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
+                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
+                      )}
+                    >
+                      <span>{option.label}</span>
+                      <span>{count}</span>
+                    </button>
+                  )
+                })}
               </div>
 
               <div className="mt-5 space-y-4">
                 <select
                   value={clientFilter}
-                  onChange={(event) =>
-                    updateFilters({ client: event.target.value || null })
-                  }
+                  onChange={(event) => updateFilters({ client: event.target.value || null })}
                   className="input-shell"
                 >
                   <option value="">All clients</option>
@@ -416,250 +505,288 @@ export function Missions() {
                 </select>
               </div>
 
-              {filteredInvoice ? (
-                <div className="mt-5 rounded-[1.2rem] border border-stone-200 bg-stone-50 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                    Invoice context
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-stone-950">
-                    {filteredInvoice.invoice_number}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-500">
-                    Only missions linked to this invoice are visible.
-                  </p>
-                </div>
-              ) : null}
-
               <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
                 Reset filters
               </button>
             </SectionCard>
           </div>
 
-          {isLoading ? (
-            <PageLoadingSkeleton stats={4} rows={4} />
-          ) : error ? (
-            <StatePanel
-              tone="danger"
-              title="Unable to load missions"
-              message={error}
-              action={
-                <button
-                  type="button"
-                  onClick={() => {
-                    void Promise.all([
-                      missionsQuery.refetch(),
-                      clientsQuery.refetch(),
-                      invoicesQuery.refetch(),
-                    ])
-                  }}
-                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
-                >
-                  Retry
-                </button>
-              }
-            />
-          ) : filteredMissions.length === 0 ? (
-            <StatePanel
-              title={missions.length === 0 ? 'No missions yet' : 'No matching missions'}
-              message={
-                missions.length === 0
-                  ? clients.length === 0
-                    ? 'Create a client first, then start adding missions.'
-                    : 'Create the first mission to populate operations tracking.'
-                  : 'Adjust the current queue or filters to reveal another mission.'
-              }
-              action={
-                missions.length === 0 ? (
+          <div className="space-y-3">
+            <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+
+            {isLoading ? (
+              <PageLoadingSkeleton stats={4} rows={4} />
+            ) : error ? (
+              <StatePanel
+                tone="danger"
+                title="Unable to load missions"
+                message={error}
+                action={
                   <button
                     type="button"
-                    onClick={openCreate}
+                    onClick={() => {
+                      void Promise.all([
+                        missionsQuery.refetch(),
+                        clientsQuery.refetch(),
+                        invoicesQuery.refetch(),
+                      ])
+                    }}
                     className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
                   >
-                    {clients.length === 0 ? 'Open clients' : 'Create mission'}
+                    Retry
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
-                  >
-                    Reset filters
-                  </button>
-                )
-              }
-            />
-          ) : (
-            <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Mission queue
-                  </h2>
-                  <p className="mt-1 text-sm text-stone-500">
-                    {filteredMissions.length} visible mission
-                    {filteredMissions.length === 1 ? '' : 's'} with assignment, margin, and
-                    invoice context kept in one row.
-                  </p>
-                </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
-                  {queue === 'all' ? 'All missions' : `Queue: ${queue.replace('-', ' ')}`}
-                </div>
-              </div>
-
-              <div className="divide-y divide-stone-200">
-                {filteredMissions.map((mission) => {
-                  const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
-                  const margin = getMissionMarginSnapshot(mission)
-
-                  return (
-                    <article
-                      key={mission.mission_id}
-                      className={clsx(
-                        'grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1.2fr)_170px_210px_240px_auto] md:items-start',
-                        focusMissionId === mission.mission_id && 'bg-amber-50/50'
-                      )}
+                }
+              />
+            ) : filteredMissions.length === 0 ? (
+              <StatePanel
+                title={missions.length === 0 ? 'No missions yet' : 'No matching missions'}
+                message={
+                  missions.length === 0
+                    ? clients.length === 0
+                      ? 'Create a client first, then start adding missions.'
+                      : 'Create the first mission to populate operations tracking.'
+                    : 'Adjust the current queue or filters to reveal another mission.'
+                }
+                action={
+                  missions.length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={openCreate}
+                      className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
                     >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-sm font-semibold text-stone-950">
-                            {mission.reference}
-                          </h2>
-                          <StatusBadge
-                            label={mission.status.replace('_', ' ')}
-                            tone={missionTone(mission.status)}
-                          />
-                          {linkedInvoices.length === 0 ? (
-                            <StatusBadge label="not invoiced" tone="warning" />
-                          ) : null}
-                          {margin.isSensitive ? (
-                            <StatusBadge label="margin sensitive" tone="danger" />
-                          ) : null}
-                        </div>
-                        <p className="mt-1 text-sm text-stone-900">
-                          {mission.departure_location} to {mission.arrival_location}
-                        </p>
-                        <p className="mt-1 text-sm text-stone-500">
-                          {clientNameById.get(mission.client_id) ?? 'Unknown client'}
-                        </p>
-                        {mission.notes ? (
-                          <p className="mt-2 line-clamp-2 text-sm text-stone-500">
-                            {mission.notes}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <div className="text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                          Schedule
-                        </p>
-                        <p className="mt-1 font-medium text-stone-900">
-                          {formatDateTime(mission.departure_datetime)}
-                        </p>
-                        <p className="mt-1">
-                          {mission.arrival_datetime
-                            ? formatDateTime(mission.arrival_datetime)
-                            : 'Arrival not set'}
-                        </p>
-                      </div>
-
-                      <div className="text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                          Assignment
-                        </p>
-                        <p className="mt-1 font-medium text-stone-900">
-                          {mission.driver_name || 'Driver unassigned'}
-                        </p>
-                        <p className="mt-1">
-                          {mission.vehicle_name || 'Vehicle not set'}
-                        </p>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                            Finance
-                          </p>
-                          <p className="mt-1 font-medium text-stone-900">
-                            {formatCurrencyWithDecimals(mission.revenue_amount)}
-                          </p>
-                          <p className="mt-1">
-                            Margin {formatPercentage(margin.marginRatio * 100, 0)}
-                          </p>
-                          <p className="mt-1">
-                            {margin.sourceLabel} cost{' '}
-                            {formatCurrencyWithDecimals(margin.baselineCost)}
-                          </p>
-                        </div>
-
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                            Invoice linkage
-                          </p>
-                          {linkedInvoices.length > 0 ? (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {linkedInvoices.map((invoice) => (
-                                <button
-                                  key={invoice.invoice_id}
-                                  type="button"
-                                  onClick={() =>
-                                    navigate({
-                                      pathname: appRoutes.invoices,
-                                      search: createSearchParams({
-                                        mission: mission.mission_id,
-                                        focus: invoice.invoice_id,
-                                      }).toString(),
-                                    })
-                                  }
-                                  className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
-                                >
-                                  {invoice.invoice_number}
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">
-                                Not invoiced
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  navigate({
-                                    pathname: appRoutes.invoices,
-                                    search: createSearchParams({
-                                      mission: mission.mission_id,
-                                    }).toString(),
-                                  })
-                                }
-                                className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
-                              >
-                                Open invoicing
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-start justify-end">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedMission(mission)
-                            setActionError(null)
-                            setShowForm(true)
-                          }}
-                          className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    </article>
+                      {clients.length === 0 ? 'Open clients' : 'Create mission'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                    >
+                      Reset filters
+                    </button>
                   )
-                })}
-              </div>
-            </SectionCard>
-          )}
+                }
+              />
+            ) : (
+              <SectionCard className="overflow-hidden p-0">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4 py-3">
+                  <div>
+                    <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                      Mission queue
+                    </h2>
+                    <p className="mt-1 text-sm text-stone-500">
+                      Showing {filteredMissions.length} of {missions.length} mission
+                      {filteredMissions.length === 1 ? '' : 's'}.
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+                    {queueLabel}
+                  </div>
+                </div>
+
+                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 md:grid md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:gap-3">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Mission
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Schedule
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Assignment
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Finance / Invoice
+                  </span>
+                  <span className="text-right text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    Actions
+                  </span>
+                </div>
+
+                <div className="divide-y divide-stone-200">
+                  {filteredMissions.map((mission) => {
+                    const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
+                    const visibleLinkedInvoices = linkedInvoices.slice(0, 2)
+                    const remainingLinkedInvoiceCount =
+                      linkedInvoices.length - visibleLinkedInvoices.length
+                    const margin = getMissionMarginSnapshot(mission)
+                    const primaryInvoice = linkedInvoices[0]
+
+                    return (
+                      <article
+                        key={mission.mission_id}
+                        className={clsx(
+                          'grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:items-center',
+                          focusMissionId === mission.mission_id && 'bg-amber-50/40'
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-sm font-semibold text-stone-950">
+                              {mission.reference}
+                            </h2>
+                            <StatusBadge
+                              label={mission.status.replace('_', ' ')}
+                              tone={missionTone(mission.status)}
+                            />
+                            {linkedInvoices.length === 0 ? (
+                              <StatusBadge label="not invoiced" tone="warning" />
+                            ) : null}
+                            {margin.isSensitive ? (
+                              <StatusBadge label="margin sensitive" tone="danger" />
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-sm text-stone-900">
+                            {mission.departure_location} to {mission.arrival_location}
+                          </p>
+                          <p className="mt-1 text-sm text-stone-500">
+                            {clientNameById.get(mission.client_id) ?? 'Unknown client'}
+                          </p>
+                          {mission.notes ? (
+                            <p className="mt-1.5 line-clamp-1 text-sm text-stone-500">
+                              {mission.notes}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <div className="text-sm text-stone-500">
+                          <p className="font-medium text-stone-900">
+                            {formatDateTime(mission.departure_datetime)}
+                          </p>
+                          <p className="mt-1 text-stone-500">
+                            Arrives{' '}
+                            {mission.arrival_datetime
+                              ? formatDateTime(mission.arrival_datetime)
+                              : 'not set'}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-stone-500">
+                          <p className="font-medium text-stone-900">
+                            {mission.driver_name || 'Driver unassigned'}
+                          </p>
+                          <p className="mt-1 text-stone-500">
+                            {mission.vehicle_name || 'Vehicle not set'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2.5 text-sm text-stone-500">
+                          <div>
+                            <p className="font-medium text-stone-900 tabular-nums">
+                              {formatCurrencyWithDecimals(mission.revenue_amount)}
+                            </p>
+                            <p className="mt-1">
+                              Margin {formatPercentage(margin.marginRatio * 100, 0)}
+                            </p>
+                            <p className="mt-1">
+                              {margin.sourceLabel} cost{' '}
+                              {formatCurrencyWithDecimals(margin.baselineCost)}
+                            </p>
+                          </div>
+
+                          <div>
+                            {linkedInvoices.length > 0 ? (
+                              <>
+                                <p className="font-medium text-stone-900">Billing linked</p>
+                                <p className="mt-1 font-medium text-stone-900">
+                                  {linkedInvoices.length} linked invoice
+                                  {linkedInvoices.length === 1 ? '' : 's'}
+                                </p>
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {visibleLinkedInvoices.map((invoice) => (
+                                    <button
+                                      key={invoice.invoice_id}
+                                      type="button"
+                                      onClick={() =>
+                                        navigate({
+                                          pathname: appRoutes.invoices,
+                                          search: createSearchParams({
+                                            mission: mission.mission_id,
+                                            focus: invoice.invoice_id,
+                                          }).toString(),
+                                        })
+                                      }
+                                      className={inlineLinkButtonClasses}
+                                    >
+                                      <Link2 className="h-3 w-3" />
+                                      <span>{invoice.invoice_number}</span>
+                                    </button>
+                                  ))}
+                                  {remainingLinkedInvoiceCount > 0 ? (
+                                    <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-500">
+                                      +{remainingLinkedInvoiceCount} more
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <p className="font-medium text-amber-800">
+                                  Ready for invoicing
+                                </p>
+                                <p className="mt-1 text-stone-500">
+                                  Create a linked invoice with mission context prefilled.
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-stretch gap-2 md:items-end">
+                          {linkedInvoices.length > 0 && primaryInvoice ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate({
+                                  pathname: appRoutes.invoices,
+                                  search: createSearchParams({
+                                    mission: mission.mission_id,
+                                    focus: primaryInvoice.invoice_id,
+                                  }).toString(),
+                                })
+                              }
+                              className={secondaryActionButtonClasses}
+                            >
+                              <span>Review invoices</span>
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate({
+                                  pathname: appRoutes.invoices,
+                                  search: createSearchParams({
+                                    mission: mission.mission_id,
+                                    compose: 'new',
+                                  }).toString(),
+                                })
+                              }
+                              className={primaryActionButtonClasses}
+                            >
+                              <FilePlus2 className="h-3.5 w-3.5" />
+                              <span>Create linked invoice</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedMission(mission)
+                              setActionError(null)
+                              setShowForm(true)
+                            }}
+                            className={secondaryActionButtonClasses}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </SectionCard>
+            )}
+          </div>
         </div>
       </div>
     </PageContainer>
