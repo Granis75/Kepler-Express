@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
+import { ArrowUpRight } from 'lucide-react'
 
 export function SectionCard({
   children,
@@ -11,7 +12,7 @@ export function SectionCard({
   return (
     <section
       className={clsx(
-        'rounded-[1.8rem] border border-white/70 bg-white/88 p-6 shadow-[0_20px_60px_rgba(28,25,23,0.07)] ring-1 ring-stone-200/70 backdrop-blur',
+        'rounded-[1.45rem] border border-stone-200/90 bg-white/92 p-5 shadow-[0_12px_32px_rgba(28,25,23,0.05)] ring-1 ring-white/65 backdrop-blur',
         className
       )}
     >
@@ -25,26 +26,57 @@ export function StatCard({
   value,
   detail,
   tone = 'default',
+  onClick,
 }: {
   label: string
   value: string
   detail?: string
   tone?: 'default' | 'success' | 'warning' | 'danger'
+  onClick?: () => void
 }) {
   const toneClasses =
     tone === 'success'
-      ? 'border-emerald-200/80 bg-[linear-gradient(180deg,_rgba(236,253,245,0.95),_rgba(255,255,255,0.96))]'
+      ? 'border-emerald-200/90 bg-[linear-gradient(180deg,_rgba(241,253,247,0.92),_rgba(255,255,255,0.98))]'
       : tone === 'warning'
-        ? 'border-amber-200/80 bg-[linear-gradient(180deg,_rgba(255,251,235,0.96),_rgba(255,255,255,0.96))]'
+        ? 'border-amber-200/90 bg-[linear-gradient(180deg,_rgba(255,251,240,0.94),_rgba(255,255,255,0.98))]'
       : tone === 'danger'
-          ? 'border-rose-200/80 bg-[linear-gradient(180deg,_rgba(255,241,242,0.96),_rgba(255,255,255,0.96))]'
-          : 'border-stone-200/80 bg-[linear-gradient(180deg,_rgba(250,250,249,0.92),_rgba(255,255,255,0.97))]'
+          ? 'border-rose-200/90 bg-[linear-gradient(180deg,_rgba(255,244,245,0.94),_rgba(255,255,255,0.98))]'
+          : 'border-stone-200/90 bg-[linear-gradient(180deg,_rgba(250,250,249,0.9),_rgba(255,255,255,0.98))]'
+
+  const cardClasses = clsx(
+    'group relative rounded-[1.2rem] border p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition',
+    onClick && 'hover:border-stone-300 hover:shadow-[0_10px_24px_rgba(28,25,23,0.08)] focus:outline-none focus:ring-4 focus:ring-stone-200',
+    toneClasses
+  )
+
+  const content = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-stone-500">
+          {label}
+        </p>
+        {onClick ? (
+          <ArrowUpRight className="h-4 w-4 text-stone-400 transition group-hover:text-stone-700" />
+        ) : null}
+      </div>
+      <p className="mt-3 text-[1.85rem] font-semibold tracking-[-0.04em] text-stone-950">
+        {value}
+      </p>
+      {detail ? <p className="mt-1.5 text-sm leading-6 text-stone-500">{detail}</p> : null}
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cardClasses}>
+        {content}
+      </button>
+    )
+  }
 
   return (
-    <div className={clsx('rounded-[1.55rem] border p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]', toneClasses)}>
-      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-stone-500">{label}</p>
-      <p className="mt-4 text-[2rem] font-semibold tracking-[-0.04em] text-stone-950">{value}</p>
-      {detail ? <p className="mt-2 text-sm leading-6 text-stone-500">{detail}</p> : null}
+    <div className={cardClasses}>
+      {content}
     </div>
   )
 }
@@ -101,7 +133,7 @@ export function StatusBadge({
   return (
     <span
       className={clsx(
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]',
+        'inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]',
         toneClasses
       )}
     >

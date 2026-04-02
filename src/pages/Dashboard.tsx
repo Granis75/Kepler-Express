@@ -1,5 +1,12 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import {
+  AlertTriangle,
+  ArrowRight,
+  FileText,
+  Receipt,
+  Truck,
+} from 'lucide-react'
+import { createSearchParams, useNavigate } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
@@ -12,14 +19,21 @@ import {
 import { useExpenses } from '../hooks/useExpenses'
 import { useInvoices } from '../hooks/useInvoices'
 import { useMissions } from '../hooks/useMissions'
+import {
+  getInvoiceBalance,
+  getMissionInvoiceMap,
+  getMissionMarginSnapshot,
+  isInvoiceInCollectionQueue,
+  isMissionActive,
+} from '../lib/operations'
 import { appRoutes } from '../lib/routes'
-import { formatCurrencyWithDecimals, formatDate, formatDateTime } from '../lib/utils'
+import {
+  formatCurrencyWithDecimals,
+  formatDate,
+  formatDateTime,
+  formatPercentage,
+} from '../lib/utils'
 import { useWorkspaceState } from '../lib/workspace'
-
-function toSafeNumber(value: unknown) {
-  const number = typeof value === 'number' ? value : Number(value ?? 0)
-  return Number.isFinite(number) ? number : 0
-}
 
 function getMissionTone(status: string) {
   switch (status) {
@@ -51,6 +65,22 @@ function getInvoiceTone(status: string) {
   }
 }
 
+function getExpenseTone(expense: { approval_status: string; receipt_present: boolean }) {
+  if (expense.approval_status === 'pending') {
+    return 'warning' as const
+  }
+
+  if (!expense.receipt_present) {
+    return 'danger' as const
+  }
+
+  if (expense.approval_status === 'paid') {
+    return 'success' as const
+  }
+
+  return 'neutral' as const
+}
+
 export function Dashboard() {
   const navigate = useNavigate()
   const { organization } = useWorkspaceState()
@@ -69,141 +99,191 @@ export function Dashboard() {
     (expensesQuery.error instanceof Error && expensesQuery.error.message) ||
     null
 
+  const missionInvoiceMap = useMemo(() => getMissionInvoiceMap(invoices), [invoices])
+
+  const missionReferenceById = useMemo(
+    () => new Map(missions.map((mission) => [mission.mission_id, mission.reference] as const)),
+    [missions]
+  )
+
+  const activeMissions = useMemo(
+    () =>
+      [...missions]
+        .filter((mission) => isMissionActive(mission.status))
+        .sort(
+          (left, right) =>
+            new Date(left.departure_datetime).getTime() -
+            new Date(right.departure_datetime).getTime()
+        ),
+    [missions]
+  )
+
+  const collectionQueue = useMemo(
+    () =>
+      [...invoices]
+        .filter((invoice) => isInvoiceInCollectionQueue(invoice))
+        .sort((left, right) => {
+          if (left.status === 'overdue' && right.status !== 'overdue') {
+            return -1
+          }
+
+          if (left.status !== 'overdue' && right.status === 'overdue') {
+            return 1
+          }
+
+          return new Date(left.due_date).getTime() - new Date(right.due_date).getTime()
+        }),
+    [invoices]
+  )
+
+  const expenseAttention = useMemo(
+    () =>
+      [...expenses]
+        .filter((expense) => expense.approval_status === 'pending' || !expense.receipt_present)
+        .sort(
+          (left, right) =>
+            new Date(right.expense_date).getTime() - new Date(left.expense_date).getTime()
+        ),
+    [expenses]
+  )
+
   const metrics = useMemo(() => {
-    const totalRevenue = missions.reduce(
-      (sum, mission) => sum + toSafeNumber(mission.revenue_amount),
-      0
-    )
-    const estimatedCost = missions.reduce(
-      (sum, mission) => sum + toSafeNumber(mission.estimated_cost_amount),
-      0
-    )
-    const actualCost = missions.reduce(
-      (sum, mission) => sum + toSafeNumber(mission.actual_cost_amount),
-      0
-    )
-    const unpaidCash = invoices.reduce(
-      (sum, invoice) =>
-        sum + Math.max(0, toSafeNumber(invoice.amount_total) - toSafeNumber(invoice.amount_paid)),
+    const unpaidCash = collectionQueue.reduce(
+      (sum, invoice) => sum + getInvoiceBalance(invoice),
       0
     )
     const overdueCount = invoices.filter((invoice) => invoice.status === 'overdue').length
     const pendingExpenses = expenses.filter(
       (expense) => expense.approval_status === 'pending'
     ).length
+    const activeWithoutInvoice = activeMissions.filter(
+      (mission) => (missionInvoiceMap.get(mission.mission_id) ?? []).length === 0
+    ).length
+    const marginSensitive = activeMissions.filter((mission) =>
+      getMissionMarginSnapshot(mission).isSensitive
+    ).length
+    const missingReceipts = expenses.filter((expense) => !expense.receipt_present).length
 
     return {
-      totalRevenue,
-      estimatedCost,
-      actualCost,
-      margin: totalRevenue - actualCost,
       unpaidCash,
       overdueCount,
       pendingExpenses,
+      activeMissionCount: activeMissions.length,
+      activeWithoutInvoice,
+      marginSensitive,
+      missingReceipts,
     }
-  }, [expenses, invoices, missions])
+  }, [activeMissions, collectionQueue, expenses, invoices, missionInvoiceMap])
 
-  const activeMissions = [...missions]
-    .filter((mission) => ['planned', 'assigned', 'in_progress'].includes(mission.status))
-    .sort(
-      (left, right) =>
-        new Date(left.departure_datetime).getTime() - new Date(right.departure_datetime).getTime()
-    )
-    .slice(0, 5)
-
-  const unpaidInvoices = [...invoices]
-    .filter((invoice) => Math.max(0, invoice.amount_total - invoice.amount_paid) > 0)
-    .sort((left, right) => {
-      if (left.status === 'overdue' && right.status !== 'overdue') {
-        return -1
-      }
-
-      if (left.status !== 'overdue' && right.status === 'overdue') {
-        return 1
-      }
-
-      return right.invoice_number.localeCompare(left.invoice_number)
-    })
-    .slice(0, 5)
-
-  const recentActivity = useMemo(() => {
-    const missionActivity = missions.map((mission) => ({
-      id: `mission-${mission.mission_id}`,
-      title: mission.reference,
-      subtitle: `${mission.departure_location} to ${mission.arrival_location}`,
-      timestamp: mission.updated_at || mission.created_at || mission.departure_datetime,
-      label: 'Mission',
-    }))
-
-    const invoiceActivity = invoices.map((invoice) => ({
-      id: `invoice-${invoice.invoice_id}`,
-      title: invoice.invoice_number,
-      subtitle: `${formatCurrencyWithDecimals(invoice.amount_total)} total`,
-      timestamp: invoice.updated_at || invoice.created_at || invoice.issue_date,
-      label: 'Invoice',
-    }))
-
-    const expenseActivity = expenses.map((expense) => ({
-      id: `expense-${expense.expense_id}`,
-      title: `${expense.expense_type} expense`,
-      subtitle: `${formatCurrencyWithDecimals(expense.amount)} • ${expense.driver_name || 'No driver'}`,
-      timestamp: expense.updated_at || expense.created_at || expense.expense_date,
-      label: 'Expense',
-    }))
-
-    return [...missionActivity, ...invoiceActivity, ...expenseActivity]
-      .sort(
-        (left, right) =>
-          new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()
-      )
-      .slice(0, 6)
-  }, [expenses, invoices, missions])
-
-  const controlSummary = [
-    {
-      label: 'Active missions',
-      value: String(activeMissions.length),
-      note: 'Routes currently in motion or about to start',
-    },
-    {
-      label: 'Overdue invoices',
-      value: String(metrics.overdueCount),
-      note: 'Cash items needing follow-up',
-    },
-    {
-      label: 'Pending expenses',
-      value: String(metrics.pendingExpenses),
-      note: 'Approvals still waiting on review',
-    },
-  ]
+  const needsAttention = useMemo(
+    () =>
+      [
+        {
+          label: 'Active missions without invoice',
+          count: metrics.activeWithoutInvoice,
+          note: 'Assigned or in-progress work is still missing billing linkage.',
+          tone: 'warning' as const,
+          icon: Truck,
+          onClick: () => {
+            navigate({
+              pathname: appRoutes.missions,
+              search: createSearchParams({ queue: 'uninvoiced' }).toString(),
+            })
+          },
+        },
+        {
+          label: 'Overdue invoices',
+          count: metrics.overdueCount,
+          note: 'Collection follow-up is already past due.',
+          tone: 'danger' as const,
+          icon: FileText,
+          onClick: () => {
+            navigate({
+              pathname: appRoutes.invoices,
+              search: createSearchParams({ queue: 'overdue' }).toString(),
+            })
+          },
+        },
+        {
+          label: 'Pending expenses',
+          count: metrics.pendingExpenses,
+          note: 'Operational reimbursements are waiting for approval.',
+          tone: 'warning' as const,
+          icon: Receipt,
+          onClick: () => {
+            navigate({
+              pathname: appRoutes.expenses,
+              search: createSearchParams({ queue: 'pending' }).toString(),
+            })
+          },
+        },
+        {
+          label: 'Expenses without receipt',
+          count: metrics.missingReceipts,
+          note: 'Receipt gaps weaken cost traceability.',
+          tone: 'danger' as const,
+          icon: Receipt,
+          onClick: () => {
+            navigate({
+              pathname: appRoutes.expenses,
+              search: createSearchParams({ queue: 'missing-receipt' }).toString(),
+            })
+          },
+        },
+        {
+          label: 'Margin-sensitive missions',
+          count: metrics.marginSensitive,
+          note: 'Current mission economics are below the working margin threshold.',
+          tone: 'warning' as const,
+          icon: AlertTriangle,
+          onClick: () => {
+            navigate({
+              pathname: appRoutes.missions,
+              search: createSearchParams({ queue: 'margin' }).toString(),
+            })
+          },
+        },
+      ].filter((item) => item.count > 0),
+    [metrics, navigate]
+  )
 
   return (
     <PageContainer>
       <PageHeader
         title="Dashboard"
-        description={`A focused view of ${organization?.name ?? 'your workspace'} across operations, cash collection, and expense control.`}
+        description={`Operational control for ${organization?.name ?? 'your workspace'}, with billing, mission execution, and expense exceptions surfaced as working queues.`}
         actions={
           <>
             <button
               type="button"
-              onClick={() => navigate(appRoutes.missions)}
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.missions,
+                  search: createSearchParams({ queue: 'active' }).toString(),
+                })
+              }
               className="btn-secondary"
             >
-              Review missions
+              Active missions
             </button>
             <button
               type="button"
-              onClick={() => navigate(appRoutes.invoices)}
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.invoices,
+                  search: createSearchParams({ queue: 'unpaid' }).toString(),
+                })
+              }
               className="btn-primary"
             >
-              Open invoices
+              Collection queue
             </button>
           </>
         }
       />
 
       {isLoading ? (
-        <PageLoadingSkeleton stats={6} rows={4} />
+        <PageLoadingSkeleton stats={4} rows={4} />
       ) : error ? (
         <StatePanel
           tone="danger"
@@ -228,7 +308,7 @@ export function Dashboard() {
       ) : missions.length === 0 && invoices.length === 0 && expenses.length === 0 ? (
         <StatePanel
           title="Your workspace is ready for first data"
-          message="Create clients, missions, and invoices to populate the dashboard with live operational context."
+          message="Create clients, missions, invoices, and expenses to turn this dashboard into a live operating console."
           action={
             <button
               type="button"
@@ -240,223 +320,355 @@ export function Dashboard() {
           }
         />
       ) : (
-        <div className="space-y-6">
-          <SectionCard className="overflow-hidden bg-[linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(247,243,236,0.92))]">
-            <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
-              <div>
-                <span className="eyebrow-chip">Control panel</span>
-                <h2 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-stone-950">
-                  Daily operational picture
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-                  Revenue, margin, cash collection, and approvals stay visible in one
-                  place so the team can act without switching between modules.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                {controlSummary.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-[1.35rem] border border-stone-200 bg-white/82 px-4 py-4 shadow-sm"
-                  >
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                      {item.label}
-                    </p>
-                    <p className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-stone-950">
-                      {item.value}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-stone-500">{item.note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </SectionCard>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <StatCard
-              label="Revenue"
-              value={formatCurrencyWithDecimals(metrics.totalRevenue)}
-              detail="Total mission revenue in the workspace"
-            />
-            <StatCard
-              label="Gross margin"
-              value={formatCurrencyWithDecimals(metrics.margin)}
-              detail={`${formatCurrencyWithDecimals(metrics.actualCost)} actual cost`}
-              tone={metrics.margin >= 0 ? 'success' : 'danger'}
-            />
+        <div className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Unpaid cash"
               value={formatCurrencyWithDecimals(metrics.unpaidCash)}
-              detail={`${metrics.overdueCount} overdue invoice${metrics.overdueCount > 1 ? 's' : ''}`}
+              detail={`${collectionQueue.length} invoice${collectionQueue.length === 1 ? '' : 's'} in collection`}
               tone={metrics.overdueCount > 0 ? 'danger' : 'warning'}
-            />
-            <StatCard
-              label="Estimated cost"
-              value={formatCurrencyWithDecimals(metrics.estimatedCost)}
-              detail="Forward view based on mission planning"
-            />
-            <StatCard
-              label="Actual cost"
-              value={formatCurrencyWithDecimals(metrics.actualCost)}
-              detail="Costs synced from expenses"
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.invoices,
+                  search: createSearchParams({ queue: 'unpaid' }).toString(),
+                })
+              }
             />
             <StatCard
               label="Pending expense approvals"
               value={String(metrics.pendingExpenses)}
-              detail="Expenses awaiting validation"
+              detail="Waiting on ops or finance review"
               tone={metrics.pendingExpenses > 0 ? 'warning' : 'default'}
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.expenses,
+                  search: createSearchParams({ queue: 'pending' }).toString(),
+                })
+              }
+            />
+            <StatCard
+              label="Active missions"
+              value={String(metrics.activeMissionCount)}
+              detail={`${metrics.activeWithoutInvoice} without invoice linkage`}
+              tone={metrics.activeWithoutInvoice > 0 ? 'warning' : 'default'}
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.missions,
+                  search: createSearchParams({ queue: 'active' }).toString(),
+                })
+              }
+            />
+            <StatCard
+              label="Overdue invoices"
+              value={String(metrics.overdueCount)}
+              detail="Past due and needing follow-up"
+              tone={metrics.overdueCount > 0 ? 'danger' : 'default'}
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.invoices,
+                  search: createSearchParams({ queue: 'overdue' }).toString(),
+                })
+              }
             />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-            <SectionCard>
-              <div className="mb-5 flex items-center justify-between gap-4">
+          <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+            <SectionCard className="p-0">
+              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
                 <div>
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Active missions
+                    Needs attention
                   </h2>
-                  <p className="text-sm text-stone-500">
-                    Planned, assigned, or in-progress work requiring attention.
+                  <p className="mt-1 text-sm text-stone-500">
+                    Exception queues to review before the next dispatch or billing cycle.
+                  </p>
+                </div>
+              </div>
+
+              {needsAttention.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-stone-500">
+                  No urgent exceptions are visible right now.
+                </div>
+              ) : (
+                <div className="divide-y divide-stone-200">
+                  {needsAttention.map((item) => {
+                    const Icon = item.icon
+
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={item.onClick}
+                        className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-stone-50/80"
+                      >
+                        <div className="flex min-w-0 gap-3">
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white">
+                            <Icon className="h-4 w-4 text-stone-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold text-stone-950">{item.label}</p>
+                              <StatusBadge label={String(item.count)} tone={item.tone} />
+                            </div>
+                            <p className="mt-1 text-sm text-stone-500">{item.note}</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-stone-400" />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard className="p-0">
+              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+                <div>
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                    Expense control
+                  </h2>
+                  <p className="mt-1 text-sm text-stone-500">
+                    Pending approvals and missing receipts across the latest expense activity.
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigate(appRoutes.missions)}
+                  onClick={() =>
+                    navigate({
+                      pathname: appRoutes.expenses,
+                      search: createSearchParams({ queue: 'pending' }).toString(),
+                    })
+                  }
                   className="btn-secondary px-4 py-2"
                 >
-                  View all
+                  Review expenses
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {activeMissions.length === 0 ? (
-                  <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 px-5 py-8 text-sm text-stone-500">
-                    No active missions right now.
-                  </div>
-                ) : (
-                  activeMissions.map((mission) => (
-                    <div
-                      key={mission.mission_id}
-                      className="flex flex-col gap-4 rounded-[1.5rem] border border-stone-200 bg-stone-50/92 px-5 py-4 lg:flex-row lg:items-center lg:justify-between"
+              {expenseAttention.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-stone-500">
+                  Expense approvals and receipt control are clear.
+                </div>
+              ) : (
+                <div className="divide-y divide-stone-200">
+                  {expenseAttention.slice(0, 5).map((expense) => (
+                    <button
+                      key={expense.expense_id}
+                      type="button"
+                      onClick={() =>
+                        navigate({
+                          pathname: appRoutes.expenses,
+                          search: createSearchParams({ focus: expense.expense_id }).toString(),
+                        })
+                      }
+                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50/80 md:grid-cols-[minmax(0,1fr)_160px_140px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-stone-950">{mission.reference}</p>
+                          <p className="text-sm font-semibold text-stone-950">
+                            {expense.expense_type}
+                          </p>
                           <StatusBadge
-                            label={mission.status.replace('_', ' ')}
-                            tone={getMissionTone(mission.status)}
+                            label={expense.approval_status}
+                            tone={getExpenseTone(expense)}
                           />
+                          {!expense.receipt_present ? (
+                            <StatusBadge label="receipt missing" tone="danger" />
+                          ) : null}
                         </div>
-                        <p className="mt-2 text-sm text-stone-600">
-                          {mission.departure_location} to {mission.arrival_location}
-                        </p>
                         <p className="mt-1 text-sm text-stone-500">
-                          {formatDateTime(mission.departure_datetime)}
+                          {missionReferenceById.get(expense.mission_id ?? '') || 'No linked mission'}
                         </p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-stone-200 bg-white/88 px-4 py-3 text-left lg:min-w-[180px] lg:text-right">
-                        <p className="text-sm font-semibold text-stone-950">
-                          {formatCurrencyWithDecimals(mission.revenue_amount)}
+                      <div className="text-sm text-stone-500">
+                        <p className="font-medium text-stone-900">
+                          {formatCurrencyWithDecimals(expense.amount)}
                         </p>
-                        <p className="mt-1 text-sm text-stone-500">
-                          {mission.driver_name || 'Driver unassigned'}
+                        <p className="mt-1">{formatDate(expense.expense_date)}</p>
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        <p className="font-medium text-stone-900">
+                          {expense.driver_name || 'No driver'}
+                        </p>
+                        <p className="mt-1">
+                          {expense.advanced_by_driver ? 'Driver advance' : 'Company paid'}
                         </p>
                       </div>
-                    </div>
-                  ))
-                )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-2">
+            <SectionCard className="p-0">
+              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+                <div>
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                    Active mission queue
+                  </h2>
+                  <p className="mt-1 text-sm text-stone-500">
+                    Live missions with invoice visibility and margin context.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      pathname: appRoutes.missions,
+                      search: createSearchParams({ queue: 'active' }).toString(),
+                    })
+                  }
+                  className="btn-secondary px-4 py-2"
+                >
+                  Open missions
+                </button>
               </div>
+
+              {activeMissions.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-stone-500">
+                  No active missions right now.
+                </div>
+              ) : (
+                <div className="divide-y divide-stone-200">
+                  {activeMissions.slice(0, 6).map((mission) => {
+                    const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
+                    const margin = getMissionMarginSnapshot(mission)
+
+                    return (
+                      <button
+                        key={mission.mission_id}
+                        type="button"
+                        onClick={() =>
+                          navigate({
+                            pathname: appRoutes.missions,
+                            search: createSearchParams({ focus: mission.mission_id }).toString(),
+                          })
+                        }
+                        className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50/80 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-stone-950">{mission.reference}</p>
+                            <StatusBadge
+                              label={mission.status.replace('_', ' ')}
+                              tone={getMissionTone(mission.status)}
+                            />
+                            {linkedInvoices.length === 0 ? (
+                              <StatusBadge label="not invoiced" tone="warning" />
+                            ) : null}
+                            {margin.isSensitive ? (
+                              <StatusBadge label="margin sensitive" tone="warning" />
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-sm text-stone-500">
+                            {mission.departure_location} to {mission.arrival_location}
+                          </p>
+                          <p className="mt-1 text-sm text-stone-500">
+                            {linkedInvoices.length > 0
+                              ? `Invoice ${linkedInvoices.map((invoice) => invoice.invoice_number).join(', ')}`
+                              : 'Billing not linked yet'}
+                          </p>
+                        </div>
+                        <div className="text-sm text-stone-500">
+                          <p className="font-medium text-stone-900">
+                            {formatDateTime(mission.departure_datetime)}
+                          </p>
+                          <p className="mt-1">{mission.driver_name || 'Driver unassigned'}</p>
+                        </div>
+                        <div className="text-sm text-stone-500">
+                          <p className="font-medium text-stone-900">
+                            {formatCurrencyWithDecimals(mission.revenue_amount)}
+                          </p>
+                          <p className="mt-1">
+                            Margin {formatPercentage(margin.marginRatio * 100, 0)}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </SectionCard>
 
-            <div className="space-y-6">
-              <SectionCard>
-                <div className="mb-4 flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                      Unpaid invoices
-                    </h2>
-                    <p className="text-sm text-stone-500">
-                      Immediate collection priorities across billing.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate(appRoutes.invoices)}
-                    className="btn-secondary px-4 py-2"
-                  >
-                    View all
-                  </button>
+            <SectionCard className="p-0">
+              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+                <div>
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                    Collection queue
+                  </h2>
+                  <p className="mt-1 text-sm text-stone-500">
+                    Invoices still open, ordered for collection follow-up.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      pathname: appRoutes.invoices,
+                      search: createSearchParams({ queue: 'unpaid' }).toString(),
+                    })
+                  }
+                  className="btn-secondary px-4 py-2"
+                >
+                  Open invoices
+                </button>
+              </div>
 
-                <div className="space-y-3">
-                  {unpaidInvoices.length === 0 ? (
-                    <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 px-5 py-8 text-sm text-stone-500">
-                      No unpaid invoices right now.
-                    </div>
-                  ) : (
-                    unpaidInvoices.map((invoice) => (
-                      <div
-                        key={invoice.invoice_id}
-                        className="rounded-[1.5rem] border border-stone-200 bg-stone-50/92 px-4 py-4"
-                      >
-                        <div className="flex items-center justify-between gap-3">
+              {collectionQueue.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-stone-500">
+                  No invoices are waiting for collection.
+                </div>
+              ) : (
+                <div className="divide-y divide-stone-200">
+                  {collectionQueue.slice(0, 6).map((invoice) => (
+                    <button
+                      key={invoice.invoice_id}
+                      type="button"
+                      onClick={() =>
+                        navigate({
+                          pathname: appRoutes.invoices,
+                          search: createSearchParams({ focus: invoice.invoice_id }).toString(),
+                        })
+                      }
+                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50/80 md:grid-cols-[minmax(0,1fr)_160px_180px]"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-stone-950">
                             {invoice.invoice_number}
                           </p>
                           <StatusBadge label={invoice.status} tone={getInvoiceTone(invoice.status)} />
                         </div>
-                        <p className="mt-2 text-sm text-stone-500">
+                        <p className="mt-1 text-sm text-stone-500">
+                          {invoice.mission_ids.length > 0
+                            ? invoice.mission_ids
+                                .map((missionId) => missionReferenceById.get(missionId))
+                                .filter(Boolean)
+                                .join(', ')
+                            : 'No linked missions'}
+                        </p>
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        <p className="font-medium text-stone-900">
                           Due {formatDate(invoice.due_date)}
                         </p>
-                        <div className="mt-3 flex items-center justify-between gap-3 rounded-[1rem] border border-stone-200 bg-white/86 px-3 py-2.5">
-                          <span className="text-xs uppercase tracking-[0.18em] text-stone-500">
-                            Outstanding
-                          </span>
-                          <span className="text-sm font-semibold text-stone-900">
-                            {formatCurrencyWithDecimals(
-                              Math.max(0, invoice.amount_total - invoice.amount_paid)
-                            )}
-                          </span>
-                        </div>
+                        <p className="mt-1">
+                          {formatCurrencyWithDecimals(invoice.amount_total)} total
+                        </p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </SectionCard>
-
-              <SectionCard>
-                <div className="mb-4">
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Recent activity
-                  </h2>
-                  <p className="text-sm text-stone-500">
-                    A compact stream of the latest mission, expense, and invoice changes.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {recentActivity.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-4 rounded-[1.5rem] border border-stone-200 bg-stone-50/92 px-4 py-4"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-stone-950">{item.title}</p>
-                          <StatusBadge label={item.label} />
-                        </div>
-                        <p className="mt-1 text-sm text-stone-500">{item.subtitle}</p>
+                      <div className="text-sm text-stone-500">
+                        <p className="font-medium text-stone-900">
+                          {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
+                        </p>
+                        <p className="mt-1">Outstanding</p>
                       </div>
-                      <div className="rounded-[1rem] border border-stone-200 bg-white/88 px-3 py-2 text-right">
-                        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">Updated</p>
-                        <p className="mt-1 text-sm text-stone-700">{formatDateTime(item.timestamp)}</p>
-                      </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
-              </SectionCard>
-            </div>
+              )}
+            </SectionCard>
           </div>
         </div>
       )}
