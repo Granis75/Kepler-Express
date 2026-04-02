@@ -1,47 +1,83 @@
-# Kepler Express Ops
+# Kepler Express Ops — Operational System
 
-## Stack
+A system designed to structure logistics operations into a clear and connected workflow.
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- Supabase-ready domain model and schema docs
+---
 
-## Included
+## Problem
 
-- Dashboard with operational KPIs
-- Mission control view with search
-- Expense tracking with reimbursement status
-- Fleet health / maintenance visibility
-- Invoice follow-up
-- Settings and entity management pages
+Daily operations relied on disconnected tools (Excel, calls, manual tracking), creating:
 
-## Local development
+- no shared visibility on missions  
+- delayed expense tracking  
+- disconnection between operations and billing  
+- no clear view of profitability  
 
-```bash
-npm install
-npm run dev
-```
+---
 
-## Production build
+## Solution
 
-```bash
-npm run build
-```
+A structured operational system connecting the full workflow:
 
-## Deploy on GitHub + Vercel
+Client → Mission → Expense → Invoice → Payment  
 
-1. Create a new GitHub repository.
-2. Upload all files from this folder.
-3. Import the repository into Vercel.
-4. In Vercel:
-   - Framework Preset: `Vite`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-5. Deploy.
+This system aligns execution with financial tracking and improves operational clarity.
+
+---
+
+## System Logic
+
+The system is built around:
+
+- **Workflow consistency**  
+  Each mission follows a structured lifecycle  
+
+- **Cost visibility**  
+  Expenses are directly linked to mission execution  
+
+- **Financial alignment**  
+  Invoicing is connected to real operational data  
+
+- **Operational tracking**  
+  All activities are centralized in a single system  
+
+---
+
+## Key Features
+
+- Mission management with real-time tracking  
+- Expense tracking linked to missions  
+- Separation of driver advances vs company costs  
+- Invoice follow-up connected to execution  
+- Dashboard with operational KPIs  
+
+---
+
+## Impact
+
+- Reduced manual coordination  
+- Improved visibility across operations and costs  
+- Better alignment between execution and billing  
+- Clearer understanding of profitability per mission  
+
+---
+
+## Live System
+
+https://kepler-express.vercel.app/
+
+---
+
+## Stack (supporting layer)
+
+React 18  
+TypeScript  
+Vite  
+Tailwind CSS  
+Supabase (data model & schema)
+
+---
 
 ## Notes
 
-- `supabase/schema.sql` and `supabase/SCHEMA.md` describe the target backend schema.
-- `src/lib/mockData.ts` powers the current UI until the real backend is connected.
+This project reflects a product-oriented approach, focusing on workflow structure, data logic and operational constraints rather than technical complexity.
