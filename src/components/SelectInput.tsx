@@ -11,13 +11,15 @@ export function SelectInput({ label, options, error, className, ...props }: Sele
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-900 mb-1.5">
+      <label className="mb-1.5 block text-sm font-medium text-stone-900">
         {label}
       </label>
       <select
         className={clsx(
-          'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:border-blue-500 appearance-none bg-white',
-          error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500',
+          'w-full appearance-none rounded-2xl border bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:ring-4',
+          error
+            ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-100'
+            : 'border-stone-300 focus:border-teal-700 focus:ring-teal-100',
           className
         )}
         {...props}
@@ -29,7 +31,7 @@ export function SelectInput({ label, options, error, className, ...props }: Sele
           </option>
         ))}
       </select>
-      {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+      {error ? <p className="mt-1 text-xs text-rose-700">{error}</p> : null}
     </div>
   )
 }

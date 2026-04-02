@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase'
+import { toUserFacingError } from '../supabase-error'
 
 export type CreatePaymentInput = {
   invoice_id: string
@@ -67,7 +68,7 @@ export async function getPaymentsByInvoice(invoiceId: string): Promise<PaymentRe
     .order('created_at', { ascending: false })
 
   if (error) {
-    throw new Error(error.message || 'Unable to load payments.')
+    throw toUserFacingError(error, 'Unable to load payments.')
   }
 
   return (data ?? []).map((row) =>
@@ -97,7 +98,7 @@ export async function createPaymentRecord(
   } = await supabase.auth.getUser()
 
   if (authError) {
-    throw new Error(authError.message || 'Unable to resolve the current session.')
+    throw toUserFacingError(authError, 'Unable to resolve the current session.')
   }
 
   if (!user) {
@@ -111,7 +112,7 @@ export async function createPaymentRecord(
     .maybeSingle()
 
   if (profileError) {
-    throw new Error(profileError.message || 'Unable to resolve the current organization.')
+    throw toUserFacingError(profileError, 'Unable to resolve the current organization.')
   }
 
   const organizationId = profile?.organization_id
@@ -139,7 +140,7 @@ export async function createPaymentRecord(
     .single()
 
   if (error) {
-    throw new Error(error.message || 'Unable to create the payment.')
+    throw toUserFacingError(error, 'Unable to create the payment.')
   }
 
   return mapPaymentRow({

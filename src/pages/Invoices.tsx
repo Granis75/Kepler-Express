@@ -1,99 +1,76 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertCircle, Plus, Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { InvoiceEditorForm, type InvoiceEditorInput } from '../components/InvoiceEditorForm'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
-import { InvoiceListItem } from '../components/InvoiceListItem'
-import { SelectInput } from '../components/SelectInput'
-import { useAuthState } from '../lib/auth'
-import { getInvoiceStatusOptions } from '../lib/domain'
+import {
+  ModalSurface,
+  PageLoadingSkeleton,
+  SectionCard,
+  StatePanel,
+  StatCard,
+  StatusBadge,
+} from '../components/WorkspaceUi'
+import { createInvoiceRecord, updateInvoiceRecord } from '../lib/api/invoices'
+import { appRoutes } from '../lib/routes'
+import { formatCurrencyWithDecimals, formatDate, toSearchValue } from '../lib/utils'
+import { useWorkspaceState } from '../lib/workspace'
 import { useClients, useInvoices, useMissions } from '../hooks'
-import { formatCurrencyWithDecimals, toSearchValue } from '../lib/utils'
-import { InvoiceStatus } from '../types'
-
-const statusRank: Partial<Record<InvoiceStatus, number>> = {
-  [InvoiceStatus.Overdue]: 0,
-  [InvoiceStatus.Partial]: 1,
-  [InvoiceStatus.Sent]: 2,
-  [InvoiceStatus.Draft]: 3,
-  [InvoiceStatus.Paid]: 4,
-}
+import type { Invoice } from '../types/domain'
 
 function toSafeNumber(value: number | null | undefined) {
   const parsed = Number(value ?? 0)
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function getRemainingAmount(amountTotal: number, amountPaid: number) {
-  return Math.max(0, toSafeNumber(amountTotal) - toSafeNumber(amountPaid))
+function remainingAmount(invoice: Invoice) {
+  return Math.max(0, toSafeNumber(invoice.amount_total) - toSafeNumber(invoice.amount_paid))
+}
+
+function invoiceTone(status: Invoice['status']) {
+  switch (status) {
+    case 'paid':
+      return 'success' as const
+    case 'partial':
+      return 'warning' as const
+    case 'overdue':
+      return 'danger' as const
+    case 'sent':
+      return 'info' as const
+    default:
+      return 'neutral' as const
+  }
+}
+
+function isEditableInvoice(status: Invoice['status']) {
+  return status === 'draft' || status === 'sent'
 }
 
 export function Invoices() {
   const navigate = useNavigate()
-  const { authReady, user } = useAuthState()
-  const canLoadProtectedData = authReady && Boolean(user)
+  const { organization } = useWorkspaceState()
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('')
+  const [statusFilter, setStatusFilter] = useState<Invoice['status'] | ''>('')
+  const [showForm, setShowForm] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const invoicesQuery = useInvoices()
+  const clientsQuery = useClients()
+  const missionsQuery = useMissions()
 
-  const {
-    data: invoices = [],
-    isLoading: invoicesLoading,
-    error: invoicesError,
-    refetch: refetchInvoices,
-  } = useInvoices(canLoadProtectedData)
-  const {
-    data: clients = [],
-    isLoading: clientsLoading,
-    error: clientsError,
-    refetch: refetchClients,
-  } = useClients(canLoadProtectedData)
-  const {
-    data: missions = [],
-    isLoading: missionsLoading,
-    error: missionsError,
-    refetch: refetchMissions,
-  } = useMissions(canLoadProtectedData)
-
-  const loading = invoicesLoading || clientsLoading || missionsLoading
+  const invoices = invoicesQuery.data ?? []
+  const clients = clientsQuery.data ?? []
+  const missions = missionsQuery.data ?? []
+  const isLoading =
+    invoicesQuery.isLoading || clientsQuery.isLoading || missionsQuery.isLoading
   const error =
-    (invoicesError instanceof Error && invoicesError.message) ||
-    (clientsError instanceof Error && clientsError.message) ||
-    (missionsError instanceof Error && missionsError.message) ||
+    (invoicesQuery.error instanceof Error && invoicesQuery.error.message) ||
+    (clientsQuery.error instanceof Error && clientsQuery.error.message) ||
+    (missionsQuery.error instanceof Error && missionsQuery.error.message) ||
     null
-
-  const summary = useMemo(
-    () =>
-      invoices.reduce(
-        (current, invoice) => {
-          const remainingAmount = getRemainingAmount(
-            invoice.amount_total,
-            invoice.amount_paid
-          )
-
-          current.totalCollected += toSafeNumber(invoice.amount_paid)
-          current.totalOutstanding += remainingAmount
-
-          if (invoice.status === InvoiceStatus.Draft) {
-            current.draftCount += 1
-          }
-
-          if (invoice.status === InvoiceStatus.Overdue) {
-            current.overdueCount += 1
-            current.overdueTotal += remainingAmount
-          }
-
-          return current
-        },
-        {
-          totalCollected: 0,
-          totalOutstanding: 0,
-          overdueCount: 0,
-          overdueTotal: 0,
-          draftCount: 0,
-        }
-      ),
-    [invoices]
-  )
 
   const clientNameById = useMemo(
     () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
@@ -105,244 +82,335 @@ export function Invoices() {
     [missions]
   )
 
-  const getMissionSummary = (missionIds: string[]) => {
-    const missionReferences = missionIds
-      .map((missionId) => missionReferenceById.get(missionId))
-      .filter(Boolean) as string[]
-
-    if (missionReferences.length === 0) {
-      return undefined
-    }
-
-    if (missionReferences.length === 1) {
-      return missionReferences[0]
-    }
-
-    return `${missionReferences[0]} +${missionReferences.length - 1}`
-  }
-
   const filteredInvoices = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
 
     return [...invoices]
       .filter((invoice) => {
-        const invoiceNumber = toSearchValue(invoice.invoice_number)
-        const clientName = toSearchValue(clientNameById.get(invoice.client_id))
-        const missionSummary = toSearchValue(getMissionSummary(invoice.mission_ids))
+        const missionSummary = invoice.mission_ids
+          .map((missionId) => missionReferenceById.get(missionId))
+          .filter(Boolean)
+          .join(' ')
 
         const matchesSearch =
           !query ||
-          invoiceNumber.includes(query) ||
-          clientName.includes(query) ||
-          missionSummary.includes(query)
+          toSearchValue(invoice.invoice_number).includes(query) ||
+          toSearchValue(clientNameById.get(invoice.client_id)).includes(query) ||
+          toSearchValue(missionSummary).includes(query)
 
         const matchesStatus = !statusFilter || invoice.status === statusFilter
 
         return matchesSearch && matchesStatus
       })
-      .sort((left, right) => {
-        const leftRank = statusRank[left.status] ?? Number.MAX_SAFE_INTEGER
-        const rightRank = statusRank[right.status] ?? Number.MAX_SAFE_INTEGER
+      .sort((left, right) => right.invoice_number.localeCompare(left.invoice_number))
+  }, [clientNameById, invoices, missionReferenceById, searchQuery, statusFilter])
 
-        if (leftRank !== rightRank) {
-          return leftRank - rightRank
-        }
+  const summary = useMemo(
+    () => ({
+      outstanding: invoices.reduce((sum, invoice) => sum + remainingAmount(invoice), 0),
+      collected: invoices.reduce((sum, invoice) => sum + toSafeNumber(invoice.amount_paid), 0),
+      overdue: invoices.filter((invoice) => invoice.status === 'overdue').length,
+      drafts: invoices.filter((invoice) => invoice.status === 'draft').length,
+    }),
+    [invoices]
+  )
 
-        return right.invoice_number.localeCompare(left.invoice_number)
-      })
-  }, [clientNameById, invoices, searchQuery, statusFilter])
-
-  const overdueInvoices = invoices.filter((invoice) => invoice.status === InvoiceStatus.Overdue)
-
-  if (!authReady) {
-    return (
-      <PageContainer>
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-gray-500">Checking Supabase session...</p>
-        </div>
-      </PageContainer>
-    )
+  const closeForm = () => {
+    setShowForm(false)
+    setSelectedInvoice(null)
+    setActionError(null)
   }
 
-  if (!user) {
-    return (
-      <PageContainer>
-        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
-        </div>
-      </PageContainer>
-    )
+  const openCreate = () => {
+    if (clients.length === 0) {
+      toast('Create a client first to prepare invoice billing.')
+      navigate(appRoutes.clients)
+      return
+    }
+
+    if (missions.length === 0) {
+      toast('Create a mission first to link invoice lines to real work.')
+      navigate(appRoutes.missions)
+      return
+    }
+
+    setSelectedInvoice(null)
+    setActionError(null)
+    setShowForm(true)
+  }
+
+  const handleSave = async (payload: InvoiceEditorInput) => {
+    if (!organization) {
+      return
+    }
+
+    setIsSaving(true)
+    setActionError(null)
+
+    try {
+      if (selectedInvoice) {
+        await updateInvoiceRecord(selectedInvoice.invoice_id, payload)
+      } else {
+        await createInvoiceRecord(organization.organization_id, payload)
+      }
+
+      toast.success(selectedInvoice ? 'Invoice updated.' : 'Invoice created.')
+      closeForm()
+      await Promise.all([
+        invoicesQuery.refetch(),
+        clientsQuery.refetch(),
+        missionsQuery.refetch(),
+      ])
+    } catch (saveError) {
+      const message =
+        saveError instanceof Error ? saveError.message : 'Unable to save the invoice.'
+      setActionError(message)
+      toast.error(message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <PageContainer>
       <PageHeader
         title="Invoices"
-        description="Billing status and collection follow-up"
+        description={`Billing, cash collection, and follow-up visibility for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
-            onClick={() => navigate('/invoices/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            onClick={openCreate}
+            disabled={clients.length === 0 || missions.length === 0}
+            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus size={18} />
-            Create invoice
+            <Plus className="h-4 w-4" />
+            New invoice
           </button>
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase">Outstanding</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">
-            {formatCurrencyWithDecimals(summary.totalOutstanding)}
-          </p>
-        </div>
-        <div className="bg-white border border-red-200 bg-red-50 rounded-lg p-4">
-          <p className="text-xs font-medium text-red-700 uppercase">Overdue</p>
-          <p className="text-2xl font-bold text-red-800 mt-2">{summary.overdueCount}</p>
-          <p className="text-xs text-red-700 mt-1">
-            {formatCurrencyWithDecimals(summary.overdueTotal)} due
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase">Collected</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">
-            {formatCurrencyWithDecimals(summary.totalCollected)}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase">Drafts</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{summary.draftCount}</p>
-        </div>
-      </div>
+      {showForm ? (
+        <ModalSurface
+          title={selectedInvoice ? 'Edit invoice' : 'Create invoice'}
+          description="Keep invoice creation aligned with the current schema: client, mission set, amount, dates, and workflow status."
+          onClose={closeForm}
+        >
+          {actionError ? (
+            <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {actionError}
+            </div>
+          ) : null}
+          <InvoiceEditorForm
+            clients={clients}
+            missions={missions}
+            initialData={selectedInvoice ?? undefined}
+            onSubmit={handleSave}
+            onCancel={closeForm}
+            isLoading={isSaving}
+          />
+        </ModalSurface>
+      ) : null}
 
-      {overdueInvoices.length > 0 && (
-        <div className="mb-6 bg-white border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertCircle size={16} className="text-red-600" />
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-              Overdue invoices
-            </h2>
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Outstanding"
+            value={formatCurrencyWithDecimals(summary.outstanding)}
+            tone={summary.overdue > 0 ? 'danger' : 'warning'}
+          />
+          <StatCard
+            label="Collected"
+            value={formatCurrencyWithDecimals(summary.collected)}
+            tone="success"
+          />
+          <StatCard label="Overdue invoices" value={String(summary.overdue)} tone="danger" />
+          <StatCard label="Drafts" value={String(summary.drafts)} />
+        </div>
+
+        <SectionCard>
+          <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by invoice number, client, or mission"
+                className="w-full rounded-2xl border border-stone-300 bg-white px-11 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+              />
+            </label>
+
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter((event.target.value || '') as Invoice['status'] | '')}
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="partial">Partial</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+            </select>
           </div>
-          <div className="space-y-2">
-            {overdueInvoices.map((invoice) => (
+        </SectionCard>
+
+        {isLoading ? (
+          <PageLoadingSkeleton stats={4} rows={4} />
+        ) : error ? (
+          <StatePanel
+            tone="danger"
+            title="Unable to load invoices"
+            message={error}
+            action={
               <button
-                key={invoice.invoice_id}
                 type="button"
-                onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
-                className="w-full text-left rounded-lg border border-gray-200 px-4 py-3 hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  void Promise.all([
+                    invoicesQuery.refetch(),
+                    clientsQuery.refetch(),
+                    missionsQuery.refetch(),
+                  ])
+                }}
+                className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{invoice.invoice_number}</p>
-                    <p className="text-xs text-red-700 mt-1">
-                      {clientNameById.get(invoice.client_id) ?? invoice.client_id}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-red-700">
-                    {formatCurrencyWithDecimals(
-                      getRemainingAmount(invoice.amount_total, invoice.amount_paid)
-                    )}
-                  </p>
-                </div>
+                Retry
               </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by invoice, client, or mission"
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <SelectInput
-            label="Status"
-            options={[{ value: '', label: 'All statuses' }, ...getInvoiceStatusOptions()]}
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter((event.target.value || '') as InvoiceStatus | '')
             }
           />
-        </div>
-      </div>
+        ) : filteredInvoices.length === 0 ? (
+          <StatePanel
+            title={invoices.length === 0 ? 'No invoices yet' : 'No matching invoices'}
+            message={
+              invoices.length === 0
+                ? clients.length === 0 || missions.length === 0
+                  ? 'Create clients and missions first so invoice creation has real billing context.'
+                  : 'Create the first invoice to start tracking outstanding cash.'
+                : 'Adjust the filters to surface another billing record.'
+            }
+            action={
+              invoices.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (clients.length === 0) {
+                      navigate(appRoutes.clients)
+                      return
+                    }
 
-      {loading ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-gray-500">Loading invoices...</p>
-        </div>
-      ) : error ? (
-        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-red-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              void Promise.all([refetchInvoices(), refetchClients(), refetchMissions()])
-            }}
-            className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      ) : filteredInvoices.length > 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {filteredInvoices.map((invoice) => (
-              <InvoiceListItem
-                key={invoice.invoice_id}
-                reference={invoice.invoice_number}
-                client={clientNameById.get(invoice.client_id) ?? invoice.client_id}
-                subtitle={getMissionSummary(invoice.mission_ids)}
-                amount={getRemainingAmount(invoice.amount_total, invoice.amount_paid)}
-                status={invoice.status}
-                dueDate={invoice.due_date}
-                onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-gray-500">
-            {invoices.length > 0
-              ? 'No invoices match the current filters.'
-              : clients.length === 0
-                ? 'No clients yet — add a client before creating invoices.'
-                : missions.length === 0
-                  ? 'No missions yet — create a mission before billing.'
-                  : 'No invoices yet — create your first invoice.'}
-          </p>
-          {invoices.length === 0 && (
-            <button
-              type="button"
-              onClick={() =>
-                navigate(
-                  clients.length === 0
-                    ? '/clients'
+                    if (missions.length === 0) {
+                      navigate(appRoutes.missions)
+                      return
+                    }
+
+                    openCreate()
+                  }}
+                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                >
+                  {clients.length === 0
+                    ? 'Open clients'
                     : missions.length === 0
-                      ? '/missions/new'
-                      : '/invoices/new'
-                )
-              }
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              {clients.length === 0
-                ? 'Go to clients'
-                : missions.length === 0
-                  ? 'Create mission'
-                  : 'Create invoice'}
-            </button>
-          )}
-        </div>
-      )}
+                      ? 'Open missions'
+                      : 'Create invoice'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setStatusFilter('')
+                  }}
+                  className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                >
+                  Reset filters
+                </button>
+              )
+            }
+          />
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {filteredInvoices.map((invoice) => {
+              const missionSummary = invoice.mission_ids
+                .map((missionId) => missionReferenceById.get(missionId))
+                .filter(Boolean)
+                .join(', ')
+
+              return (
+                <SectionCard key={invoice.invoice_id} className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                          {invoice.invoice_number}
+                        </h2>
+                        <StatusBadge label={invoice.status} tone={invoiceTone(invoice.status)} />
+                      </div>
+                      <p className="mt-2 text-sm text-stone-500">
+                        {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
+                      </p>
+                    </div>
+
+                    {isEditableInvoice(invoice.status) ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedInvoice(invoice)
+                          setActionError(null)
+                          setShowForm(true)
+                        }}
+                        className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Outstanding</p>
+                      <p className="mt-2 text-sm font-medium text-stone-900">
+                        {formatCurrencyWithDecimals(remainingAmount(invoice))}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Collected</p>
+                      <p className="mt-2 text-sm font-medium text-stone-900">
+                        {formatCurrencyWithDecimals(invoice.amount_paid)}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Issue date</p>
+                      <p className="mt-2 text-sm font-medium text-stone-900">
+                        {formatDate(invoice.issue_date)}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Due date</p>
+                      <p className="mt-2 text-sm font-medium text-stone-900">
+                        {formatDate(invoice.due_date)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-[1.5rem] border border-stone-200 bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Linked missions</p>
+                    <p className="mt-2 text-sm leading-7 text-stone-600">
+                      {missionSummary || 'No mission references available'}
+                    </p>
+                  </div>
+
+                  {invoice.notes ? (
+                    <div className="mt-4 rounded-[1.5rem] border border-stone-200 bg-white p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Notes</p>
+                      <p className="mt-2 text-sm leading-7 text-stone-600">{invoice.notes}</p>
+                    </div>
+                  ) : null}
+                </SectionCard>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </PageContainer>
   )
 }

@@ -1,5 +1,6 @@
 import type { Expense } from '../../types/domain'
 import { getSupabaseClient } from '../supabase'
+import { toUserFacingError } from '../supabase-error'
 
 export type CreateExpenseInput = {
   mission_id?: string
@@ -85,7 +86,7 @@ export async function getExpenses(): Promise<Expense[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    throw new Error(error.message || 'Unable to load expenses.')
+    throw toUserFacingError(error, 'Unable to load expenses.')
   }
 
   return (data ?? []).map((row) =>
@@ -119,7 +120,7 @@ export async function createExpenseRecord(
   } = await supabase.auth.getUser()
 
   if (authError) {
-    throw new Error(authError.message || 'Unable to resolve the current session.')
+    throw toUserFacingError(authError, 'Unable to resolve the current session.')
   }
 
   if (!user) {
@@ -133,7 +134,7 @@ export async function createExpenseRecord(
     .maybeSingle()
 
   if (profileError) {
-    throw new Error(profileError.message || 'Unable to resolve the current organization.')
+    throw toUserFacingError(profileError, 'Unable to resolve the current organization.')
   }
 
   const organizationId = profile?.organization_id
@@ -154,7 +155,7 @@ export async function createExpenseRecord(
     .single()
 
   if (error) {
-    throw new Error(error.message || 'Unable to create the expense.')
+    throw toUserFacingError(error, 'Unable to create the expense.')
   }
 
   return mapExpenseRow({
@@ -191,7 +192,7 @@ export async function updateExpenseRecord(
     .maybeSingle()
 
   if (error) {
-    throw new Error(error.message || 'Unable to update the expense.')
+    throw toUserFacingError(error, 'Unable to update the expense.')
   }
 
   if (!data) {

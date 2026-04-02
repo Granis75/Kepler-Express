@@ -1,5 +1,6 @@
 import type { Client } from '../../types/domain'
 import { getSupabaseClient } from '../supabase'
+import { toUserFacingError } from '../supabase-error'
 
 type ClientRow = {
   client_id: string
@@ -47,7 +48,7 @@ export async function getClients(): Promise<Client[]> {
     .order('name', { ascending: true })
 
   if (error) {
-    throw new Error(error.message || 'Unable to load clients.')
+    throw toUserFacingError(error, 'Unable to load clients.')
   }
 
   return (data ?? []).map((row) =>

@@ -1,4 +1,5 @@
 import type { PostgrestError } from '@supabase/supabase-js'
+import { toUserFacingMessage } from '../supabase-error'
 
 export class DataLayerError extends Error {
   code?: string
@@ -39,9 +40,7 @@ function isPostgrestError(error: unknown): error is PostgrestError {
 }
 
 function formatPostgrestMessage(error: PostgrestError) {
-  return [error.message, error.details ? `Details: ${error.details}` : '', error.hint ? `Hint: ${error.hint}` : '']
-    .filter(Boolean)
-    .join(' ')
+  return toUserFacingMessage(error, 'Something went wrong while loading data.')
 }
 
 export function toDataLayerError(

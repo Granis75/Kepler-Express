@@ -1,256 +1,361 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus } from 'lucide-react'
-import { MissionFilter } from '../components/MissionFilter'
-import { MissionListItem } from '../components/MissionListItem'
-import { MissionListSkeleton } from '../components/MissionListSkeleton'
+import { Plus, Search } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { MissionEditorForm, type MissionEditorInput } from '../components/MissionEditorForm'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
-import { useAuthState } from '../lib/auth'
-import { getMissionListStatus, isActiveMissionStatus } from '../lib/domain'
+import {
+  ModalSurface,
+  PageLoadingSkeleton,
+  SectionCard,
+  StatePanel,
+  StatCard,
+  StatusBadge,
+} from '../components/WorkspaceUi'
 import { useClients, useMissions } from '../hooks'
-import { toSearchValue } from '../lib/utils'
-import { MissionStatus } from '../types'
-import type { Client, Mission } from '../types/domain'
+import { createMissionRecord, updateMissionRecord } from '../lib/api/missions'
+import { appRoutes } from '../lib/routes'
+import { formatCurrencyWithDecimals, formatDateTime, toSearchValue } from '../lib/utils'
+import { useWorkspaceState } from '../lib/workspace'
+import type { Mission } from '../types/domain'
+import { MissionStatus } from '../types/enums'
 
-function sortMissions(missions: Mission[]) {
-  return [...missions].sort((left, right) => {
-    const leftPriority = isActiveMissionStatus(left.status) ? 0 : 1
-    const rightPriority = isActiveMissionStatus(right.status) ? 0 : 1
-
-    if (leftPriority !== rightPriority) {
-      return leftPriority - rightPriority
-    }
-
-    return (
-      new Date(right.departure_datetime).getTime() -
-      new Date(left.departure_datetime).getTime()
-    )
-  })
-}
-
-function getClientName(clients: Client[], clientId: string) {
-  return clients.find((client) => client.client_id === clientId)?.name ?? clientId
-}
-
-function getDriverName(driverName?: string) {
-  if (!driverName) {
-    return 'No driver assigned'
+function missionTone(status: Mission['status']) {
+  switch (status) {
+    case MissionStatus.Delivered:
+      return 'success' as const
+    case MissionStatus.InProgress:
+      return 'info' as const
+    case MissionStatus.Issue:
+      return 'danger' as const
+    case MissionStatus.Assigned:
+      return 'warning' as const
+    default:
+      return 'neutral' as const
   }
-
-  return driverName
 }
 
 export function Missions() {
   const navigate = useNavigate()
-  const { authReady, user } = useAuthState()
-  const canLoadProtectedData = authReady && Boolean(user)
+  const { organization } = useWorkspaceState()
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<MissionStatus | ''>('')
+  const [statusFilter, setStatusFilter] = useState<Mission['status'] | ''>('')
+  const [showForm, setShowForm] = useState(false)
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const missionsQuery = useMissions()
+  const clientsQuery = useClients()
 
-  // Missions via React Query
-  const {
-    data: missions = [],
-    isLoading: missionsLoading,
-    isError: missionsError,
-    error: missionsQueryError,
-    refetch: refetchMissions,
-  } = useMissions(canLoadProtectedData)
-  const {
-    data: clients = [],
-    isLoading: clientsLoading,
-    error: clientsQueryError,
-    refetch: refetchClients,
-  } = useClients(canLoadProtectedData)
-
-  const loading = missionsLoading || clientsLoading
+  const missions = missionsQuery.data ?? []
+  const clients = clientsQuery.data ?? []
+  const isLoading = missionsQuery.isLoading || clientsQuery.isLoading
   const error =
-    (missionsError &&
-      (missionsQueryError instanceof Error
-        ? missionsQueryError.message
-        : 'Unable to load missions.')) ||
-    (clientsQueryError instanceof Error ? clientsQueryError.message : null)
+    (missionsQuery.error instanceof Error && missionsQuery.error.message) ||
+    (clientsQuery.error instanceof Error && clientsQuery.error.message) ||
+    null
 
-  const summary = useMemo(() => {
-    return missions.reduce(
-      (accumulator, mission) => {
-        accumulator.total += 1
-
-        if (isActiveMissionStatus(mission.status)) {
-          accumulator.active += 1
-        }
-
-        if (mission.status === MissionStatus.Delivered) {
-          accumulator.delivered += 1
-        }
-
-        if (mission.status === MissionStatus.Issue) {
-          accumulator.issues += 1
-        }
-
-        return accumulator
-      },
-      {
-        total: 0,
-        active: 0,
-        delivered: 0,
-        issues: 0,
-      }
-    )
-  }, [missions])
+  const clientNameById = useMemo(
+    () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
+    [clients]
+  )
 
   const filteredMissions = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const query = searchQuery.trim().toLowerCase()
 
-    return sortMissions(
-      missions.filter((mission) => {
+    return [...missions]
+      .filter((mission) => {
         const matchesStatus = !statusFilter || mission.status === statusFilter
 
-        if (!normalizedQuery) {
+        if (!query) {
           return matchesStatus
         }
 
-        const reference = toSearchValue(mission.reference)
-        const clientName = toSearchValue(getClientName(clients, mission.client_id))
-        const driverName = toSearchValue(getDriverName(mission.driver_name))
-        const route = toSearchValue(
-          `${mission.departure_location ?? ''} ${mission.arrival_location ?? ''}`
+        return (
+          matchesStatus &&
+          (
+            toSearchValue(mission.reference).includes(query) ||
+            toSearchValue(clientNameById.get(mission.client_id)).includes(query) ||
+            toSearchValue(mission.driver_name).includes(query) ||
+            toSearchValue(mission.vehicle_name).includes(query) ||
+            toSearchValue(
+              `${mission.departure_location} ${mission.arrival_location}`
+            ).includes(query)
+          )
         )
-
-        const matchesSearch =
-          reference.includes(normalizedQuery) ||
-          clientName.includes(normalizedQuery) ||
-          driverName.includes(normalizedQuery) ||
-          route.includes(normalizedQuery)
-
-        return matchesStatus && matchesSearch
       })
-    )
-  }, [clients, missions, searchQuery, statusFilter])
+      .sort(
+        (left, right) =>
+          new Date(right.departure_datetime).getTime() -
+          new Date(left.departure_datetime).getTime()
+      )
+  }, [clientNameById, missions, searchQuery, statusFilter])
 
-  if (!authReady) {
-    return (
-      <PageContainer>
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-gray-500">Checking Supabase session...</p>
-        </div>
-      </PageContainer>
-    )
+  const summary = useMemo(
+    () => ({
+      total: missions.length,
+      active: missions.filter((mission) =>
+        [MissionStatus.Planned, MissionStatus.Assigned, MissionStatus.InProgress].includes(
+          mission.status as MissionStatus
+        )
+      ).length,
+      delivered: missions.filter((mission) => mission.status === MissionStatus.Delivered).length,
+      issues: missions.filter((mission) => mission.status === MissionStatus.Issue).length,
+    }),
+    [missions]
+  )
+
+  const closeForm = () => {
+    setShowForm(false)
+    setSelectedMission(null)
+    setActionError(null)
   }
 
-  if (!user) {
-    return (
-      <PageContainer>
-        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
-        </div>
-      </PageContainer>
-    )
+  const openCreate = () => {
+    if (clients.length === 0) {
+      toast('Create a client first to open mission planning.')
+      navigate(appRoutes.clients)
+      return
+    }
+
+    setSelectedMission(null)
+    setActionError(null)
+    setShowForm(true)
+  }
+
+  const handleSave = async (payload: MissionEditorInput) => {
+    if (!organization) {
+      return
+    }
+
+    setIsSaving(true)
+    setActionError(null)
+
+    try {
+      if (selectedMission) {
+        await updateMissionRecord(selectedMission.mission_id, payload)
+      } else {
+        await createMissionRecord(organization.organization_id, payload)
+      }
+
+      toast.success(selectedMission ? 'Mission updated.' : 'Mission created.')
+      closeForm()
+      await Promise.all([missionsQuery.refetch(), clientsQuery.refetch()])
+    } catch (saveError) {
+      const message =
+        saveError instanceof Error ? saveError.message : 'Unable to save the mission.'
+      setActionError(message)
+      toast.error(message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <PageContainer>
       <PageHeader
         title="Missions"
-        description="Operational missions synced from Supabase"
+        description={`Live operations across ${organization?.name ?? 'the current workspace'}, with route, assignment, and financial context in one place.`}
         actions={
           <button
             type="button"
-            onClick={() => navigate('/missions/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
           >
-            <Plus size={18} />
+            <Plus className="h-4 w-4" />
             New mission
           </button>
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 xl:grid-cols-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs font-medium text-gray-500 uppercase">Total missions</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{summary.total}</p>
-        </div>
-        <div className="bg-white border border-blue-200 bg-blue-50 rounded-lg p-4">
-          <p className="text-xs font-medium text-blue-700 uppercase">Active</p>
-          <p className="text-2xl font-bold text-blue-800 mt-2">{summary.active}</p>
-        </div>
-        <div className="bg-white border border-green-200 bg-green-50 rounded-lg p-4">
-          <p className="text-xs font-medium text-green-700 uppercase">Delivered</p>
-          <p className="text-2xl font-bold text-green-800 mt-2">{summary.delivered}</p>
-        </div>
-        <div className="bg-white border border-red-200 bg-red-50 rounded-lg p-4">
-          <p className="text-xs font-medium text-red-700 uppercase">Issues</p>
-          <p className="text-2xl font-bold text-red-800 mt-2">{summary.issues}</p>
-        </div>
-      </div>
+      {showForm ? (
+        <ModalSurface
+          title={selectedMission ? 'Edit mission' : 'Create mission'}
+          description="Create only from the stable mission contract: client, route, assignment names, schedule, and margin."
+          onClose={closeForm}
+        >
+          {actionError ? (
+            <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {actionError}
+            </div>
+          ) : null}
+          <MissionEditorForm
+            clients={clients}
+            initialData={selectedMission ?? undefined}
+            onSubmit={handleSave}
+            onCancel={closeForm}
+            isLoading={isSaving}
+          />
+        </ModalSurface>
+      ) : null}
 
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-        <MissionFilter
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusChange={(value) => setStatusFilter(value as MissionStatus | '')}
-          onClearFilters={() => {
-            setSearchQuery('')
-            setStatusFilter('')
-          }}
-        />
-      </div>
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total missions" value={String(summary.total)} />
+          <StatCard label="Active" value={String(summary.active)} tone="warning" />
+          <StatCard label="Delivered" value={String(summary.delivered)} tone="success" />
+          <StatCard label="Issues" value={String(summary.issues)} tone="danger" />
+        </div>
 
-      {loading ? (
-        <MissionListSkeleton />
-      ) : error ? (
-        <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-red-700">{error}</p>
-          <div className="mt-4 flex gap-2 justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                void Promise.all([refetchMissions(), refetchClients()])
-              }}
-              className="px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      ) : filteredMissions.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-gray-500">
-            {missions.length > 0
-              ? 'No missions match the current filters.'
-              : clients.length === 0
-                ? 'No clients yet — add a client before creating missions.'
-                : 'No missions yet — create your first mission.'}
-          </p>
-          {missions.length === 0 && (
-            <button
-              type="button"
-              onClick={() => navigate(clients.length === 0 ? '/clients' : '/missions/new')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              {clients.length === 0 ? 'Go to clients' : 'Create mission'}
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {filteredMissions.map((mission) => (
-              <MissionListItem
-                key={mission.mission_id}
-                reference={mission.reference}
-                client={getClientName(clients, mission.client_id)}
-                route={`${mission.departure_location} → ${mission.arrival_location}`}
-                driver={getDriverName(mission.driver_name)}
-                status={getMissionListStatus(mission.status)}
-                revenue={mission.revenue_amount}
-                onClick={() => navigate(`/missions/${mission.mission_id}`)}
+        <SectionCard>
+          <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by reference, client, route, driver, or vehicle"
+                className="w-full rounded-2xl border border-stone-300 bg-white px-11 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
               />
+            </label>
+
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter((event.target.value || '') as Mission['status'] | '')}
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">All statuses</option>
+              <option value={MissionStatus.Planned}>Planned</option>
+              <option value={MissionStatus.Assigned}>Assigned</option>
+              <option value={MissionStatus.InProgress}>In progress</option>
+              <option value={MissionStatus.Delivered}>Delivered</option>
+              <option value={MissionStatus.Issue}>Issue</option>
+              <option value={MissionStatus.Cancelled}>Cancelled</option>
+            </select>
+          </div>
+        </SectionCard>
+
+        {isLoading ? (
+          <PageLoadingSkeleton stats={4} rows={4} />
+        ) : error ? (
+          <StatePanel
+            tone="danger"
+            title="Unable to load missions"
+            message={error}
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  void Promise.all([missionsQuery.refetch(), clientsQuery.refetch()])
+                }}
+                className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : filteredMissions.length === 0 ? (
+          <StatePanel
+            title={missions.length === 0 ? 'No missions yet' : 'No matching missions'}
+            message={
+              missions.length === 0
+                ? clients.length === 0
+                  ? 'Create a client first, then start adding missions.'
+                  : 'Create the first mission to populate operations tracking.'
+                : 'Adjust the filters to reveal another mission.'
+            }
+            action={
+              missions.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={openCreate}
+                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                >
+                  {clients.length === 0 ? 'Open clients' : 'Create mission'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setStatusFilter('')
+                  }}
+                  className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                >
+                  Reset filters
+                </button>
+              )
+            }
+          />
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {filteredMissions.map((mission) => (
+              <SectionCard key={mission.mission_id} className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                        {mission.reference}
+                      </h2>
+                      <StatusBadge
+                        label={mission.status.replace('_', ' ')}
+                        tone={missionTone(mission.status)}
+                      />
+                    </div>
+                    <p className="mt-2 text-sm text-stone-500">
+                      {clientNameById.get(mission.client_id) ?? 'Unknown client'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMission(mission)
+                      setActionError(null)
+                      setShowForm(true)
+                    }}
+                    className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Route</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {mission.departure_location} to {mission.arrival_location}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Departure</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {formatDateTime(mission.departure_datetime)}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Assignment</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {mission.driver_name || 'No driver'}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-500">
+                      {mission.vehicle_name || 'No vehicle'}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Margin view</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {formatCurrencyWithDecimals(mission.revenue_amount)}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-500">
+                      Est. cost {formatCurrencyWithDecimals(mission.estimated_cost_amount)}
+                    </p>
+                  </div>
+                </div>
+
+                {mission.notes ? (
+                  <div className="mt-4 rounded-[1.5rem] border border-stone-200 bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Notes</p>
+                    <p className="mt-2 text-sm leading-7 text-stone-600">{mission.notes}</p>
+                  </div>
+                ) : null}
+              </SectionCard>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </PageContainer>
   )
 }

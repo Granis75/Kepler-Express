@@ -1,55 +1,57 @@
 import { useMemo, useState } from 'react'
-import { AlertCircle, ChevronRight, Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
-import { SelectInput } from '../components/SelectInput'
+import {
+  ModalSurface,
+  PageLoadingSkeleton,
+  SectionCard,
+  StatePanel,
+  StatCard,
+  StatusBadge,
+} from '../components/WorkspaceUi'
 import {
   createExpenseRecord,
   type CreateExpenseInput,
   updateExpenseRecord,
 } from '../lib/api/expenses'
-import { useAuthState } from '../lib/auth'
+import { formatCurrencyWithDecimals, formatDate, toSearchValue } from '../lib/utils'
+import { useWorkspaceState } from '../lib/workspace'
 import { useExpenses, useMissions } from '../hooks'
-import { classNames, formatCurrencyWithDecimals, formatDate, toSearchValue } from '../lib/utils'
 import type { Expense } from '../types/domain'
 
-const expenseTypeMeta: Record<
-  Expense['expense_type'],
-  { label: string; color: string }
-> = {
-  fuel: { label: 'Fuel', color: 'bg-orange-100 text-orange-700' },
-  tolls: { label: 'Tolls', color: 'bg-purple-100 text-purple-700' },
-  mission: { label: 'Mission', color: 'bg-blue-100 text-blue-700' },
-  maintenance: { label: 'Maintenance', color: 'bg-red-100 text-red-700' },
-  other: { label: 'Other', color: 'bg-gray-100 text-gray-700' },
+const expenseTypeLabels: Record<Expense['expense_type'], string> = {
+  fuel: 'Fuel',
+  tolls: 'Tolls',
+  mission: 'Mission',
+  maintenance: 'Maintenance',
+  other: 'Other',
 }
 
-const approvalStatusMeta: Record<
-  Expense['approval_status'],
-  { label: string; color: string }
-> = {
-  pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700' },
-  approved: { label: 'Approved', color: 'bg-blue-100 text-blue-700' },
-  paid: { label: 'Paid', color: 'bg-green-100 text-green-700' },
-  rejected: { label: 'Rejected', color: 'bg-red-100 text-red-700' },
+const approvalStatusLabels: Record<Expense['approval_status'], string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  paid: 'Paid',
+  rejected: 'Rejected',
 }
 
-const expenseTypeOptions = Object.entries(expenseTypeMeta).map(([value, meta]) => ({
-  value: value as Expense['expense_type'],
-  label: meta.label,
-}))
-
-const approvalStatusOptions = Object.entries(approvalStatusMeta).map(
-  ([value, meta]) => ({
-    value: value as Expense['approval_status'],
-    label: meta.label,
-  })
-)
+function getApprovalTone(status: Expense['approval_status']) {
+  switch (status) {
+    case 'paid':
+      return 'success' as const
+    case 'approved':
+      return 'info' as const
+    case 'rejected':
+      return 'danger' as const
+    default:
+      return 'warning' as const
+  }
+}
 
 export function Expenses() {
-  const { authReady, user } = useAuthState()
-  const canLoadProtectedData = authReady && Boolean(user)
+  const { organization } = useWorkspaceState()
   const [showForm, setShowForm] = useState(false)
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -61,24 +63,15 @@ export function Expenses() {
     advancedByDriver: '' as '' | 'yes' | 'no',
     missingReceipt: false,
   })
+  const expensesQuery = useExpenses()
+  const missionsQuery = useMissions()
 
-  const {
-    data: expenses = [],
-    isLoading: expensesLoading,
-    error: expensesQueryError,
-    refetch: refetchExpenses,
-  } = useExpenses(canLoadProtectedData)
-  const {
-    data: missions = [],
-    isLoading: missionsLoading,
-    error: missionsQueryError,
-    refetch: refetchMissions,
-  } = useMissions(canLoadProtectedData)
-
-  const loading = expensesLoading || missionsLoading
+  const expenses = expensesQuery.data ?? []
+  const missions = missionsQuery.data ?? []
+  const isLoading = expensesQuery.isLoading || missionsQuery.isLoading
   const error =
-    (expensesQueryError instanceof Error && expensesQueryError.message) ||
-    (missionsQueryError instanceof Error && missionsQueryError.message) ||
+    (expensesQuery.error instanceof Error && expensesQuery.error.message) ||
+    (missionsQuery.error instanceof Error && missionsQuery.error.message) ||
     null
 
   const missionReferenceById = useMemo(
@@ -86,7 +79,7 @@ export function Expenses() {
     [missions]
   )
 
-  const sortedExpenses = useMemo(() => {
+  const filteredExpenses = useMemo(() => {
     const searchTerm = toSearchValue(filters.search)
 
     return [...expenses]
@@ -116,14 +109,13 @@ export function Expenses() {
             : filters.advancedByDriver === 'yes'
               ? expense.advanced_by_driver
               : !expense.advanced_by_driver
-        const matchesReceipt = !filters.missingReceipt || !expense.receipt_present
 
         return (
           matchesSearch &&
           matchesType &&
           matchesApprovalStatus &&
           matchesDriverAdvance &&
-          matchesReceipt
+          (!filters.missingReceipt || !expense.receipt_present)
         )
       })
       .sort(
@@ -132,16 +124,19 @@ export function Expenses() {
       )
   }, [expenses, filters, missionReferenceById])
 
-  const totalAmount = sortedExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-  const driverAdvancedAmount = sortedExpenses
-    .filter((expense) => expense.advanced_by_driver)
-    .reduce((sum, expense) => sum + expense.amount, 0)
-  const missingReceiptCount = sortedExpenses.filter(
-    (expense) => !expense.receipt_present
-  ).length
-  const pendingApprovals = sortedExpenses.filter(
-    (expense) => expense.approval_status === 'pending'
-  ).length
+  const summary = useMemo(
+    () => ({
+      totalAmount: filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+      driverAdvanced: filteredExpenses
+        .filter((expense) => expense.advanced_by_driver)
+        .reduce((sum, expense) => sum + expense.amount, 0),
+      pendingApprovals: filteredExpenses.filter(
+        (expense) => expense.approval_status === 'pending'
+      ).length,
+      missingReceipts: filteredExpenses.filter((expense) => !expense.receipt_present).length,
+    }),
+    [filteredExpenses]
+  )
 
   const closeForm = () => {
     setShowForm(false)
@@ -160,42 +155,24 @@ export function Expenses() {
         await createExpenseRecord(expenseData)
       }
 
+      toast.success(selectedExpense ? 'Expense updated.' : 'Expense created.')
       closeForm()
-      await Promise.all([refetchExpenses(), refetchMissions()])
+      await Promise.all([expensesQuery.refetch(), missionsQuery.refetch()])
     } catch (saveError) {
-      setActionError(
+      const message =
         saveError instanceof Error ? saveError.message : 'Unable to save the expense.'
-      )
+      setActionError(message)
+      toast.error(message)
     } finally {
       setIsSaving(false)
     }
-  }
-
-  if (!authReady) {
-    return (
-      <PageContainer>
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-          <p className="text-sm text-gray-500">Checking Supabase session...</p>
-        </div>
-      </PageContainer>
-    )
-  }
-
-  if (!user) {
-    return (
-      <PageContainer>
-        <div className="rounded-lg border border-amber-200 bg-white p-8 text-center">
-          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
-        </div>
-      </PageContainer>
-    )
   }
 
   return (
     <PageContainer>
       <PageHeader
         title="Expenses"
-        description="Track operational costs from live Supabase data"
+        description={`Operational costs and receipt discipline for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -204,278 +181,279 @@ export function Expenses() {
               setActionError(null)
               setShowForm(true)
             }}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
           >
+            <Plus className="h-4 w-4" />
             New expense
           </button>
         }
       />
 
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs font-medium uppercase text-gray-500">Total expenses</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">
-            {formatCurrencyWithDecimals(totalAmount)}
-          </p>
-        </div>
-        <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-          <p className="text-xs font-medium uppercase text-orange-600">Driver advances</p>
-          <p className="mt-2 text-2xl font-bold text-orange-700">
-            {formatCurrencyWithDecimals(driverAdvancedAmount)}
-          </p>
-        </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-xs font-medium uppercase text-red-600">Missing receipts</p>
-          <p className="mt-2 text-2xl font-bold text-red-700">{missingReceiptCount}</p>
-        </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs font-medium uppercase text-amber-600">Pending approvals</p>
-          <p className="mt-2 text-2xl font-bold text-amber-700">{pendingApprovals}</p>
-        </div>
-      </div>
+      {showForm ? (
+        <ModalSurface
+          title={selectedExpense ? 'Edit expense' : 'Create expense'}
+          description="Record only the fields supported by the current expense contract."
+          onClose={closeForm}
+        >
+          {actionError ? (
+            <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {actionError}
+            </div>
+          ) : null}
+          <ExpenseForm
+            missions={missions}
+            expense={selectedExpense ?? undefined}
+            onSave={handleSave}
+            onCancel={closeForm}
+            isLoading={isSaving}
+          />
+        </ModalSurface>
+      ) : null}
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
-            <div className="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-              <h2 className="text-lg font-bold">
-                {selectedExpense ? 'Edit expense' : 'New expense'}
-              </h2>
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Visible expenses"
+            value={formatCurrencyWithDecimals(summary.totalAmount)}
+          />
+          <StatCard
+            label="Driver advances"
+            value={formatCurrencyWithDecimals(summary.driverAdvanced)}
+            tone="warning"
+          />
+          <StatCard
+            label="Pending approvals"
+            value={String(summary.pendingApprovals)}
+            tone={summary.pendingApprovals > 0 ? 'warning' : 'default'}
+          />
+          <StatCard
+            label="Missing receipts"
+            value={String(summary.missingReceipts)}
+            tone={summary.missingReceipts > 0 ? 'danger' : 'default'}
+          />
+        </div>
+
+        <SectionCard>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_200px_180px]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    search: event.target.value,
+                  }))
+                }
+                placeholder="Search by mission, driver, vehicle, notes, or amount"
+                className="w-full rounded-2xl border border-stone-300 bg-white px-11 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+              />
+            </label>
+
+            <select
+              value={filters.expenseType}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  expenseType: (event.target.value || '') as Expense['expense_type'] | '',
+                }))
+              }
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">All types</option>
+              {Object.entries(expenseTypeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.approvalStatus}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  approvalStatus: (event.target.value || '') as Expense['approval_status'] | '',
+                }))
+              }
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">All approvals</option>
+              {Object.entries(approvalStatusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.advancedByDriver}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  advancedByDriver: event.target.value as '' | 'yes' | 'no',
+                }))
+              }
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">All payments</option>
+              <option value="yes">Advanced by driver</option>
+              <option value="no">Company paid</option>
+            </select>
+          </div>
+
+          <label className="mt-4 inline-flex items-center gap-3 text-sm text-stone-600">
+            <input
+              type="checkbox"
+              checked={filters.missingReceipt}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  missingReceipt: event.target.checked,
+                }))
+              }
+              className="h-4 w-4 rounded border-stone-300"
+            />
+            Show only expenses missing a receipt
+          </label>
+        </SectionCard>
+
+        {isLoading ? (
+          <PageLoadingSkeleton stats={4} rows={4} />
+        ) : error ? (
+          <StatePanel
+            tone="danger"
+            title="Unable to load expenses"
+            message={error}
+            action={
               <button
                 type="button"
-                onClick={closeForm}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6">
-              {actionError && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {actionError}
-                </div>
-              )}
-              <ExpenseForm
-                missions={missions}
-                expense={selectedExpense ?? undefined}
-                onSave={handleSave}
-                onCancel={closeForm}
-                isLoading={isSaving}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <div className="relative xl:col-span-2">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, search: event.target.value }))
-              }
-              placeholder="Search by amount, notes, mission, driver, or vehicle"
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <SelectInput
-            label="Type"
-            options={[
-              { value: '', label: 'All types' },
-              ...expenseTypeOptions.map((option) => ({
-                value: option.value,
-                label: option.label,
-              })),
-            ]}
-            value={filters.expenseType}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                expenseType: event.target.value as Expense['expense_type'] | '',
-              }))
-            }
-          />
-          <SelectInput
-            label="Approval"
-            options={[
-              { value: '', label: 'All approvals' },
-              ...approvalStatusOptions.map((option) => ({
-                value: option.value,
-                label: option.label,
-              })),
-            ]}
-            value={filters.approvalStatus}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                approvalStatus: event.target.value as Expense['approval_status'] | '',
-              }))
-            }
-          />
-          <SelectInput
-            label="Driver advance"
-            options={[
-              { value: '', label: 'All expenses' },
-              { value: 'yes', label: 'Driver advanced' },
-              { value: 'no', label: 'Company paid' },
-            ]}
-            value={filters.advancedByDriver}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                advancedByDriver: event.target.value as '' | 'yes' | 'no',
-              }))
-            }
-          />
-        </div>
-        <label className="mt-4 flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={filters.missingReceipt}
-            onChange={(event) =>
-              setFilters((current) => ({
-                ...current,
-                missingReceipt: event.target.checked,
-              }))
-            }
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-sm text-gray-700">Only show missing receipts</span>
-        </label>
-      </div>
-
-      {loading ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-          <p className="text-sm text-gray-500">Loading expenses...</p>
-        </div>
-      ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-white p-8 text-center">
-          <p className="text-sm text-red-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              void Promise.all([refetchExpenses(), refetchMissions()])
-            }}
-            className="mt-4 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50"
-          >
-            Retry
-          </button>
-        </div>
-      ) : sortedExpenses.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-          <p className="text-sm text-gray-500">
-            {expenses.length > 0
-              ? 'No expenses match the current filters.'
-              : 'No expenses found in Supabase yet.'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sortedExpenses.map((expense) => {
-            const typeMeta = expenseTypeMeta[expense.expense_type]
-            const approvalMeta = approvalStatusMeta[expense.approval_status]
-            const noReceipt = !expense.receipt_present
-            const pendingApproval = expense.approval_status === 'pending'
-
-            return (
-              <div
-                key={expense.expense_id}
-                className={classNames(
-                  'cursor-pointer rounded-lg border bg-white p-4 transition-shadow hover:shadow-md',
-                  noReceipt
-                    ? 'border-red-200 bg-red-50'
-                    : pendingApproval
-                      ? 'border-amber-200 bg-amber-50'
-                      : 'border-gray-200'
-                )}
                 onClick={() => {
-                  setSelectedExpense(expense)
-                  setActionError(null)
-                  setShowForm(true)
+                  void Promise.all([expensesQuery.refetch(), missionsQuery.refetch()])
                 }}
+                className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
               >
+                Retry
+              </button>
+            }
+          />
+        ) : filteredExpenses.length === 0 ? (
+          <StatePanel
+            title={expenses.length === 0 ? 'No expenses yet' : 'No matching expenses'}
+            message={
+              expenses.length === 0
+                ? 'Create the first expense to start tracking actual mission costs.'
+                : 'Adjust the filters to surface another expense record.'
+            }
+            action={
+              expenses.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedExpense(null)
+                    setShowForm(true)
+                  }}
+                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                >
+                  Create expense
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilters({
+                      search: '',
+                      expenseType: '',
+                      approvalStatus: '',
+                      advancedByDriver: '',
+                      missingReceipt: false,
+                    })
+                  }
+                  className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                >
+                  Reset filters
+                </button>
+              )
+            }
+          />
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {filteredExpenses.map((expense) => (
+              <SectionCard key={expense.expense_id} className="p-5">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center gap-3">
-                      <span className="text-xs font-medium text-gray-500">
-                        {formatDate(expense.expense_date)}
-                      </span>
-                      <span
-                        className={`inline-flex rounded px-2 py-1 text-xs font-semibold ${typeMeta.color}`}
-                      >
-                        {typeMeta.label}
-                      </span>
-                      {expense.advanced_by_driver && (
-                        <span className="inline-flex rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
-                          Driver-advanced
-                        </span>
-                      )}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                        {expenseTypeLabels[expense.expense_type]}
+                      </h2>
+                      <StatusBadge
+                        label={approvalStatusLabels[expense.approval_status]}
+                        tone={getApprovalTone(expense.approval_status)}
+                      />
                     </div>
-                    {expense.notes && (
-                      <p className="truncate text-sm font-medium text-gray-900">
-                        {expense.notes}
-                      </p>
-                    )}
-                    <div
-                      className={classNames(
-                        'flex items-center gap-4 text-xs text-gray-600',
-                        expense.notes && 'mt-2'
-                      )}
-                    >
-                      {expense.mission_id && (
-                        <span>
-                          Mission:{' '}
-                          {missionReferenceById.get(expense.mission_id) ?? expense.mission_id}
-                        </span>
-                      )}
-                      {expense.driver_name && <span>Driver: {expense.driver_name}</span>}
-                      {expense.vehicle_name && <span>Vehicle: {expense.vehicle_name}</span>}
-                    </div>
+                    <p className="mt-2 text-sm text-stone-500">
+                      {missionReferenceById.get(expense.mission_id ?? '') || 'No linked mission'}
+                    </p>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-gray-900">
-                        {formatCurrencyWithDecimals(expense.amount)}
-                      </p>
-                      <span
-                        className={`mt-1 inline-flex rounded px-2 py-1 text-xs font-semibold ${approvalMeta.color}`}
-                      >
-                        {approvalMeta.label}
-                      </span>
-                    </div>
-                    <ChevronRight className="mt-1 h-5 w-5 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedExpense(expense)
+                      setActionError(null)
+                      setShowForm(true)
+                    }}
+                    className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Amount</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {formatCurrencyWithDecimals(expense.amount)}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Date</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {formatDate(expense.expense_date)}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Assignment</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {expense.driver_name || 'No driver'}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-500">
+                      {expense.vehicle_name || 'No vehicle'}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Receipt</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">
+                      {expense.receipt_present ? 'Receipt present' : 'Receipt missing'}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-500">
+                      {expense.advanced_by_driver ? 'Advanced by driver' : 'Company paid'}
+                    </p>
                   </div>
                 </div>
 
-                {(noReceipt || pendingApproval) && (
-                  <div className="mt-3 border-t border-gray-200 pt-3">
-                    <div className="flex items-center gap-2 text-xs">
-                      <AlertCircle
-                        className={classNames(
-                          'h-4 w-4',
-                          noReceipt ? 'text-red-600' : 'text-amber-600'
-                        )}
-                      />
-                      <span
-                        className={classNames(
-                          'font-medium',
-                          noReceipt ? 'text-red-700' : 'text-amber-700'
-                        )}
-                      >
-                        {noReceipt ? 'Receipt missing' : 'Waiting for approval'}
-                      </span>
-                    </div>
+                {expense.notes ? (
+                  <div className="mt-4 rounded-[1.5rem] border border-stone-200 bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Notes</p>
+                    <p className="mt-2 text-sm leading-7 text-stone-600">{expense.notes}</p>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                ) : null}
+              </SectionCard>
+            ))}
+          </div>
+        )}
+      </div>
     </PageContainer>
   )
 }

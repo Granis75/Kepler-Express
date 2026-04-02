@@ -1,53 +1,81 @@
+import { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { useAuthState } from './lib/auth'
-import { Dashboard } from './pages/Dashboard'
-import { Missions } from './pages/Missions'
-import { MissionDetail } from './pages/MissionDetail'
-import { MissionCreate } from './pages/MissionCreate'
-import { MissionEdit } from './pages/MissionEdit'
-import { Clients } from './pages/Clients'
-import { Drivers } from './pages/Drivers'
-import { Vehicles } from './pages/Vehicles'
-import { VehicleCreate } from './pages/VehicleCreate'
-import { VehicleDetail } from './pages/VehicleDetail'
-import { VehicleEdit } from './pages/VehicleEdit'
-import { Expenses } from './pages/Expenses'
-import { Invoices } from './pages/Invoices'
-import { InvoiceCreate } from './pages/InvoiceCreate'
-import { InvoiceDetail } from './pages/InvoiceDetail'
-import { InvoiceEdit } from './pages/InvoiceEdit'
-import { Login } from './pages/Login'
-import { Signup } from './pages/Signup'
-import { Settings } from './pages/Settings'
+import { appRoutes, publicRoutes } from './lib/routes'
+import { useWorkspaceState } from './lib/workspace'
+
+const Landing = lazy(() => import('./pages/Landing').then((module) => ({ default: module.Landing })))
+const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })))
+const Signup = lazy(() => import('./pages/Signup').then((module) => ({ default: module.Signup })))
+const Dashboard = lazy(() =>
+  import('./pages/Dashboard').then((module) => ({ default: module.Dashboard }))
+)
+const Clients = lazy(() => import('./pages/Clients').then((module) => ({ default: module.Clients })))
+const Missions = lazy(() =>
+  import('./pages/Missions').then((module) => ({ default: module.Missions }))
+)
+const Expenses = lazy(() =>
+  import('./pages/Expenses').then((module) => ({ default: module.Expenses }))
+)
+const Invoices = lazy(() =>
+  import('./pages/Invoices').then((module) => ({ default: module.Invoices }))
+)
+const Settings = lazy(() =>
+  import('./pages/Settings').then((module) => ({ default: module.Settings }))
+)
+
+function FullscreenState({
+  eyebrow,
+  title,
+  message,
+  tone = 'default',
+  actions,
+}: {
+  eyebrow: string
+  title: string
+  message: string
+  tone?: 'default' | 'warning' | 'danger'
+  actions?: React.ReactNode
+}) {
+  const toneClasses =
+    tone === 'danger'
+      ? 'border-rose-200 bg-rose-50 text-rose-900'
+      : tone === 'warning'
+        ? 'border-amber-200 bg-amber-50 text-amber-900'
+        : 'border-stone-200 bg-white text-stone-900'
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.08),_transparent_24%),linear-gradient(180deg,_#faf8f3_0%,_#f6f2eb_100%)] px-6 py-10">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+        <div className={`w-full rounded-[2rem] border p-8 shadow-sm ${toneClasses}`}>
+          <p className="text-xs uppercase tracking-[0.24em] text-stone-500">{eyebrow}</p>
+          <h1 className="mt-4 font-heading text-3xl font-semibold tracking-tight">{title}</h1>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-stone-600">{message}</p>
+          {actions ? <div className="mt-8 flex flex-wrap gap-3">{actions}</div> : null}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-5">
-      <div className="bg-white border border-gray-200 rounded-lg px-6 py-5 text-center shadow-sm">
-        <p className="text-sm text-gray-500">Checking Supabase session...</p>
-      </div>
-    </div>
+    <FullscreenState
+      eyebrow="Authentication"
+      title="Checking your session"
+      message="We are restoring the current Supabase session before opening the workspace."
+    />
   )
 }
 
-function WorkspaceLoadingScreen() {
+function RouteLoadingScreen() {
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-5">
-      <div className="bg-white border border-gray-200 rounded-lg px-6 py-5 text-center shadow-sm">
-        <p className="text-sm text-gray-500">Loading workspace context...</p>
-      </div>
-    </div>
-  )
-}
-
-function WorkspaceErrorScreen({ message }: { message: string }) {
-  return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-5">
-      <div className="bg-white border border-red-200 rounded-lg px-6 py-5 text-center shadow-sm max-w-md">
-        <p className="text-sm text-red-700">{message}</p>
-      </div>
-    </div>
+    <FullscreenState
+      eyebrow="Navigation"
+      title="Opening workspace view"
+      message="We are loading the next page."
+    />
   )
 }
 
@@ -61,7 +89,7 @@ function getRedirectTarget(locationState: unknown) {
     return locationState.from
   }
 
-  return '/'
+  return appRoutes.dashboard
 }
 
 function PublicOnlyRoute() {
@@ -79,18 +107,29 @@ function PublicOnlyRoute() {
   return <Outlet />
 }
 
-function ProtectedAppShell() {
-  const { authReady, user, profile, organization, authError } = useAuthState()
+function ProtectedRoute() {
+  const { authReady, isConfigured, user } = useAuthState()
   const location = useLocation()
 
   if (!authReady) {
     return <AuthLoadingScreen />
   }
 
+  if (!isConfigured) {
+    return (
+      <FullscreenState
+        eyebrow="Configuration"
+        title="Supabase is not configured"
+        message="Add the Supabase URL and anonymous key to the local environment before using the protected workspace."
+        tone="warning"
+      />
+    )
+  }
+
   if (!user) {
     return (
       <Navigate
-        to="/login"
+        to={publicRoutes.login}
         replace
         state={{
           from: `${location.pathname}${location.search}${location.hash}`,
@@ -99,14 +138,63 @@ function ProtectedAppShell() {
     )
   }
 
-  if (!profile || !organization) {
-    if (authError) {
-      return <WorkspaceErrorScreen message={authError} />
-    }
+  return <Outlet />
+}
 
-    return <WorkspaceLoadingScreen />
+function WorkspaceGate() {
+  const { signOut } = useAuthState()
+  const { workspaceReady, isLoading, hasWorkspace, error, reload } = useWorkspaceState()
+
+  if (!workspaceReady || isLoading) {
+    return (
+      <FullscreenState
+        eyebrow="Workspace"
+        title="Loading your workspace"
+        message="We are checking the profile and organization attached to this account."
+      />
+    )
   }
 
+  if (!hasWorkspace) {
+    return (
+      <FullscreenState
+        eyebrow="Workspace"
+        title="Workspace unavailable"
+        message={
+          error ??
+          'This account is authenticated, but the workspace is not ready yet. Reload once the profile bootstrap has completed.'
+        }
+        tone={error ? 'danger' : 'warning'}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                void reload()
+              }}
+              className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+            >
+              Retry workspace load
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void signOut()
+              }}
+              className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+            >
+              Sign out
+            </button>
+          </>
+        }
+      />
+    )
+  }
+
+  return <Outlet />
+}
+
+function AppShell() {
   return (
     <Layout>
       <Outlet />
@@ -114,35 +202,56 @@ function ProtectedAppShell() {
   )
 }
 
+function AppIndexRedirect() {
+  return <Navigate to={appRoutes.dashboard} replace />
+}
+
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route element={<PublicOnlyRoute />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-        </Route>
+      <Suspense fallback={<RouteLoadingScreen />}>
+        <Routes>
+          <Route path={publicRoutes.landing} element={<Landing />} />
 
-        <Route element={<ProtectedAppShell />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/missions" element={<Missions />} />
-          <Route path="/missions/new" element={<MissionCreate />} />
-          <Route path="/missions/:id" element={<MissionDetail />} />
-          <Route path="/missions/:id/edit" element={<MissionEdit />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/drivers" element={<Drivers />} />
-          <Route path="/vehicles" element={<Vehicles />} />
-          <Route path="/vehicles/new" element={<VehicleCreate />} />
-          <Route path="/vehicles/:id" element={<VehicleDetail />} />
-          <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/invoices" element={<Invoices />} />
-          <Route path="/invoices/new" element={<InvoiceCreate />} />
-          <Route path="/invoices/:id" element={<InvoiceDetail />} />
-          <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Routes>
+          <Route element={<PublicOnlyRoute />}>
+            <Route path={publicRoutes.login} element={<Login />} />
+            <Route path={publicRoutes.signup} element={<Signup />} />
+          </Route>
+
+          <Route element={<ProtectedRoute />}>
+            <Route path={appRoutes.home} element={<AppIndexRedirect />} />
+
+            <Route element={<WorkspaceGate />}>
+              <Route element={<AppShell />}>
+                <Route path={appRoutes.dashboard} element={<Dashboard />} />
+                <Route path={appRoutes.clients} element={<Clients />} />
+                <Route path={appRoutes.missions} element={<Missions />} />
+                <Route path={appRoutes.expenses} element={<Expenses />} />
+                <Route path={appRoutes.invoices} element={<Invoices />} />
+                <Route path={appRoutes.settings} element={<Settings />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route path="/dashboard" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="/clients" element={<Navigate to={appRoutes.clients} replace />} />
+          <Route path="/missions" element={<Navigate to={appRoutes.missions} replace />} />
+          <Route path="/missions/new" element={<Navigate to={appRoutes.missions} replace />} />
+          <Route path="/missions/:id" element={<Navigate to={appRoutes.missions} replace />} />
+          <Route path="/missions/:id/edit" element={<Navigate to={appRoutes.missions} replace />} />
+          <Route path="/expenses" element={<Navigate to={appRoutes.expenses} replace />} />
+          <Route path="/invoices" element={<Navigate to={appRoutes.invoices} replace />} />
+          <Route path="/invoices/new" element={<Navigate to={appRoutes.invoices} replace />} />
+          <Route path="/invoices/:id" element={<Navigate to={appRoutes.invoices} replace />} />
+          <Route path="/invoices/:id/edit" element={<Navigate to={appRoutes.invoices} replace />} />
+          <Route path="/drivers" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="/vehicles" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="/vehicles/new" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="/vehicles/:id" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="/vehicles/:id/edit" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="*" element={<Navigate to={publicRoutes.landing} replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   )
 }
