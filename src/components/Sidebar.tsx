@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuthState } from '../lib/auth'
-import { getSupabaseClient } from '../lib/data'
 
 interface NavItem {
   label: string
@@ -38,7 +37,7 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   const navigate = useNavigate()
-  const { user } = useAuthState()
+  const { user, profile, organization, signOut } = useAuthState()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState<string | null>(null)
 
@@ -47,14 +46,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     setSignOutError(null)
 
     try {
-      const supabase = getSupabaseClient()
-      const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        setSignOutError(error.message)
-        return
-      }
-
+      await signOut()
       onClose?.()
       navigate('/login', { replace: true })
     } catch (error) {
@@ -100,7 +92,12 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="border-t border-gray-200 px-6 py-4 space-y-3">
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Session</p>
-          <p className="text-sm text-gray-900 mt-1 truncate">{user?.email ?? 'Signed in'}</p>
+          <p className="text-sm text-gray-900 mt-1 truncate">
+            {profile?.name ?? user?.email ?? 'Signed in'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1 truncate">
+            {organization?.name ?? user?.email ?? 'Workspace'}
+          </p>
         </div>
         <button
           type="button"

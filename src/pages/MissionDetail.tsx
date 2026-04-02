@@ -1,49 +1,78 @@
-import { useCallback } from 'react'
+import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { ArrowLeft, Edit2 } from 'lucide-react'
 import { calculateInvoiceAmountRemaining } from '../lib/calculations'
 import { getMissionStatusConfig, getInvoiceStatusConfig } from '../lib/domain'
-import {
-  getMissionById,
-  listClients,
-  listDrivers,
-  listExpenses,
-  listInvoices,
-  listVehicles,
-  useAsyncData,
-} from '../lib/data'
+import { useAuthState } from '../lib/auth'
+import { useClients, useExpenses, useInvoices, useMission } from '../hooks'
 import { formatCurrencyWithDecimals, formatDate, toFiniteNumber } from '../lib/utils'
 
 export function MissionDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
+  const {
+    data: mission,
+    isLoading: missionLoading,
+    error: missionError,
+    refetch: refetchMission,
+  } = useMission(id, canLoadProtectedData)
+  const {
+    data: clients = [],
+    isLoading: clientsLoading,
+    error: clientsError,
+    refetch: refetchClients,
+  } = useClients(canLoadProtectedData)
+  const {
+    data: expenses = [],
+    isLoading: expensesLoading,
+    error: expensesError,
+    refetch: refetchExpenses,
+  } = useExpenses(canLoadProtectedData)
+  const {
+    data: invoices = [],
+    isLoading: invoicesLoading,
+    error: invoicesError,
+    refetch: refetchInvoices,
+  } = useInvoices(canLoadProtectedData)
+  const loading = missionLoading || clientsLoading || expensesLoading || invoicesLoading
+  const error =
+    (missionError instanceof Error && missionError.message) ||
+    (clientsError instanceof Error && clientsError.message) ||
+    (expensesError instanceof Error && expensesError.message) ||
+    (invoicesError instanceof Error && invoicesError.message) ||
+    null
 
-  const loadMissionDetailData = useCallback(async () => {
-    if (!id) {
-      throw new Error('Mission ID is required.')
-    }
+  const linkedExpenses = useMemo(
+    () => expenses.filter((expense) => expense.mission_id === mission?.mission_id),
+    [expenses, mission?.mission_id]
+  )
+  const linkedInvoice = useMemo(
+    () => invoices.find((invoice) => invoice.mission_ids.includes(mission?.mission_id ?? '')),
+    [invoices, mission?.mission_id]
+  )
 
-    const [mission, clients, drivers, vehicles, expenses, invoices] = await Promise.all([
-      getMissionById(id),
-      listClients(),
-      listDrivers(),
-      listVehicles(),
-      listExpenses(),
-      listInvoices(),
-    ])
+  if (!authReady) {
+    return (
+      <PageContainer>
+        <div className="text-center py-12">
+          <p className="text-gray-500">Checking Supabase session...</p>
+        </div>
+      </PageContainer>
+    )
+  }
 
-    return {
-      mission,
-      clients,
-      drivers,
-      vehicles,
-      expenses,
-      invoices,
-    }
-  }, [id])
-
-  const { data, loading, error, reload } = useAsyncData(loadMissionDetailData, [id])
+  if (!user) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      </PageContainer>
+    )
+  }
 
   if (loading) {
     return (
@@ -55,14 +84,21 @@ export function MissionDetail() {
     )
   }
 
-  if (error || !data) {
+  if (error || !mission) {
     return (
       <PageContainer>
         <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
-          <p className="text-sm text-red-700">{error || 'Unable to load the mission.'}</p>
+          <p className="text-sm text-red-700">{error || 'Mission not found or inaccessible.'}</p>
           <button
             type="button"
-            onClick={reload}
+            onClick={() => {
+              void Promise.all([
+                refetchMission(),
+                refetchClients(),
+                refetchExpenses(),
+                refetchInvoices(),
+              ])
+            }}
             className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
           >
             Retry
@@ -72,22 +108,7 @@ export function MissionDetail() {
     )
   }
 
-  const { mission, clients, drivers, vehicles, expenses, invoices } = data
-
   const client = clients.find((item) => item.client_id === mission.client_id)
-  const driver = mission.driver_id
-    ? drivers.find((item) => item.driver_id === mission.driver_id)
-    : undefined
-  const vehicle = mission.vehicle_id
-    ? vehicles.find((item) => item.vehicle_id === mission.vehicle_id)
-    : undefined
-
-  const linkedExpenses = expenses.filter(
-    (expense) => expense.mission_id === mission.mission_id
-  )
-  const linkedInvoice = invoices.find((invoice) =>
-    invoice.mission_ids.includes(mission.mission_id)
-  )
 
   const totalExpenses =
     linkedExpenses.reduce((sum, expense) => sum + toFiniteNumber(expense.amount), 0) +
@@ -157,11 +178,15 @@ export function MissionDetail() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Driver</p>
-                <p className="text-sm text-gray-900">{driver?.name || 'No driver assigned'}</p>
+                <p className="text-sm text-gray-900">
+                  {mission.driver_name ?? 'No driver assigned'}
+                </p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Vehicle</p>
-                <p className="text-sm text-gray-900">{vehicle?.name || 'No vehicle assigned'}</p>
+                <p className="text-sm text-gray-900">
+                  {mission.vehicle_name ?? 'No vehicle assigned'}
+                </p>
               </div>
             </div>
           </div>
@@ -199,7 +224,7 @@ export function MissionDetail() {
               {linkedExpenses.map((expense) => (
                 <div key={expense.expense_id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div>
-                    {expense.description && <p className="text-sm text-gray-900">{expense.description}</p>}
+                    {expense.notes && <p className="text-sm text-gray-900">{expense.notes}</p>}
                     <p className="text-xs text-gray-500">{formatDate(expense.expense_date)}</p>
                   </div>
                   <p className="text-sm font-medium text-gray-900">{formatCurrencyWithDecimals(expense.amount)}</p>

@@ -92,14 +92,35 @@ export function MissionForm({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
+    const reference = formData.reference.trim()
+    const departureLocation = formData.departure_location.trim()
+    const arrivalLocation = formData.arrival_location.trim()
 
-    if (!formData.reference) newErrors.reference = 'Mission reference is required'
+    if (!reference) newErrors.reference = 'Mission reference is required'
     if (!formData.client_id) newErrors.client_id = 'Client is required'
-    if (!formData.departure_location) newErrors.departure_location = 'Pickup location is required'
-    if (!formData.arrival_location) newErrors.arrival_location = 'Delivery location is required'
+    if (!departureLocation) newErrors.departure_location = 'Pickup location is required'
+    if (!arrivalLocation) newErrors.arrival_location = 'Delivery location is required'
     if (!formData.departure_datetime) newErrors.departure_datetime = 'Date is required'
-    if (!formData.revenue_amount || formData.revenue_amount <= 0) newErrors.revenue_amount = 'Valid revenue is required'
-    if (!formData.estimated_cost_amount || formData.estimated_cost_amount <= 0) newErrors.estimated_cost_amount = 'Valid estimated cost is required'
+
+    if (!Number.isFinite(formData.revenue_amount) || formData.revenue_amount <= 0) {
+      newErrors.revenue_amount = 'Valid revenue is required'
+    } else if (formData.revenue_amount > 10000) {
+      newErrors.revenue_amount = 'Revenue cannot exceed 10,000 EUR'
+    }
+
+    if (!Number.isFinite(formData.estimated_cost_amount) || formData.estimated_cost_amount < 0) {
+      newErrors.estimated_cost_amount = 'Estimated cost cannot be negative'
+    } else if (formData.estimated_cost_amount > formData.revenue_amount) {
+      newErrors.estimated_cost_amount = 'Estimated cost cannot exceed revenue'
+    }
+
+    if (
+      departureLocation &&
+      arrivalLocation &&
+      departureLocation.toLowerCase() === arrivalLocation.toLowerCase()
+    ) {
+      newErrors.arrival_location = 'Pickup and delivery locations must be different'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -108,7 +129,15 @@ export function MissionForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
-      onSubmit(formData)
+      onSubmit({
+        ...formData,
+        reference: formData.reference.trim(),
+        driver_id: formData.driver_id || undefined,
+        vehicle_id: formData.vehicle_id || undefined,
+        departure_location: formData.departure_location.trim(),
+        arrival_location: formData.arrival_location.trim(),
+        notes: formData.notes?.trim() || undefined,
+      })
     }
   }
 

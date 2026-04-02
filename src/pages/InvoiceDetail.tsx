@@ -1,34 +1,39 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Edit2, Plus } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { MissionListItem } from '../components/MissionListItem'
 import { PaymentForm } from '../components/PaymentForm'
 import { useAuthState } from '../lib/auth'
-import {
-  calculateInvoiceAmountRemaining,
-  calculateInvoicePaymentPercentage,
-} from '../lib/calculations'
-import {
-  createPayment,
-  getInvoiceById,
-  listClients,
-  listDrivers,
-  listMissions,
-  listPaymentsByInvoiceId,
-  useAsyncData,
-} from '../lib/data'
+import { createPaymentRecord, type CreatePaymentInput } from '../lib/api/payments'
+import { calculateInvoicePaymentPercentage } from '../lib/calculations'
 import {
   getInvoiceStatusConfig,
   getMissionListStatus,
   getPaymentMethodConfig,
 } from '../lib/domain'
+import { useClients, useInvoice, useMissions, usePaymentsByInvoice } from '../hooks'
 import {
   formatCurrencyWithDecimals,
   formatDate,
   formatPercentage,
 } from '../lib/utils'
-import { InvoiceStatus, type CreatePaymentInput } from '../types'
+import { InvoiceStatus, PaymentMethod } from '../types'
+
+function toPaymentMethod(value: CreatePaymentInput['payment_method']): PaymentMethod {
+  switch (value) {
+    case 'bank_transfer':
+      return PaymentMethod.BankTransfer
+    case 'check':
+      return PaymentMethod.Check
+    case 'cash':
+      return PaymentMethod.Cash
+    case 'card':
+      return PaymentMethod.Card
+    default:
+      return PaymentMethod.Other
+  }
+}
 
 export function InvoiceDetail() {
   const navigate = useNavigate()
@@ -38,32 +43,34 @@ export function InvoiceDetail() {
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [isSavingPayment, setIsSavingPayment] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
-
-  const loadInvoiceDetailData = useCallback(async () => {
-    if (!id) {
-      throw new Error('Invoice ID is required.')
-    }
-
-    const [invoice, payments, clients, missions, drivers] = await Promise.all([
-      getInvoiceById(id),
-      listPaymentsByInvoiceId(id),
-      listClients(),
-      listMissions(),
-      listDrivers(),
-    ])
-
-    return {
-      invoice,
-      payments,
-      clients,
-      missions,
-      drivers,
-    }
-  }, [id])
-
-  const { data, loading, error, reload } = useAsyncData(loadInvoiceDetailData, [id], {
-    enabled: canLoadProtectedData,
-  })
+  const {
+    data: invoice,
+    isLoading: invoiceLoading,
+    error: invoiceError,
+    refetch: refetchInvoice,
+  } = useInvoice(id, canLoadProtectedData)
+  const {
+    data: payments = [],
+    isLoading: paymentsLoading,
+    error: paymentsError,
+    refetch: refetchPayments,
+  } = usePaymentsByInvoice(id, canLoadProtectedData)
+  const {
+    data: clients = [],
+    isLoading: clientsLoading,
+    error: clientsError,
+  } = useClients(canLoadProtectedData)
+  const {
+    data: missions = [],
+    isLoading: missionsLoading,
+    error: missionsError,
+  } = useMissions(canLoadProtectedData)
+  const loading = invoiceLoading || paymentsLoading || clientsLoading || missionsLoading
+  const error =
+    (invoiceError instanceof Error && invoiceError.message) ||
+    (clientsError instanceof Error && clientsError.message) ||
+    (missionsError instanceof Error && missionsError.message) ||
+    null
 
   if (!authReady) {
     return (
@@ -95,14 +102,16 @@ export function InvoiceDetail() {
     )
   }
 
-  if (error || !data) {
+  if (error || !invoice) {
     return (
       <PageContainer>
         <div className="bg-white border border-red-200 rounded-lg p-8 text-center">
           <p className="text-sm text-red-700">{error || 'Invoice not found or inaccessible'}</p>
           <button
             type="button"
-            onClick={reload}
+            onClick={() => {
+              void Promise.all([refetchInvoice(), refetchPayments()])
+            }}
             className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
           >
             Retry
@@ -112,21 +121,18 @@ export function InvoiceDetail() {
     )
   }
 
-  const { invoice, payments, clients, missions, drivers } = data
   const client = clients.find((item) => item.client_id === invoice.client_id)
   const relatedMissions = missions.filter((mission) =>
     invoice.mission_ids.includes(mission.mission_id)
   )
-  const amountRemaining = calculateInvoiceAmountRemaining(
-    invoice.amount_total,
-    invoice.amount_paid
-  )
+  const amountRemaining = Math.max(0, invoice.amount_total - invoice.amount_paid)
   const paymentProgress = calculateInvoicePaymentPercentage(
     invoice.amount_total,
     invoice.amount_paid
   )
   const statusConfig = getInvoiceStatusConfig(invoice.status)
   const latestPayment = payments[0]
+  const paymentLoadError = paymentsError instanceof Error ? paymentsError.message : null
 
   const paymentHistory = [...payments].sort(
     (left, right) =>
@@ -138,9 +144,9 @@ export function InvoiceDetail() {
     setPaymentError(null)
 
     try {
-      await createPayment(payment)
+      await createPaymentRecord(payment)
       setShowPaymentForm(false)
-      reload()
+      await Promise.all([refetchInvoice(), refetchPayments()])
     } catch (err) {
       setPaymentError(err instanceof Error ? err.message : 'Unable to save the payment.')
     } finally {
@@ -273,7 +279,7 @@ export function InvoiceDetail() {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                   Issue date
                 </p>
-                <p className="text-gray-900">{formatDate(invoice.issued_date)}</p>
+                <p className="text-gray-900">{formatDate(invoice.issue_date)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
@@ -307,17 +313,13 @@ export function InvoiceDetail() {
             {relatedMissions.length > 0 ? (
               <div className="space-y-3">
                 {relatedMissions.map((mission) => {
-                  const driver = mission.driver_id
-                    ? drivers.find((item) => item.driver_id === mission.driver_id)
-                    : undefined
-
                   return (
                     <MissionListItem
                       key={mission.mission_id}
                       reference={mission.reference}
                       client={client?.name ?? mission.client_id}
                       route={`${mission.departure_location} → ${mission.arrival_location}`}
-                      driver={driver?.name ?? 'No driver assigned'}
+                      driver={mission.driver_name ?? 'No driver assigned'}
                       status={getMissionListStatus(mission.status)}
                       revenue={mission.revenue_amount}
                       onClick={() => navigate(`/missions/${mission.mission_id}`)}
@@ -372,10 +374,14 @@ export function InvoiceDetail() {
             <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
               Payments
             </h2>
-            {paymentHistory.length > 0 ? (
+            {paymentLoadError ? (
+              <p className="text-sm text-red-700">{paymentLoadError}</p>
+            ) : paymentHistory.length > 0 ? (
               <div className="space-y-3">
                 {paymentHistory.map((payment) => {
-                  const methodConfig = getPaymentMethodConfig(payment.payment_method)
+                  const methodConfig = getPaymentMethodConfig(
+                    toPaymentMethod(payment.payment_method)
+                  )
 
                   return (
                     <div
@@ -399,7 +405,7 @@ export function InvoiceDetail() {
                           )}
                         </div>
                         <p className="text-sm font-semibold text-gray-900">
-                          {formatCurrencyWithDecimals(payment.amount, payment.currency)}
+                          {formatCurrencyWithDecimals(payment.amount)}
                         </p>
                       </div>
                     </div>

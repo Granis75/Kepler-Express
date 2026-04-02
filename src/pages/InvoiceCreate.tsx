@@ -5,6 +5,7 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { InvoiceForm } from '../components/InvoiceForm'
 import type { CreateInvoiceInput } from '../types'
+import { useAuthState } from '../lib/auth'
 import { getInvoiceReferenceFormat } from '../lib/domain'
 import {
   createInvoice,
@@ -16,6 +17,8 @@ import {
 
 export function InvoiceCreate() {
   const navigate = useNavigate()
+  const { authReady, user } = useAuthState()
+  const canLoadProtectedData = authReady && Boolean(user)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -23,11 +26,17 @@ export function InvoiceCreate() {
     () => Promise.all([listClients(), listMissions(), listInvoices()]),
     []
   )
-  const { data, loading, error, reload } = useAsyncData(loadInvoiceDependencies, [])
+  const { data, loading, error, reload } = useAsyncData(loadInvoiceDependencies, [], {
+    enabled: canLoadProtectedData,
+  })
+
+  const clients = data?.[0] ?? []
+  const missions = data?.[1] ?? []
+  const existingInvoices = data?.[2] ?? []
 
   const defaultInvoiceNumber = useMemo(
-    () => getInvoiceReferenceFormat((data?.[2]?.length ?? 0) + 1),
-    [data]
+    () => getInvoiceReferenceFormat(existingInvoices.length + 1),
+    [existingInvoices.length]
   )
 
   const handleSubmit = async (invoiceData: CreateInvoiceInput) => {
@@ -42,6 +51,26 @@ export function InvoiceCreate() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  if (!authReady) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">Checking Supabase session...</p>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!user) {
+    return (
+      <PageContainer>
+        <div className="bg-white border border-amber-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-amber-700">Sign in required to access protected data.</p>
+        </div>
+      </PageContainer>
+    )
   }
 
   return (
@@ -75,6 +104,34 @@ export function InvoiceCreate() {
             Retry
           </button>
         </div>
+      ) : clients.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-900">No clients yet.</p>
+          <p className="mt-2 text-sm text-gray-500">
+            Create your first client before issuing an invoice.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/clients')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Go to clients
+          </button>
+        </div>
+      ) : missions.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-900">No missions ready to bill.</p>
+          <p className="mt-2 text-sm text-gray-500">
+            Create a mission first, then come back here to issue the invoice.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/missions/new')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Create mission
+          </button>
+        </div>
       ) : (
         <>
           {saveError && (
@@ -83,8 +140,8 @@ export function InvoiceCreate() {
             </div>
           )}
           <InvoiceForm
-            clients={data[0]}
-            missions={data[1]}
+            clients={clients}
+            missions={missions}
             defaultInvoiceNumber={defaultInvoiceNumber}
             onSubmit={handleSubmit}
             onCancel={() => navigate('/invoices')}

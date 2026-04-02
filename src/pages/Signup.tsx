@@ -4,25 +4,37 @@ import { Gauge } from 'lucide-react'
 import { TextInput } from '../components/TextInput'
 import { useAuthState } from '../lib/auth'
 
-export function Login() {
-  const { signIn } = useAuthState()
+export function Signup() {
+  const { signUp } = useAuthState()
+  const [fullName, setFullName] = useState('')
+  const [organizationName, setOrganizationName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setIsSubmitting(true)
     setAuthError(null)
+    setSuccessMessage(null)
 
     try {
-      await signIn({
+      const result = await signUp({
+        fullName: fullName.trim(),
+        organizationName: organizationName.trim(),
         email: email.trim(),
         password,
       })
+
+      setSuccessMessage(
+        result.emailConfirmationRequired
+          ? 'Account created. Confirm your email, then sign in.'
+          : 'Workspace created. Redirecting to your account...'
+      )
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Unable to sign in.')
+      setAuthError(error instanceof Error ? error.message : 'Unable to create your account.')
     } finally {
       setIsSubmitting(false)
     }
@@ -37,8 +49,8 @@ export function Login() {
               <Gauge size={22} className="text-blue-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Sign in</h1>
-              <p className="text-sm text-gray-500">Access Kepler Express protected data</p>
+              <h1 className="text-xl font-semibold text-gray-900">Create workspace</h1>
+              <p className="text-sm text-gray-500">Start Kepler Express with your own organization</p>
             </div>
           </div>
 
@@ -48,7 +60,29 @@ export function Login() {
             </div>
           )}
 
+          {successMessage && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              {successMessage}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            <TextInput
+              label="Full name"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Jane Doe"
+              autoComplete="name"
+              required
+            />
+            <TextInput
+              label="Organization"
+              value={organizationName}
+              onChange={(event) => setOrganizationName(event.target.value)}
+              placeholder="Kepler Express"
+              autoComplete="organization"
+              required
+            />
             <TextInput
               label="Email"
               type="email"
@@ -63,8 +97,9 @@ export function Login() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Your password"
-              autoComplete="current-password"
+              placeholder="At least 8 characters"
+              autoComplete="new-password"
+              minLength={8}
               required
             />
             <button
@@ -72,14 +107,14 @@ export function Login() {
               disabled={isSubmitting}
               className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? 'Creating workspace...' : 'Create workspace'}
             </button>
           </form>
 
           <p className="mt-4 text-sm text-gray-500">
-            Need a workspace?{' '}
-            <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-              Create one
+            Already have an account?{' '}
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              Sign in
             </Link>
           </p>
         </div>

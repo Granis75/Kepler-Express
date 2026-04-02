@@ -1,12 +1,13 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import { ClientForm } from '../components/ClientForm'
 import { useAuthState } from '../lib/auth'
+import { useClients } from '../hooks'
 import { formatPhoneNumber, toSearchValue } from '../lib/utils'
 import { getClientStatusConfig } from '../lib/domain'
-import { createClient, listClients, updateClient, useAsyncData } from '../lib/data'
+import { createClient, updateClient } from '../lib/data'
 import type { Client, CreateClientInput } from '../types'
 
 export function Clients() {
@@ -18,16 +19,15 @@ export function Clients() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  const loadClients = useCallback(() => listClients(), [])
-  const { data: clients, loading, error, reload } = useAsyncData(loadClients, [], {
-    enabled: canLoadProtectedData,
-  })
+  const {
+    data: clients = [],
+    isLoading: loading,
+    error: clientsError,
+    refetch: refetchClients,
+  } = useClients(canLoadProtectedData)
+  const error = clientsError instanceof Error ? clientsError.message : null
 
   const filteredClients = useMemo(() => {
-    if (!clients) {
-      return []
-    }
-
     const query = searchQuery.trim().toLowerCase()
 
     return clients.filter((client) => {
@@ -61,7 +61,7 @@ export function Clients() {
       }
 
       closeForm()
-      reload()
+      void refetchClients()
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Unable to save the client.')
     } finally {
@@ -155,7 +155,9 @@ export function Clients() {
           <p className="text-sm text-red-700">{error}</p>
           <button
             type="button"
-            onClick={reload}
+            onClick={() => {
+              void refetchClients()
+            }}
             className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
           >
             Retry
@@ -164,10 +166,23 @@ export function Clients() {
       ) : filteredClients.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
           <p className="text-sm text-gray-500">
-            {clients && clients.length > 0
+            {clients.length > 0
               ? 'No clients match the current search.'
-              : 'No clients found in Supabase yet.'}
+              : 'No clients yet — create your first client.'}
           </p>
+          {clients.length === 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedClient(null)
+                setActionError(null)
+                setShowForm(true)
+              }}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Add client
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">

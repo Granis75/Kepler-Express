@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, Plus, Search } from 'lucide-react'
 import { PageContainer } from '../components/PageContainer'
@@ -6,19 +6,26 @@ import { PageHeader } from '../components/PageHeader'
 import { InvoiceListItem } from '../components/InvoiceListItem'
 import { SelectInput } from '../components/SelectInput'
 import { useAuthState } from '../lib/auth'
-import { calculateInvoiceAmountRemaining, calculateInvoiceSummary } from '../lib/calculations'
-import { listClients, listInvoices, listMissions, useAsyncData } from '../lib/data'
 import { getInvoiceStatusOptions } from '../lib/domain'
+import { useClients, useInvoices, useMissions } from '../hooks'
 import { formatCurrencyWithDecimals, toSearchValue } from '../lib/utils'
 import { InvoiceStatus } from '../types'
 
-const statusRank = {
+const statusRank: Partial<Record<InvoiceStatus, number>> = {
   [InvoiceStatus.Overdue]: 0,
   [InvoiceStatus.Partial]: 1,
   [InvoiceStatus.Sent]: 2,
   [InvoiceStatus.Draft]: 3,
   [InvoiceStatus.Paid]: 4,
-  [InvoiceStatus.Cancelled]: 5,
+}
+
+function toSafeNumber(value: number | null | undefined) {
+  const parsed = Number(value ?? 0)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function getRemainingAmount(amountTotal: number, amountPaid: number) {
+  return Math.max(0, toSafeNumber(amountTotal) - toSafeNumber(amountPaid))
 }
 
 export function Invoices() {
@@ -28,19 +35,65 @@ export function Invoices() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('')
 
-  const loadInvoiceData = useCallback(
-    () => Promise.all([listInvoices(), listClients(), listMissions()]),
-    []
+  const {
+    data: invoices = [],
+    isLoading: invoicesLoading,
+    error: invoicesError,
+    refetch: refetchInvoices,
+  } = useInvoices(canLoadProtectedData)
+  const {
+    data: clients = [],
+    isLoading: clientsLoading,
+    error: clientsError,
+    refetch: refetchClients,
+  } = useClients(canLoadProtectedData)
+  const {
+    data: missions = [],
+    isLoading: missionsLoading,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useMissions(canLoadProtectedData)
+
+  const loading = invoicesLoading || clientsLoading || missionsLoading
+  const error =
+    (invoicesError instanceof Error && invoicesError.message) ||
+    (clientsError instanceof Error && clientsError.message) ||
+    (missionsError instanceof Error && missionsError.message) ||
+    null
+
+  const summary = useMemo(
+    () =>
+      invoices.reduce(
+        (current, invoice) => {
+          const remainingAmount = getRemainingAmount(
+            invoice.amount_total,
+            invoice.amount_paid
+          )
+
+          current.totalCollected += toSafeNumber(invoice.amount_paid)
+          current.totalOutstanding += remainingAmount
+
+          if (invoice.status === InvoiceStatus.Draft) {
+            current.draftCount += 1
+          }
+
+          if (invoice.status === InvoiceStatus.Overdue) {
+            current.overdueCount += 1
+            current.overdueTotal += remainingAmount
+          }
+
+          return current
+        },
+        {
+          totalCollected: 0,
+          totalOutstanding: 0,
+          overdueCount: 0,
+          overdueTotal: 0,
+          draftCount: 0,
+        }
+      ),
+    [invoices]
   )
-  const { data, loading, error, reload } = useAsyncData(loadInvoiceData, [], {
-    enabled: canLoadProtectedData,
-  })
-
-  const invoices = data?.[0] ?? []
-  const clients = data?.[1] ?? []
-  const missions = data?.[2] ?? []
-
-  const summary = calculateInvoiceSummary(invoices)
 
   const clientNameById = useMemo(
     () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
@@ -88,8 +141,8 @@ export function Invoices() {
         return matchesSearch && matchesStatus
       })
       .sort((left, right) => {
-        const leftRank = statusRank[left.status]
-        const rightRank = statusRank[right.status]
+        const leftRank = statusRank[left.status] ?? Number.MAX_SAFE_INTEGER
+        const rightRank = statusRank[right.status] ?? Number.MAX_SAFE_INTEGER
 
         if (leftRank !== rightRank) {
           return leftRank - rightRank
@@ -189,10 +242,7 @@ export function Invoices() {
                   </div>
                   <p className="text-sm font-semibold text-red-700">
                     {formatCurrencyWithDecimals(
-                      calculateInvoiceAmountRemaining(
-                        invoice.amount_total,
-                        invoice.amount_paid
-                      )
+                      getRemainingAmount(invoice.amount_total, invoice.amount_paid)
                     )}
                   </p>
                 </div>
@@ -234,7 +284,9 @@ export function Invoices() {
           <p className="text-sm text-red-700">{error}</p>
           <button
             type="button"
-            onClick={reload}
+            onClick={() => {
+              void Promise.all([refetchInvoices(), refetchClients(), refetchMissions()])
+            }}
             className="mt-4 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
           >
             Retry
@@ -249,7 +301,7 @@ export function Invoices() {
                 reference={invoice.invoice_number}
                 client={clientNameById.get(invoice.client_id) ?? invoice.client_id}
                 subtitle={getMissionSummary(invoice.mission_ids)}
-                amount={calculateInvoiceAmountRemaining(invoice.amount_total, invoice.amount_paid)}
+                amount={getRemainingAmount(invoice.amount_total, invoice.amount_paid)}
                 status={invoice.status}
                 dueDate={invoice.due_date}
                 onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
@@ -262,8 +314,33 @@ export function Invoices() {
           <p className="text-sm text-gray-500">
             {invoices.length > 0
               ? 'No invoices match the current filters.'
-              : 'No invoices found in Supabase yet.'}
+              : clients.length === 0
+                ? 'No clients yet — add a client before creating invoices.'
+                : missions.length === 0
+                  ? 'No missions yet — create a mission before billing.'
+                  : 'No invoices yet — create your first invoice.'}
           </p>
+          {invoices.length === 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  clients.length === 0
+                    ? '/clients'
+                    : missions.length === 0
+                      ? '/missions/new'
+                      : '/invoices/new'
+                )
+              }
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              {clients.length === 0
+                ? 'Go to clients'
+                : missions.length === 0
+                  ? 'Create mission'
+                  : 'Create invoice'}
+            </button>
+          )}
         </div>
       )}
     </PageContainer>

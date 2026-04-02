@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { MissionFilter } from '../components/MissionFilter'
@@ -6,12 +6,12 @@ import { MissionListItem } from '../components/MissionListItem'
 import { MissionListSkeleton } from '../components/MissionListSkeleton'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
-import { useMissions } from '../lib/hooks'
 import { useAuthState } from '../lib/auth'
-import { listClients, listDrivers, useAsyncData } from '../lib/data'
 import { getMissionListStatus, isActiveMissionStatus } from '../lib/domain'
+import { useClients, useMissions } from '../hooks'
 import { toSearchValue } from '../lib/utils'
-import { MissionStatus, type Client, type Driver, type Mission } from '../types'
+import { MissionStatus } from '../types'
+import type { Client, Mission } from '../types/domain'
 
 function sortMissions(missions: Mission[]) {
   return [...missions].sort((left, right) => {
@@ -33,12 +33,12 @@ function getClientName(clients: Client[], clientId: string) {
   return clients.find((client) => client.client_id === clientId)?.name ?? clientId
 }
 
-function getDriverName(drivers: Driver[], driverId?: string) {
-  if (!driverId) {
+function getDriverName(driverName?: string) {
+  if (!driverName) {
     return 'No driver assigned'
   }
 
-  return drivers.find((driver) => driver.driver_id === driverId)?.name ?? driverId
+  return driverName
 }
 
 export function Missions() {
@@ -53,29 +53,23 @@ export function Missions() {
     data: missions = [],
     isLoading: missionsLoading,
     isError: missionsError,
+    error: missionsQueryError,
     refetch: refetchMissions,
   } = useMissions(canLoadProtectedData)
-
-  // Clients and drivers via old pattern (kept for safety)
-  const loadClientDriverData = useCallback(
-    () => Promise.all([listClients(), listDrivers()]),
-    []
-  )
   const {
-    data: clientDriverData,
-    loading: clientDriverLoading,
-    error: clientDriverError,
-    reload: reloadClientDriver,
-  } = useAsyncData(loadClientDriverData, [], {
-    enabled: canLoadProtectedData,
-  })
+    data: clients = [],
+    isLoading: clientsLoading,
+    error: clientsQueryError,
+    refetch: refetchClients,
+  } = useClients(canLoadProtectedData)
 
-  const clients = clientDriverData?.[0] ?? []
-  const drivers = clientDriverData?.[1] ?? []
-
-  const loading = missionsLoading || clientDriverLoading
-  const error = missionsError ? 'Unable to load missions' : clientDriverError
-  const allReady = !loading && !missionsError && !clientDriverError
+  const loading = missionsLoading || clientsLoading
+  const error =
+    (missionsError &&
+      (missionsQueryError instanceof Error
+        ? missionsQueryError.message
+        : 'Unable to load missions.')) ||
+    (clientsQueryError instanceof Error ? clientsQueryError.message : null)
 
   const summary = useMemo(() => {
     return missions.reduce(
@@ -118,7 +112,7 @@ export function Missions() {
 
         const reference = toSearchValue(mission.reference)
         const clientName = toSearchValue(getClientName(clients, mission.client_id))
-        const driverName = toSearchValue(getDriverName(drivers, mission.driver_id))
+        const driverName = toSearchValue(getDriverName(mission.driver_name))
         const route = toSearchValue(
           `${mission.departure_location ?? ''} ${mission.arrival_location ?? ''}`
         )
@@ -132,7 +126,7 @@ export function Missions() {
         return matchesStatus && matchesSearch
       })
     )
-  }, [clients, drivers, missions, searchQuery, statusFilter])
+  }, [clients, missions, searchQuery, statusFilter])
 
   if (!authReady) {
     return (
@@ -211,20 +205,13 @@ export function Missions() {
           <div className="mt-4 flex gap-2 justify-center">
             <button
               type="button"
-              onClick={() => refetchMissions()}
+              onClick={() => {
+                void Promise.all([refetchMissions(), refetchClients()])
+              }}
               className="px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
             >
-              Retry Missions
+              Retry
             </button>
-            {clientDriverError && (
-              <button
-                type="button"
-                onClick={reloadClientDriver}
-                className="px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
-              >
-                Retry Data
-              </button>
-            )}
           </div>
         </div>
       ) : filteredMissions.length === 0 ? (
@@ -232,10 +219,21 @@ export function Missions() {
           <p className="text-sm text-gray-500">
             {missions.length > 0
               ? 'No missions match the current filters.'
-              : 'No missions found in Supabase yet. Create your first mission to get started.'}
+              : clients.length === 0
+                ? 'No clients yet — add a client before creating missions.'
+                : 'No missions yet — create your first mission.'}
           </p>
+          {missions.length === 0 && (
+            <button
+              type="button"
+              onClick={() => navigate(clients.length === 0 ? '/clients' : '/missions/new')}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              {clients.length === 0 ? 'Go to clients' : 'Create mission'}
+            </button>
+          )}
         </div>
-      ) : allReady ? (
+      ) : (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="divide-y divide-gray-100">
             {filteredMissions.map((mission) => (
@@ -244,7 +242,7 @@ export function Missions() {
                 reference={mission.reference}
                 client={getClientName(clients, mission.client_id)}
                 route={`${mission.departure_location} → ${mission.arrival_location}`}
-                driver={getDriverName(drivers, mission.driver_id)}
+                driver={getDriverName(mission.driver_name)}
                 status={getMissionListStatus(mission.status)}
                 revenue={mission.revenue_amount}
                 onClick={() => navigate(`/missions/${mission.mission_id}`)}
@@ -252,7 +250,7 @@ export function Missions() {
             ))}
           </div>
         </div>
-      ) : null}
+      )}
     </PageContainer>
   )
 }

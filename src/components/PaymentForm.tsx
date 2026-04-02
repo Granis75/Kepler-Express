@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { CreatePaymentInput, Invoice } from '../types'
-import { PaymentMethod } from '../types'
+import type { Invoice } from '../types/domain'
+import { type CreatePaymentInput } from '../lib/api/payments'
 import { TextInput } from './TextInput'
 import { SelectInput } from './SelectInput'
 import { getPaymentMethodOptions } from '../lib/domain'
@@ -18,7 +18,7 @@ interface PaymentFormProps {
 interface PaymentFormState {
   amount: number
   payment_date: string
-  payment_method: PaymentMethod
+  payment_method: CreatePaymentInput['payment_method']
   notes: string
 }
 
@@ -26,7 +26,7 @@ function getInitialFormData(invoice: Invoice): PaymentFormState {
   return {
     amount: Number((invoice.amount_total - invoice.amount_paid).toFixed(2)),
     payment_date: new Date().toISOString().slice(0, 10),
-    payment_method: PaymentMethod.BankTransfer,
+    payment_method: 'bank_transfer',
     notes: '',
   }
 }
@@ -132,7 +132,10 @@ export function PaymentForm({
           options={paymentMethodOptions}
           value={formData.payment_method}
           onChange={(event) =>
-            handleChange('payment_method', event.target.value as PaymentMethod)
+            handleChange(
+              'payment_method',
+              event.target.value as CreatePaymentInput['payment_method']
+            )
           }
           error={errors.payment_method}
         />

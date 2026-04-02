@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { useAuthState } from './lib/auth'
-import { AppProviders } from './providers'
 import { Dashboard } from './pages/Dashboard'
 import { Missions } from './pages/Missions'
 import { MissionDetail } from './pages/MissionDetail'
@@ -19,6 +18,7 @@ import { InvoiceCreate } from './pages/InvoiceCreate'
 import { InvoiceDetail } from './pages/InvoiceDetail'
 import { InvoiceEdit } from './pages/InvoiceEdit'
 import { Login } from './pages/Login'
+import { Signup } from './pages/Signup'
 import { Settings } from './pages/Settings'
 
 function AuthLoadingScreen() {
@@ -26,6 +26,26 @@ function AuthLoadingScreen() {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-5">
       <div className="bg-white border border-gray-200 rounded-lg px-6 py-5 text-center shadow-sm">
         <p className="text-sm text-gray-500">Checking Supabase session...</p>
+      </div>
+    </div>
+  )
+}
+
+function WorkspaceLoadingScreen() {
+  return (
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-5">
+      <div className="bg-white border border-gray-200 rounded-lg px-6 py-5 text-center shadow-sm">
+        <p className="text-sm text-gray-500">Loading workspace context...</p>
+      </div>
+    </div>
+  )
+}
+
+function WorkspaceErrorScreen({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-5">
+      <div className="bg-white border border-red-200 rounded-lg px-6 py-5 text-center shadow-sm max-w-md">
+        <p className="text-sm text-red-700">{message}</p>
       </div>
     </div>
   )
@@ -60,7 +80,7 @@ function PublicOnlyRoute() {
 }
 
 function ProtectedAppShell() {
-  const { authReady, user } = useAuthState()
+  const { authReady, user, profile, organization, authError } = useAuthState()
   const location = useLocation()
 
   if (!authReady) {
@@ -79,6 +99,14 @@ function ProtectedAppShell() {
     )
   }
 
+  if (!profile || !organization) {
+    if (authError) {
+      return <WorkspaceErrorScreen message={authError} />
+    }
+
+    return <WorkspaceLoadingScreen />
+  }
+
   return (
     <Layout>
       <Outlet />
@@ -88,35 +116,34 @@ function ProtectedAppShell() {
 
 function App() {
   return (
-    <AppProviders>
-      <Router>
-        <Routes>
-          <Route element={<PublicOnlyRoute />}>
-            <Route path="/login" element={<Login />} />
-          </Route>
+    <Router>
+      <Routes>
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Route>
 
-          <Route element={<ProtectedAppShell />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/missions" element={<Missions />} />
-            <Route path="/missions/new" element={<MissionCreate />} />
-            <Route path="/missions/:id" element={<MissionDetail />} />
-            <Route path="/missions/:id/edit" element={<MissionEdit />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/drivers" element={<Drivers />} />
-            <Route path="/vehicles" element={<Vehicles />} />
-            <Route path="/vehicles/new" element={<VehicleCreate />} />
-            <Route path="/vehicles/:id" element={<VehicleDetail />} />
-            <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/invoices/new" element={<InvoiceCreate />} />
-            <Route path="/invoices/:id" element={<InvoiceDetail />} />
-            <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </Router>
-    </AppProviders>
+        <Route element={<ProtectedAppShell />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/missions" element={<Missions />} />
+          <Route path="/missions/new" element={<MissionCreate />} />
+          <Route path="/missions/:id" element={<MissionDetail />} />
+          <Route path="/missions/:id/edit" element={<MissionEdit />} />
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/drivers" element={<Drivers />} />
+          <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/vehicles/new" element={<VehicleCreate />} />
+          <Route path="/vehicles/:id" element={<VehicleDetail />} />
+          <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
+          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/invoices/new" element={<InvoiceCreate />} />
+          <Route path="/invoices/:id" element={<InvoiceDetail />} />
+          <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </Router>
   )
 }
 

@@ -1,65 +1,82 @@
 import { useState } from 'react'
-import { Expense, CreateExpenseInput, Driver, Mission, Vehicle } from '../types/entities'
-import { ExpenseType, ReimbursementStatus, Currency } from '../types/enums'
-import { TextInput } from './TextInput'
+import type { CreateExpenseInput } from '../lib/api/expenses'
+import type { Expense, Mission } from '../types/domain'
 import { SelectInput } from './SelectInput'
-import { validateExpenseCreation } from '../lib/validators'
-import {
-  getExpenseTypeLabel,
-  getReimbursementStatusLabel,
-  normalizeExpenseReimbursementStatus,
-} from '../lib/domain'
+import { TextInput } from './TextInput'
 
 interface ExpenseFormProps {
   missions: Mission[]
-  drivers: Driver[]
-  vehicles: Vehicle[]
   expense?: Expense
   onSave: (data: CreateExpenseInput) => void
   onCancel: () => void
   isLoading?: boolean
 }
 
-const today = new Date().toISOString().split('T')[0]
+const today = new Date().toISOString().slice(0, 10)
+
+const expenseTypeOptions: Array<{
+  value: Expense['expense_type']
+  label: string
+}> = [
+  { value: 'fuel', label: 'Fuel' },
+  { value: 'tolls', label: 'Tolls' },
+  { value: 'mission', label: 'Mission' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'other', label: 'Other' },
+]
+
+const approvalStatusOptions: Array<{
+  value: Expense['approval_status']
+  label: string
+}> = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'rejected', label: 'Rejected' },
+]
 
 function getInitialFormData(expense?: Expense): CreateExpenseInput {
-  const advancedByDriver = expense?.advanced_by_driver ?? false
-
   return {
-    expense_date: expense?.expense_date ?? today,
-    type: expense?.type ?? ExpenseType.Fuel,
-    amount: expense?.amount ?? 0,
-    currency: expense?.currency ?? Currency.EUR,
     mission_id: expense?.mission_id,
-    driver_id: expense?.driver_id,
-    vehicle_id: expense?.vehicle_id,
-    advanced_by_driver: advancedByDriver,
-    reimbursement_status:
-      expense?.reimbursement_status ??
-      (advancedByDriver ? ReimbursementStatus.Pending : ReimbursementStatus.Paid),
-    receipt_attached: expense?.receipt_attached ?? false,
-    description: expense?.description ?? '',
+    driver_name: expense?.driver_name,
+    vehicle_name: expense?.vehicle_name,
+    expense_type: expense?.expense_type ?? 'fuel',
+    amount: expense?.amount ?? 0,
+    advanced_by_driver: expense?.advanced_by_driver ?? false,
+    approval_status: expense?.approval_status ?? 'pending',
+    receipt_url: expense?.receipt_url,
+    receipt_present: expense?.receipt_present ?? false,
+    expense_date: expense?.expense_date ?? today,
+    notes: expense?.notes ?? '',
   }
 }
 
 export function ExpenseForm({
   missions,
-  drivers,
-  vehicles,
   expense,
   onSave,
   onCancel,
   isLoading = false,
 }: ExpenseFormProps) {
-  const [formData, setFormData] = useState<CreateExpenseInput>(() => getInitialFormData(expense))
-
+  const [formData, setFormData] = useState<CreateExpenseInput>(() =>
+    getInitialFormData(expense)
+  )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleChange = <K extends keyof CreateExpenseInput>(field: K, value: CreateExpenseInput[K]) => {
+  const missionOptions = missions.map((mission) => ({
+    value: mission.mission_id,
+    label: `${mission.reference} • ${mission.departure_location} → ${mission.arrival_location}`,
+  }))
+
+  const handleChange = <K extends keyof CreateExpenseInput>(
+    field: K,
+    value: CreateExpenseInput[K]
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }))
+
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -68,85 +85,43 @@ export function ExpenseForm({
     }
   }
 
-  const handleAdvancedByDriverChange = (advancedByDriver: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      advanced_by_driver: advancedByDriver,
-      reimbursement_status: normalizeExpenseReimbursementStatus(
-        advancedByDriver,
-        prev.reimbursement_status === ReimbursementStatus.Paid
-          ? undefined
-          : prev.reimbursement_status
-      ),
-    }))
+  const validate = () => {
+    const nextErrors: Record<string, string> = {}
+
+    if (!formData.expense_date) {
+      nextErrors.expense_date = 'Date is required'
+    }
+
+    if (!formData.expense_type) {
+      nextErrors.expense_type = 'Type is required'
+    }
+
+    if (formData.amount <= 0) {
+      nextErrors.amount = 'Amount must be greater than 0'
+    }
+
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
   }
 
-  const validate = (data: CreateExpenseInput) => {
-    const newErrors = Object.fromEntries(
-      validateExpenseCreation({
-        amount: data.amount,
-        expense_date: data.expense_date,
-        receipt_attached: data.receipt_attached,
-        advanced_by_driver: data.advanced_by_driver,
-      }).errors.map((error) => [error.field, error.message])
-    ) as Record<string, string>
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault()
 
-    if (!data.type) newErrors.type = 'Type is required'
-    if (!data.currency) newErrors.currency = 'Currency is required'
+    if (!validate()) {
+      return
+    }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const normalizedFormData: CreateExpenseInput = {
+    onSave({
       ...formData,
-      reimbursement_status: normalizeExpenseReimbursementStatus(
-        formData.advanced_by_driver,
-        formData.reimbursement_status
-      ),
-    }
-
-    if (validate(normalizedFormData)) {
-      onSave(normalizedFormData)
-    }
+      driver_name: formData.driver_name?.trim() || undefined,
+      vehicle_name: formData.vehicle_name?.trim() || undefined,
+      notes: formData.notes?.trim() || undefined,
+      receipt_url: formData.receipt_url?.trim() || undefined,
+    })
   }
-
-  const typeOptions = Object.values(ExpenseType).map((type) => ({
-    value: type,
-    label: getExpenseTypeLabel(type),
-  }))
-
-  const statusOptions = Object.values(ReimbursementStatus).map((status) => ({
-    value: status,
-    label: getReimbursementStatusLabel(status),
-  }))
-
-  const currencyOptions = Object.values(Currency).map((curr) => ({
-    value: curr,
-    label: curr,
-  }))
-
-  const missionOptions = missions.map((m) => ({
-    value: m.mission_id,
-    label: `${m.reference} • ${m.departure_location} → ${m.arrival_location}`,
-  }))
-
-  const driverOptions = drivers.map((d) => ({
-    value: d.driver_id,
-    label: d.name,
-  }))
-
-  const vehicleOptions = vehicles.map((vehicle) => ({
-    value: vehicle.vehicle_id,
-    label: `${vehicle.name} (${vehicle.license_plate})`,
-  }))
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Expense info */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900">Expense info</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -154,140 +129,118 @@ export function ExpenseForm({
             label="Date"
             type="date"
             value={formData.expense_date}
-            onChange={(e) => handleChange('expense_date', e.target.value)}
+            onChange={(event) => handleChange('expense_date', event.target.value)}
             max={today}
             error={errors.expense_date}
           />
           <SelectInput
             label="Type"
-            options={typeOptions}
-            value={formData.type}
-            onChange={(e) => handleChange('type', e.target.value as ExpenseType)}
-            error={errors.type}
+            options={expenseTypeOptions}
+            value={formData.expense_type}
+            onChange={(event) =>
+              handleChange('expense_type', event.target.value as Expense['expense_type'])
+            }
+            error={errors.expense_type}
           />
         </div>
       </div>
 
-      {/* Amount */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900">Amount</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2">
-            <TextInput
-              label="Amount"
-              type="number"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) =>
-                handleChange('amount', e.target.value === '' ? 0 : Number(e.target.value))
-              }
-              error={errors.amount}
-            />
-          </div>
-          <SelectInput
-            label="Currency"
-            options={currencyOptions}
-            value={formData.currency || Currency.EUR}
-            onChange={(e) => handleChange('currency', e.target.value as Currency)}
-            error={errors.currency}
-          />
-        </div>
+        <TextInput
+          label="Amount"
+          type="number"
+          step="0.01"
+          value={formData.amount}
+          onChange={(event) =>
+            handleChange(
+              'amount',
+              event.target.value === '' ? 0 : Number(event.target.value)
+            )
+          }
+          error={errors.amount}
+        />
       </div>
 
-      {/* Assignment */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900">Assignment</h3>
         <SelectInput
           label="Mission"
           options={[{ value: '', label: 'None' }, ...missionOptions]}
-          value={formData.mission_id || ''}
-          onChange={(e) => handleChange('mission_id', e.target.value || undefined)}
+          value={formData.mission_id ?? ''}
+          onChange={(event) => handleChange('mission_id', event.target.value || undefined)}
         />
-        <SelectInput
-          label="Driver"
-          options={[{ value: '', label: 'None' }, ...driverOptions]}
-          value={formData.driver_id || ''}
-          onChange={(e) => handleChange('driver_id', e.target.value || undefined)}
-        />
-        <SelectInput
-          label="Vehicle"
-          options={[{ value: '', label: 'None' }, ...vehicleOptions]}
-          value={formData.vehicle_id || ''}
-          onChange={(e) => handleChange('vehicle_id', e.target.value || undefined)}
-        />
-      </div>
-
-      {/* Reimbursement */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">Reimbursement</h3>
-        <div className="space-y-4">
-          {/* Driver-advanced flag */}
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={formData.advanced_by_driver}
-              onChange={(e) => handleAdvancedByDriverChange(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">
-              Advanced by driver <span className="text-orange-600 font-medium">(reimbursement required)</span>
-            </span>
-          </label>
-
-          {/* Status */}
-          <SelectInput
-            label="Reimbursement status"
-            options={statusOptions}
-            value={
-              formData.advanced_by_driver
-                ? formData.reimbursement_status || ReimbursementStatus.Pending
-                : ReimbursementStatus.Paid
-            }
-            onChange={(e) =>
-              handleChange('reimbursement_status', e.target.value as ReimbursementStatus)
-            }
-            disabled={!formData.advanced_by_driver}
+        <div className="grid grid-cols-2 gap-4">
+          <TextInput
+            label="Driver"
+            value={formData.driver_name ?? ''}
+            onChange={(event) => handleChange('driver_name', event.target.value)}
           />
-          {!formData.advanced_by_driver && (
-            <p className="text-xs text-gray-500">
-              Company-paid expenses are marked as paid automatically.
-            </p>
-          )}
-
-          {/* Receipt attached */}
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={formData.receipt_attached}
-              onChange={(e) => handleChange('receipt_attached', e.target.checked)}
-              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-            />
-            <span className="text-sm text-gray-700">Receipt attached</span>
-          </label>
+          <TextInput
+            label="Vehicle"
+            value={formData.vehicle_name ?? ''}
+            onChange={(event) => handleChange('vehicle_name', event.target.value)}
+          />
         </div>
       </div>
 
-      {/* Notes */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900">Approval</h3>
+        <label className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={formData.advanced_by_driver}
+            onChange={(event) =>
+              handleChange('advanced_by_driver', event.target.checked)
+            }
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700">Advanced by driver</span>
+        </label>
+        <SelectInput
+          label="Approval status"
+          options={approvalStatusOptions}
+          value={formData.approval_status}
+          onChange={(event) =>
+            handleChange(
+              'approval_status',
+              event.target.value as Expense['approval_status']
+            )
+          }
+        />
+        <label className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={formData.receipt_present}
+            onChange={(event) => handleChange('receipt_present', event.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700">Receipt present</span>
+        </label>
+      </div>
+
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900">Notes</label>
         <textarea
-          value={formData.description || ''}
-          onChange={(e) => handleChange('description', e.target.value)}
-          placeholder="Add any notes..."
+          value={formData.notes ?? ''}
+          onChange={(event) => handleChange('notes', event.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-3 justify-end pt-4 border-t">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+      <div className="flex justify-end gap-3 border-t pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg px-4 py-2 font-medium text-gray-700 hover:bg-gray-100"
+        >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {isLoading ? 'Saving...' : expense ? 'Save changes' : 'Create expense'}
         </button>
