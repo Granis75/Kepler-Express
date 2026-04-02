@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, FilePlus2, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
   ActiveFilterBar,
+  DensityToggle,
   ModalSurface,
   PageLoadingSkeleton,
   SectionCard,
@@ -76,6 +77,8 @@ const secondaryActionButtonClasses =
 const primaryActionButtonClasses =
   'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-2 text-xs font-medium text-white transition hover:bg-stone-800'
 
+const densityStorageKey = 'kepler.ops.queue-density'
+
 export function Missions() {
   const navigate = useNavigate()
   const { organization } = useWorkspaceState()
@@ -84,6 +87,14 @@ export function Missions() {
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
+    if (typeof window === 'undefined') {
+      return 'compact'
+    }
+
+    const savedDensity = window.localStorage.getItem(densityStorageKey)
+    return savedDensity === 'comfortable' ? 'comfortable' : 'compact'
+  })
   const missionsQuery = useMissions()
   const clientsQuery = useClients()
   const invoicesQuery = useInvoices()
@@ -346,11 +357,21 @@ export function Missions() {
     onClear: () => void
   }>
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(densityStorageKey, density)
+  }, [density])
+
+  const isCompact = density === 'compact'
+
   return (
     <PageContainer>
       <PageHeader
         title="Missions"
-        description={`Operational queue for ${organization?.name ?? 'the current workspace'}, with assignment, margin, and invoice linkage exposed directly in the list.`}
+        description={`Operational mission queue for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -422,9 +443,7 @@ export function Missions() {
                 <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  Keep the mission queue tight around billing, status, and ownership.
-                </p>
+                <p className="mt-1 text-sm text-stone-500">Billing, status, and ownership.</p>
               </div>
 
               <label className="relative mt-5 block">
@@ -512,7 +531,21 @@ export function Missions() {
           </div>
 
           <div className="space-y-3">
-            <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+            <div
+              className={clsx(
+                'flex flex-col gap-3',
+                activeFilterItems.length > 0 && 'lg:flex-row lg:items-start lg:justify-between'
+              )}
+            >
+              {activeFilterItems.length > 0 ? (
+                <div className="min-w-0 flex-1">
+                  <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+                </div>
+              ) : null}
+              <div className="lg:shrink-0">
+                <DensityToggle value={density} onChange={setDensity} />
+              </div>
+            </div>
 
             {isLoading ? (
               <PageLoadingSkeleton stats={4} rows={4} />
@@ -569,12 +602,22 @@ export function Missions() {
               />
             ) : (
               <SectionCard className="overflow-hidden p-0">
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4 py-3">
+                <div
+                  className={clsx(
+                    'flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4',
+                    isCompact ? 'py-2.5' : 'py-3'
+                  )}
+                >
                   <div>
-                    <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                    <h2
+                      className={clsx(
+                        'font-heading font-semibold tracking-tight text-stone-950',
+                        isCompact ? 'text-[1.65rem]' : 'text-2xl'
+                      )}
+                    >
                       Mission queue
                     </h2>
-                    <p className="mt-1 text-sm text-stone-500">
+                    <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                       Showing {filteredMissions.length} of {missions.length} mission
                       {filteredMissions.length === 1 ? '' : 's'}.
                     </p>
@@ -584,7 +627,12 @@ export function Missions() {
                   </div>
                 </div>
 
-                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 md:grid md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:gap-3">
+                <div
+                  className={clsx(
+                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:gap-3',
+                    isCompact ? 'py-1.5' : 'py-2'
+                  )}
+                >
                   <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
                     Mission
                   </span>
@@ -615,8 +663,12 @@ export function Missions() {
                       <article
                         key={mission.mission_id}
                         className={clsx(
-                          'grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:items-center',
-                          focusMissionId === mission.mission_id && 'bg-amber-50/40'
+                          'grid px-4 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:items-center',
+                          isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
+                          focusMissionId === mission.mission_id && 'bg-sky-50/40 ring-1 ring-inset ring-sky-200/60',
+                          linkedInvoices.length === 0 &&
+                            isMissionActive(mission.status) &&
+                            'bg-amber-50/20'
                         )}
                       >
                         <div className="min-w-0">
@@ -628,6 +680,9 @@ export function Missions() {
                               label={mission.status.replace('_', ' ')}
                               tone={missionTone(mission.status)}
                             />
+                            {focusMissionId === mission.mission_id ? (
+                              <StatusBadge label="focus" tone="info" />
+                            ) : null}
                             {linkedInvoices.length === 0 ? (
                               <StatusBadge label="not invoiced" tone="warning" />
                             ) : null}
@@ -635,14 +690,19 @@ export function Missions() {
                               <StatusBadge label="margin sensitive" tone="danger" />
                             ) : null}
                           </div>
-                          <p className="mt-1 text-sm text-stone-900">
+                          <p className="mt-1 text-sm font-medium text-stone-900">
                             {mission.departure_location} to {mission.arrival_location}
                           </p>
-                          <p className="mt-1 text-sm text-stone-500">
+                          <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                             {clientNameById.get(mission.client_id) ?? 'Unknown client'}
                           </p>
                           {mission.notes ? (
-                            <p className="mt-1.5 line-clamp-1 text-sm text-stone-500">
+                            <p
+                              className={clsx(
+                                'line-clamp-1 text-stone-400',
+                                isCompact ? 'hidden pt-0.5 text-[11px] md:block' : 'mt-1 text-xs'
+                              )}
+                            >
                               {mission.notes}
                             </p>
                           ) : null}
@@ -652,7 +712,7 @@ export function Missions() {
                           <p className="font-medium text-stone-900">
                             {formatDateTime(mission.departure_datetime)}
                           </p>
-                          <p className="mt-1 text-stone-500">
+                          <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                             Arrives{' '}
                             {mission.arrival_datetime
                               ? formatDateTime(mission.arrival_datetime)
@@ -664,20 +724,20 @@ export function Missions() {
                           <p className="font-medium text-stone-900">
                             {mission.driver_name || 'Driver unassigned'}
                           </p>
-                          <p className="mt-1 text-stone-500">
+                          <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                             {mission.vehicle_name || 'Vehicle not set'}
                           </p>
                         </div>
 
-                        <div className="space-y-2.5 text-sm text-stone-500">
+                        <div className={clsx('text-sm text-stone-500', isCompact ? 'space-y-2' : 'space-y-2.5')}>
                           <div>
                             <p className="font-medium text-stone-900 tabular-nums">
                               {formatCurrencyWithDecimals(mission.revenue_amount)}
                             </p>
-                            <p className="mt-1">
+                            <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                               Margin {formatPercentage(margin.marginRatio * 100, 0)}
                             </p>
-                            <p className="mt-1">
+                            <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                               {margin.sourceLabel} cost{' '}
                               {formatCurrencyWithDecimals(margin.baselineCost)}
                             </p>
@@ -686,12 +746,14 @@ export function Missions() {
                           <div>
                             {linkedInvoices.length > 0 ? (
                               <>
-                                <p className="font-medium text-stone-900">Billing linked</p>
-                                <p className="mt-1 font-medium text-stone-900">
-                                  {linkedInvoices.length} linked invoice
-                                  {linkedInvoices.length === 1 ? '' : 's'}
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-medium text-stone-900">Billing linked</p>
+                                  <span className="text-xs text-stone-500">
+                                    {linkedInvoices.length} invoice
+                                    {linkedInvoices.length === 1 ? '' : 's'}
+                                  </span>
+                                </div>
+                                <div className={clsx('flex flex-wrap gap-1.5', isCompact ? 'mt-1.5' : 'mt-2')}>
                                   {visibleLinkedInvoices.map((invoice) => (
                                     <button
                                       key={invoice.invoice_id}
@@ -719,14 +781,12 @@ export function Missions() {
                                 </div>
                               </>
                             ) : (
-                              <>
-                                <p className="font-medium text-amber-800">
-                                  Ready for invoicing
-                                </p>
-                                <p className="mt-1 text-stone-500">
+                              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-3 py-2">
+                                <p className="font-medium text-amber-900">Invoice missing</p>
+                                <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                                   Create a linked invoice with mission context prefilled.
                                 </p>
-                              </>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -746,7 +806,9 @@ export function Missions() {
                               }
                               className={secondaryActionButtonClasses}
                             >
-                              <span>Review invoices</span>
+                              <span>
+                                {linkedInvoices.length === 1 ? 'Open invoice' : 'Open invoices'}
+                              </span>
                               <ArrowRight className="h-3.5 w-3.5" />
                             </button>
                           ) : (

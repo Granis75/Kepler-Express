@@ -190,6 +190,46 @@ export function ActiveFilterBar({
   )
 }
 
+export function DensityToggle({
+  value,
+  onChange,
+}: {
+  value: 'compact' | 'comfortable'
+  onChange: (value: 'compact' | 'comfortable') => void
+}) {
+  return (
+    <div className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white/90 p-1 shadow-[0_8px_18px_rgba(28,25,23,0.04)]">
+      <span className="px-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+        Density
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange('compact')}
+        className={clsx(
+          'rounded-full px-3 py-1.5 text-xs font-medium transition',
+          value === 'compact'
+            ? 'bg-stone-950 text-white shadow-[0_8px_18px_rgba(28,25,23,0.12)]'
+            : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+        )}
+      >
+        Compact
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('comfortable')}
+        className={clsx(
+          'rounded-full px-3 py-1.5 text-xs font-medium transition',
+          value === 'comfortable'
+            ? 'bg-stone-950 text-white shadow-[0_8px_18px_rgba(28,25,23,0.12)]'
+            : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+        )}
+      >
+        Comfortable
+      </button>
+    </div>
+  )
+}
+
 export function ModalSurface({
   title,
   description,

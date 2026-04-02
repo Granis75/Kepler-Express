@@ -8,6 +8,7 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
   ActiveFilterBar,
+  DensityToggle,
   ModalSurface,
   PageLoadingSkeleton,
   SectionCard,
@@ -75,6 +76,8 @@ const inlineLinkButtonClasses =
 const secondaryActionButtonClasses =
   'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
 
+const densityStorageKey = 'kepler.ops.queue-density'
+
 export function Invoices() {
   const navigate = useNavigate()
   const { organization } = useWorkspaceState()
@@ -83,6 +86,14 @@ export function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
+    if (typeof window === 'undefined') {
+      return 'compact'
+    }
+
+    const savedDensity = window.localStorage.getItem(densityStorageKey)
+    return savedDensity === 'comfortable' ? 'comfortable' : 'compact'
+  })
   const invoicesQuery = useInvoices()
   const clientsQuery = useClients()
   const missionsQuery = useMissions()
@@ -369,11 +380,21 @@ export function Invoices() {
     onClear: () => void
   }>
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(densityStorageKey, density)
+  }, [density])
+
+  const isCompact = density === 'compact'
+
   return (
     <PageContainer>
       <PageHeader
         title="Invoices"
-        description={`Collection workflow and billing visibility for ${organization?.name ?? 'the current workspace'}, with linked mission context exposed inline.`}
+        description={`Operational billing queue for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -450,9 +471,7 @@ export function Invoices() {
                 <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  Keep billing queues visible by client, mission, and collection state.
-                </p>
+                <p className="mt-1 text-sm text-stone-500">Client, mission, and collection state.</p>
               </div>
 
               <label className="relative mt-5 block">
@@ -541,7 +560,21 @@ export function Invoices() {
           </div>
 
           <div className="space-y-3">
-            <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+            <div
+              className={clsx(
+                'flex flex-col gap-3',
+                activeFilterItems.length > 0 && 'lg:flex-row lg:items-start lg:justify-between'
+              )}
+            >
+              {activeFilterItems.length > 0 ? (
+                <div className="min-w-0 flex-1">
+                  <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+                </div>
+              ) : null}
+              <div className="lg:shrink-0">
+                <DensityToggle value={density} onChange={setDensity} />
+              </div>
+            </div>
 
             {isLoading ? (
               <PageLoadingSkeleton stats={4} rows={4} />
@@ -614,12 +647,22 @@ export function Invoices() {
               />
             ) : (
               <SectionCard className="overflow-hidden p-0">
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4 py-3">
+                <div
+                  className={clsx(
+                    'flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4',
+                    isCompact ? 'py-2.5' : 'py-3'
+                  )}
+                >
                   <div>
-                    <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                    <h2
+                      className={clsx(
+                        'font-heading font-semibold tracking-tight text-stone-950',
+                        isCompact ? 'text-[1.65rem]' : 'text-2xl'
+                      )}
+                    >
                       Invoice queue
                     </h2>
-                    <p className="mt-1 text-sm text-stone-500">
+                    <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                       Showing {filteredInvoices.length} of {invoices.length} invoice
                       {filteredInvoices.length === 1 ? '' : 's'}.
                     </p>
@@ -629,7 +672,12 @@ export function Invoices() {
                   </div>
                 </div>
 
-                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 md:grid md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:gap-3">
+                <div
+                  className={clsx(
+                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:gap-3',
+                    isCompact ? 'py-1.5' : 'py-2'
+                  )}
+                >
                   <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
                     Invoice
                   </span>
@@ -653,13 +701,20 @@ export function Invoices() {
                     const remainingMissionCount =
                       invoice.mission_ids.length - visibleMissionIds.length
                     const firstMissionId = invoice.mission_ids[0]
+                    const outstandingAmount = getInvoiceBalance(invoice)
+                    const isOverdue = invoice.status === 'overdue'
+                    const isPartial = invoice.status === 'partial'
+                    const isOpenBalance = outstandingAmount > 0
 
                     return (
                       <article
                         key={invoice.invoice_id}
                         className={clsx(
-                          'grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:items-center',
-                          focusInvoiceId === invoice.invoice_id && 'bg-amber-50/40'
+                          'grid px-4 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:items-center',
+                          isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
+                          focusInvoiceId === invoice.invoice_id && 'bg-sky-50/40 ring-1 ring-inset ring-sky-200/60',
+                          isOverdue && 'bg-rose-50/20',
+                          !isOverdue && isPartial && 'bg-amber-50/20'
                         )}
                       >
                         <div className="min-w-0">
@@ -668,45 +723,84 @@ export function Invoices() {
                               {invoice.invoice_number}
                             </h2>
                             <StatusBadge label={invoice.status} tone={invoiceTone(invoice.status)} />
-                            {getInvoiceBalance(invoice) > 0 ? (
+                            {focusInvoiceId === invoice.invoice_id ? (
+                              <StatusBadge label="focus" tone="info" />
+                            ) : null}
+                            {isOpenBalance ? (
                               <StatusBadge label="open balance" tone="warning" />
                             ) : null}
                           </div>
-                          <p className="mt-1 text-sm text-stone-900">
+                          <p className="mt-1 text-sm font-medium text-stone-900">
                             {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
                           </p>
                           {invoice.notes ? (
-                            <p className="mt-1.5 line-clamp-1 text-sm text-stone-500">
+                            <p
+                              className={clsx(
+                                'line-clamp-1 text-stone-400',
+                                isCompact ? 'hidden text-xs md:block' : 'mt-1 text-xs'
+                              )}
+                            >
                               {invoice.notes}
                             </p>
                           ) : null}
                         </div>
 
                         <div className="text-sm text-stone-500">
-                          <p className="font-medium text-stone-900">
+                          <p
+                            className={clsx(
+                              'font-medium',
+                              isOverdue ? 'text-rose-700' : 'text-stone-900'
+                            )}
+                          >
                             {formatDate(invoice.issue_date)}
                           </p>
-                          <p className="mt-1 text-stone-500">Due {formatDate(invoice.due_date)}</p>
+                          <p
+                            className={clsx(
+                              isCompact ? 'mt-0.5 text-xs' : 'mt-1',
+                              isOverdue ? 'font-medium text-rose-700' : 'text-stone-500'
+                            )}
+                          >
+                            Due {formatDate(invoice.due_date)}
+                          </p>
                         </div>
 
                         <div className="text-sm text-stone-500">
-                          <p className="font-medium text-stone-900 tabular-nums">
-                            {formatCurrencyWithDecimals(invoice.amount_total)}
+                          <p
+                            className={clsx(
+                              'font-medium tabular-nums',
+                              isOverdue
+                                ? 'text-rose-700'
+                                : isPartial || isOpenBalance
+                                  ? 'text-amber-700'
+                                  : 'text-stone-900'
+                            )}
+                          >
+                            Outstanding {formatCurrencyWithDecimals(outstandingAmount)}
                           </p>
-                          <p className="mt-1">Paid {formatCurrencyWithDecimals(invoice.amount_paid)}</p>
-                          <p className="mt-1">
-                            Outstanding {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
+                          <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
+                            Total {formatCurrencyWithDecimals(invoice.amount_total)}
+                          </p>
+                          <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
+                            Paid {formatCurrencyWithDecimals(invoice.amount_paid)}
                           </p>
                         </div>
 
                         <div className="text-sm text-stone-500">
                           {invoice.mission_ids.length > 0 ? (
                             <>
-                              <p className="font-medium text-stone-900">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-medium text-stone-900">
+                                  Linked missions
+                                </p>
+                                <span className="text-xs text-stone-500">
+                                  {invoice.mission_ids.length}
+                                </span>
+                              </div>
+                              <p className={clsx(isCompact ? 'mt-0.5 text-xs text-stone-500' : 'mt-1 font-medium text-stone-900')}>
                                 {invoice.mission_ids.length} linked mission
                                 {invoice.mission_ids.length === 1 ? '' : 's'}
                               </p>
-                              <div className="mt-2 flex flex-wrap gap-1.5">
+                              <div className={clsx('flex flex-wrap gap-1.5', isCompact ? 'mt-1.5' : 'mt-2')}>
                                 {visibleMissionIds.map((missionId) => (
                                   <button
                                     key={missionId}
