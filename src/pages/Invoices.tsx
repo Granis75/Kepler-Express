@@ -82,7 +82,7 @@ const tertiaryActionButtonClasses =
   'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const checkboxClasses =
-  'h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-300'
+  'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
 
 const densityStorageKey = 'kepler.ops.queue-density'
 
@@ -663,7 +663,6 @@ export function Invoices() {
 
             <SelectionToolbar
               count={selectedInvoiceIds.length}
-              label="Invoices selected"
               onClear={clearSelection}
             />
 
@@ -822,6 +821,7 @@ export function Invoices() {
                     const isPartial = invoice.status === 'partial'
                     const isOpenBalance = outstandingAmount > 0
                     const isFocused = focusInvoiceId === invoice.invoice_id
+                    const isSelected = selectedInvoiceIds.includes(invoice.invoice_id)
 
                     return (
                       <article
@@ -830,15 +830,26 @@ export function Invoices() {
                         className={clsx(
                           'group grid cursor-pointer border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
-                          selectedInvoiceIds.includes(invoice.invoice_id) &&
+                          isSelected &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
                           isFocused
-                            ? 'border-l-sky-500 bg-sky-50/45 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.38),inset_0_1px_0_rgba(255,255,255,0.72)]'
+                            ? clsx(
+                                'border-l-sky-500 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.38),inset_0_1px_0_rgba(255,255,255,0.72)]',
+                                isSelected ? 'bg-sky-100/55' : 'bg-sky-50/45'
+                              )
                             : isOverdue
-                              ? 'border-l-rose-400 bg-rose-50/25 hover:bg-rose-50/40'
+                              ? clsx(
+                                  'border-l-rose-400 hover:bg-rose-50/40',
+                                  isSelected ? 'bg-rose-100/45' : 'bg-rose-50/25'
+                                )
                               : isOpenBalance
-                                ? 'border-l-amber-400 bg-amber-50/20 hover:bg-amber-50/35'
-                                : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
+                                ? clsx(
+                                    'border-l-amber-400 hover:bg-amber-50/35',
+                                    isSelected ? 'bg-amber-100/45' : 'bg-amber-50/20'
+                                  )
+                                : isSelected
+                                  ? 'border-l-stone-300 bg-stone-100/80'
+                                  : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
                         )}
                       >
                         <div className="flex items-start gap-3">

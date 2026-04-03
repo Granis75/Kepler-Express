@@ -72,9 +72,6 @@ const missionQueueOptions = [
 const inlineLinkButtonClasses =
   'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
-const secondaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
-
 const primaryActionButtonClasses =
   'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
@@ -82,7 +79,7 @@ const tertiaryActionButtonClasses =
   'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const checkboxClasses =
-  'h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-300'
+  'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
 
 const densityStorageKey = 'kepler.ops.queue-density'
 
@@ -238,12 +235,6 @@ export function Missions() {
     searchQuery,
     statusFilter,
   ])
-
-  const selectedMissions = useMemo(
-    () =>
-      filteredMissions.filter((mission) => selectedMissionIds.includes(mission.mission_id)),
-    [filteredMissions, selectedMissionIds]
-  )
 
   const allVisibleSelected =
     filteredMissions.length > 0 &&
@@ -415,41 +406,6 @@ export function Missions() {
   const focusedMission = focusMissionId ? missionById.get(focusMissionId) : null
   const queueLabel =
     missionQueueOptions.find((option) => option.value === queue)?.label ?? 'All missions'
-
-  const selectedUninvoicedMissions = selectedMissions.filter((mission) => {
-    const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
-    return linkedInvoices.length === 0
-  })
-  const selectedMissionClientCount = new Set(
-    selectedUninvoicedMissions.map((mission) => mission.client_id)
-  ).size
-  const canCreateBulkInvoice =
-    selectedUninvoicedMissions.length > 0 &&
-    selectedUninvoicedMissions.length === selectedMissions.length &&
-    selectedMissionClientCount === 1
-  const selectedMissionMeta =
-    canCreateBulkInvoice
-      ? 'Ready for one invoice draft.'
-      : selectedMissionIds.length > 0 &&
-            selectedUninvoicedMissions.length !== selectedMissions.length
-          ? 'Selection includes billed missions.'
-          : selectedMissionIds.length > 0 && selectedMissionClientCount > 1
-            ? 'Selection includes multiple clients.'
-          : undefined
-
-  const handleCreateBulkInvoice = () => {
-    if (!canCreateBulkInvoice) {
-      return
-    }
-
-    navigate({
-      pathname: appRoutes.invoices,
-      search: createSearchParams({
-        compose: 'new',
-        draft: selectedUninvoicedMissions.map((mission) => mission.mission_id).join(','),
-      }).toString(),
-    })
-  }
 
   const activeFilterItems = [
     queue !== 'all'
@@ -687,23 +643,7 @@ export function Missions() {
 
             <SelectionToolbar
               count={selectedMissionIds.length}
-              label="Missions selected"
-              meta={selectedMissionMeta}
               onClear={clearSelection}
-              actions={
-                canCreateBulkInvoice ? (
-                  <button
-                    type="button"
-                    onClick={handleCreateBulkInvoice}
-                    className={primaryActionButtonClasses}
-                  >
-                    <FilePlus2 className="h-3.5 w-3.5" />
-                    <span>
-                      {selectedMissionIds.length === 1 ? 'Create invoice' : 'Create invoice draft'}
-                    </span>
-                  </button>
-                ) : undefined
-              }
             />
 
             {isLoading ? (
@@ -785,7 +725,7 @@ export function Missions() {
                     <button
                       type="button"
                       onClick={toggleAllVisibleMissions}
-                      className={clsx(secondaryActionButtonClasses, 'md:hidden')}
+                      className={clsx(tertiaryActionButtonClasses, 'md:hidden')}
                     >
                       {allVisibleSelected ? 'Clear visible' : 'Select visible'}
                     </button>
@@ -844,6 +784,7 @@ export function Missions() {
                     const isIssue = mission.status === MissionStatus.Issue
                     const isUninvoiced = linkedInvoices.length === 0
                     const isMediumPriority = !isCritical && margin.isSensitive
+                    const isSelected = selectedMissionIds.includes(mission.mission_id)
 
                     return (
                       <article
@@ -852,17 +793,31 @@ export function Missions() {
                         className={clsx(
                           'group grid cursor-pointer border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
-                          selectedMissionIds.includes(mission.mission_id) &&
+                          isSelected &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
                           isFocused
-                            ? 'border-l-sky-500 bg-sky-50/45 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.38),inset_0_1px_0_rgba(255,255,255,0.72)]'
+                            ? clsx(
+                                'border-l-sky-500 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.38),inset_0_1px_0_rgba(255,255,255,0.72)]',
+                                isSelected ? 'bg-sky-100/55' : 'bg-sky-50/45'
+                              )
                             : isCritical
-                              ? 'border-l-amber-400 bg-amber-50/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-amber-50/70'
+                              ? clsx(
+                                  'border-l-amber-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-amber-50/70',
+                                  isSelected ? 'bg-amber-100/55' : 'bg-amber-50/45'
+                                )
                               : isIssue
-                                ? 'border-l-rose-400 bg-rose-50/25 hover:bg-rose-50/40'
+                                ? clsx(
+                                    'border-l-rose-400 hover:bg-rose-50/40',
+                                    isSelected ? 'bg-rose-100/45' : 'bg-rose-50/25'
+                                  )
                               : isMediumPriority
-                                ? 'border-l-amber-200 bg-amber-50/20 hover:bg-amber-50/35'
-                                : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
+                                ? clsx(
+                                    'border-l-amber-200 hover:bg-amber-50/35',
+                                    isSelected ? 'bg-amber-100/40' : 'bg-amber-50/20'
+                                  )
+                                : isSelected
+                                  ? 'border-l-stone-300 bg-stone-100/80'
+                                  : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
                         )}
                       >
                         <div className="flex items-start gap-3">
@@ -1051,7 +1006,7 @@ export function Missions() {
                                   }).toString(),
                                 })
                               }}
-                              className={secondaryActionButtonClasses}
+                              className={primaryActionButtonClasses}
                               title={primaryInvoice.invoice_number}
                             >
                               <span>

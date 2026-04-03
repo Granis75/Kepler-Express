@@ -243,7 +243,7 @@ export function SelectionToolbar({
   onClear,
 }: {
   count: number
-  label: string
+  label?: string
   meta?: string
   actions?: ReactNode
   onClear: () => void
@@ -253,12 +253,12 @@ export function SelectionToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-stone-200/90 bg-white/92 px-4 py-3 shadow-[0_10px_24px_rgba(28,25,23,0.05)]">
+    <div className="sticky top-24 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-stone-200/90 bg-white/92 px-4 py-3 shadow-[0_10px_24px_rgba(28,25,23,0.05)] backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-stone-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
           {count} selected
         </span>
-        <p className="text-sm text-stone-700">{label}</p>
+        {label ? <p className="text-sm text-stone-700">{label}</p> : null}
         {meta ? <p className="text-xs text-stone-500">{meta}</p> : null}
       </div>
 
@@ -269,7 +269,7 @@ export function SelectionToolbar({
           onClick={onClear}
           className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
         >
-          Clear
+          Clear selection
         </button>
       </div>
     </div>
