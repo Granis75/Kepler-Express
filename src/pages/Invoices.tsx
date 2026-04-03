@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Copy, Link2, Plus, Search } from 'lucide-react'
+import { ArrowRight, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -221,12 +221,6 @@ export function Invoices() {
     searchQuery,
     statusFilter,
   ])
-
-  const selectedInvoices = useMemo(
-    () =>
-      filteredInvoices.filter((invoice) => selectedInvoiceIds.includes(invoice.invoice_id)),
-    [filteredInvoices, selectedInvoiceIds]
-  )
 
   const allVisibleSelected =
     filteredInvoices.length > 0 &&
@@ -483,61 +477,6 @@ export function Invoices() {
     onClear: () => void
   }>
 
-  const selectedInvoiceNumbers = selectedInvoices.map((invoice) => invoice.invoice_number)
-  const selectedLinkedMissionReferences = selectedInvoices
-    .flatMap((invoice) => invoice.mission_ids)
-    .map((missionId) => missionReferenceById.get(missionId))
-    .filter(Boolean) as string[]
-
-  const copyToClipboard = async ({
-    content,
-    successMessage,
-    errorMessage,
-  }: {
-    content: string
-    successMessage: string
-    errorMessage: string
-  }) => {
-    try {
-      await navigator.clipboard.writeText(content)
-      toast.success(successMessage)
-    } catch {
-      toast.error(errorMessage)
-    }
-  }
-
-  const handleCopySelectedInvoiceNumbers = async () => {
-    if (selectedInvoiceNumbers.length === 0) {
-      return
-    }
-
-    await copyToClipboard({
-      content: selectedInvoiceNumbers.join('\n'),
-      successMessage: 'Invoice numbers copied.',
-      errorMessage: 'Clipboard is unavailable in this browser.',
-    })
-  }
-
-  const handleCopySelectedMissionReferences = async () => {
-    if (selectedLinkedMissionReferences.length === 0) {
-      return
-    }
-
-    await copyToClipboard({
-      content: [...new Set(selectedLinkedMissionReferences)].join('\n'),
-      successMessage: 'Linked mission references copied.',
-      errorMessage: 'Clipboard is unavailable in this browser.',
-    })
-  }
-
-  const handleCopyInvoiceNumber = async (invoiceNumber: string) => {
-    await copyToClipboard({
-      content: invoiceNumber,
-      successMessage: 'Invoice number copied.',
-      errorMessage: 'Clipboard is unavailable in this browser.',
-    })
-  }
-
   useEffect(() => {
     if (typeof window === 'undefined') {
       return
@@ -724,44 +663,8 @@ export function Invoices() {
 
             <SelectionToolbar
               count={selectedInvoiceIds.length}
-              label="invoice queue rows ready for bulk action"
-              meta={
-                selectedLinkedMissionReferences.length > 0
-                  ? 'Linked mission references are available in the current selection.'
-                  : selectedInvoiceIds.length > 0
-                    ? 'Select invoices linked to missions to copy related work references.'
-                    : undefined
-              }
+              label="Invoices selected"
               onClear={clearSelection}
-              actions={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleCopySelectedInvoiceNumbers()
-                    }}
-                    className={primaryActionButtonClasses}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    <span>Copy numbers</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleCopySelectedMissionReferences()
-                    }}
-                    disabled={selectedLinkedMissionReferences.length === 0}
-                    className={clsx(
-                      utilityActionButtonClasses,
-                      selectedLinkedMissionReferences.length === 0 &&
-                        'cursor-not-allowed opacity-50'
-                    )}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    <span>Copy missions</span>
-                  </button>
-                </>
-              }
             />
 
             {isLoading ? (
@@ -1073,19 +976,6 @@ export function Invoices() {
                         </div>
 
                         <div className="flex flex-col items-stretch gap-1.5 md:items-end">
-                          <div className="pointer-events-none opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                void handleCopyInvoiceNumber(invoice.invoice_number)
-                              }}
-                              className={tertiaryActionButtonClasses}
-                            >
-                              Copy no.
-                            </button>
-                          </div>
-
                           {firstMissionId ? (
                             <button
                               type="button"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Copy, FilePlus2, Link2, Plus, Search } from 'lucide-react'
+import { ArrowRight, FilePlus2, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -416,7 +416,6 @@ export function Missions() {
   const queueLabel =
     missionQueueOptions.find((option) => option.value === queue)?.label ?? 'All missions'
 
-  const selectedMissionReferences = selectedMissions.map((mission) => mission.reference)
   const selectedUninvoicedMissions = selectedMissions.filter((mission) => {
     const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
     return linkedInvoices.length === 0
@@ -428,43 +427,15 @@ export function Missions() {
     selectedUninvoicedMissions.length > 0 &&
     selectedUninvoicedMissions.length === selectedMissions.length &&
     selectedMissionClientCount === 1
-
-  const copyToClipboard = async ({
-    content,
-    successMessage,
-    errorMessage,
-  }: {
-    content: string
-    successMessage: string
-    errorMessage: string
-  }) => {
-    try {
-      await navigator.clipboard.writeText(content)
-      toast.success(successMessage)
-    } catch {
-      toast.error(errorMessage)
-    }
-  }
-
-  const handleCopySelectedMissionReferences = async () => {
-    if (selectedMissionReferences.length === 0) {
-      return
-    }
-
-    await copyToClipboard({
-      content: selectedMissionReferences.join('\n'),
-      successMessage: 'Mission references copied.',
-      errorMessage: 'Clipboard is unavailable in this browser.',
-    })
-  }
-
-  const handleCopyMissionReference = async (reference: string) => {
-    await copyToClipboard({
-      content: reference,
-      successMessage: 'Mission reference copied.',
-      errorMessage: 'Clipboard is unavailable in this browser.',
-    })
-  }
+  const selectedMissionMeta =
+    canCreateBulkInvoice
+      ? 'Ready for one invoice draft.'
+      : selectedMissionIds.length > 0 &&
+            selectedUninvoicedMissions.length !== selectedMissions.length
+          ? 'Selection includes billed missions.'
+          : selectedMissionIds.length > 0 && selectedMissionClientCount > 1
+            ? 'Selection includes multiple clients.'
+          : undefined
 
   const handleCreateBulkInvoice = () => {
     if (!canCreateBulkInvoice) {
@@ -716,46 +687,22 @@ export function Missions() {
 
             <SelectionToolbar
               count={selectedMissionIds.length}
-              label="mission queue rows ready for bulk action"
-              meta={
-                canCreateBulkInvoice
-                  ? 'Ready to open one invoice draft from the current selection.'
-                  : selectedMissionIds.length > 0
-                    ? selectedMissionClientCount > 1
-                      ? 'Bulk invoice draft requires one client.'
-                      : selectedUninvoicedMissions.length !== selectedMissions.length
-                        ? 'Only uninvoiced missions can open a shared draft.'
-                        : undefined
-                    : undefined
-              }
+              label="Missions selected"
+              meta={selectedMissionMeta}
               onClear={clearSelection}
               actions={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleCopySelectedMissionReferences()
-                    }}
-                    className={secondaryActionButtonClasses}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    <span>Copy refs</span>
-                  </button>
+                canCreateBulkInvoice ? (
                   <button
                     type="button"
                     onClick={handleCreateBulkInvoice}
-                    disabled={!canCreateBulkInvoice}
-                    className={clsx(
-                      primaryActionButtonClasses,
-                      !canCreateBulkInvoice && 'cursor-not-allowed opacity-50'
-                    )}
+                    className={primaryActionButtonClasses}
                   >
                     <FilePlus2 className="h-3.5 w-3.5" />
                     <span>
                       {selectedMissionIds.length === 1 ? 'Create invoice' : 'Create invoice draft'}
                     </span>
                   </button>
-                </>
+                ) : undefined
               }
             />
 
@@ -1091,19 +1038,6 @@ export function Missions() {
                         </div>
 
                         <div className="flex flex-col items-stretch gap-1.5 md:items-end">
-                          <div className="pointer-events-none opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                void handleCopyMissionReference(mission.reference)
-                              }}
-                              className={tertiaryActionButtonClasses}
-                            >
-                              Copy ref
-                            </button>
-                          </div>
-
                           {linkedInvoices.length > 0 && primaryInvoice ? (
                             <button
                               type="button"
