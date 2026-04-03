@@ -1,8 +1,16 @@
 import { Suspense, lazy } from 'react'
-import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import {
+  BrowserRouter as Router,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { useAuthState } from './lib/auth'
-import { appRoutes, publicRoutes } from './lib/routes'
+import { appRoutes, getClientDetailRoute, publicRoutes } from './lib/routes'
 import { useWorkspaceState } from './lib/workspace'
 
 const Landing = lazy(() => import('./pages/Landing').then((module) => ({ default: module.Landing })))
@@ -12,6 +20,9 @@ const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((module) => ({ default: module.Dashboard }))
 )
 const Clients = lazy(() => import('./pages/Clients').then((module) => ({ default: module.Clients })))
+const ClientDetail = lazy(() =>
+  import('./pages/ClientDetail').then((module) => ({ default: module.ClientDetail }))
+)
 const Missions = lazy(() =>
   import('./pages/Missions').then((module) => ({ default: module.Missions }))
 )
@@ -206,6 +217,12 @@ function AppIndexRedirect() {
   return <Navigate to={appRoutes.dashboard} replace />
 }
 
+function LegacyClientDetailRedirect() {
+  const { id } = useParams<{ id: string }>()
+
+  return <Navigate to={id ? getClientDetailRoute(id) : appRoutes.clients} replace />
+}
+
 function App() {
   return (
     <Router>
@@ -225,6 +242,7 @@ function App() {
               <Route element={<AppShell />}>
                 <Route path={appRoutes.dashboard} element={<Dashboard />} />
                 <Route path={appRoutes.clients} element={<Clients />} />
+                <Route path={appRoutes.clientDetail} element={<ClientDetail />} />
                 <Route path={appRoutes.missions} element={<Missions />} />
                 <Route path={appRoutes.expenses} element={<Expenses />} />
                 <Route path={appRoutes.invoices} element={<Invoices />} />
@@ -235,6 +253,7 @@ function App() {
 
           <Route path="/dashboard" element={<Navigate to={appRoutes.dashboard} replace />} />
           <Route path="/clients" element={<Navigate to={appRoutes.clients} replace />} />
+          <Route path="/clients/:id" element={<LegacyClientDetailRedirect />} />
           <Route path="/missions" element={<Navigate to={appRoutes.missions} replace />} />
           <Route path="/missions/new" element={<Navigate to={appRoutes.missions} replace />} />
           <Route path="/missions/:id" element={<Navigate to={appRoutes.missions} replace />} />

@@ -36,6 +36,17 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
   },
 }
 
+function getRouteMeta(pathname: string) {
+  if (pathname.startsWith(`${appRoutes.clients}/`)) {
+    return {
+      title: 'Client Portfolio',
+      subtitle: 'Account health, missions, and billing exposure',
+    }
+  }
+
+  return routeMeta[pathname] ?? routeMeta[appRoutes.dashboard]
+}
+
 export function Header({
   onMenuClick,
   onCommandPaletteOpen,
@@ -43,7 +54,7 @@ export function Header({
 }: HeaderProps) {
   const location = useLocation()
   const { organization, profile } = useWorkspaceState()
-  const meta = routeMeta[location.pathname] ?? routeMeta[appRoutes.dashboard]
+  const meta = getRouteMeta(location.pathname)
 
   return (
     <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#f6f2eb]/86 backdrop-blur">

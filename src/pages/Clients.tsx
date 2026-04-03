@@ -25,7 +25,7 @@ import {
 } from '../lib/operations'
 import { formatCurrencyWithDecimals, formatPhoneNumber, toSearchValue } from '../lib/utils'
 import { useWorkspaceState } from '../lib/workspace'
-import { appRoutes } from '../lib/routes'
+import { appRoutes, getClientDetailRoute } from '../lib/routes'
 import type { Client, CreateClientInput } from '../types'
 
 const clientQueueOptions = [
@@ -233,6 +233,10 @@ export function Clients() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const openClientDetail = (clientId: string) => {
+    navigate(getClientDetailRoute(clientId))
   }
 
   return (
@@ -464,7 +468,20 @@ export function Clients() {
                   return (
                     <article
                       key={client.client_id}
-                      className="grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1.1fr)_180px_220px_240px_auto] md:items-start"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openClientDetail(client.client_id)}
+                      onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) {
+                          return
+                        }
+
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          openClientDetail(client.client_id)
+                        }
+                      }}
+                      className="grid cursor-pointer gap-4 px-5 py-4 transition hover:bg-stone-50/80 focus-within:bg-stone-50/80 md:grid-cols-[minmax(0,1.1fr)_180px_220px_240px_auto] md:items-start"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -516,12 +533,13 @@ export function Clients() {
                         </p>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={(event) => {
+                            event.stopPropagation()
                             navigate({
                               pathname: appRoutes.missions,
                               search: createSearchParams({ client: client.client_id }).toString(),
                             })
-                          }
+                          }}
                           className="mt-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
                         >
                           Open missions
@@ -541,12 +559,13 @@ export function Clients() {
                         <p className="mt-1">{overdueInvoices} overdue</p>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={(event) => {
+                            event.stopPropagation()
                             navigate({
                               pathname: appRoutes.invoices,
                               search: createSearchParams({ client: client.client_id }).toString(),
                             })
-                          }
+                          }}
                           className="mt-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
                         >
                           Open invoices
@@ -556,7 +575,8 @@ export function Clients() {
                       <div className="flex items-start justify-end">
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation()
                             setSelectedClient(client)
                             setActionError(null)
                             setShowForm(true)
