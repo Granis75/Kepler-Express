@@ -23,7 +23,7 @@ import {
   isInvoiceInCollectionQueue,
   mergeSearchParams,
 } from '../lib/operations'
-import { appRoutes } from '../lib/routes'
+import { appRoutes, getInvoiceDetailRoute } from '../lib/routes'
 import {
   formatCurrencyWithDecimals,
   formatDate,
@@ -248,12 +248,6 @@ export function Invoices() {
 
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
-  }
-
-  const focusInvoice = (invoiceId: string) => {
-    setSearchParams(mergeSearchParams(searchParams, { focus: invoiceId }), {
-      replace: true,
-    })
   }
 
   const clearSelection = () => {
@@ -826,9 +820,8 @@ export function Invoices() {
                     return (
                       <article
                         key={invoice.invoice_id}
-                        onClick={() => focusInvoice(invoice.invoice_id)}
                         className={clsx(
-                          'group grid cursor-pointer border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
+                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
                           isSelected &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
@@ -857,11 +850,14 @@ export function Invoices() {
                             type="checkbox"
                             checked={selectedInvoiceIds.includes(invoice.invoice_id)}
                             onChange={() => toggleInvoiceSelection(invoice.invoice_id)}
-                            onClick={(event) => event.stopPropagation()}
                             aria-label={`Select invoice ${invoice.invoice_number}`}
                             className={clsx(checkboxClasses, 'mt-0.5 shrink-0')}
                           />
-                          <div className="min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
+                            className="min-w-0 flex-1 rounded-[1rem] px-1 py-1 text-left transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                          >
                             <div className="flex flex-wrap items-center gap-2">
                               <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-950">
                                 {invoice.invoice_number}
@@ -880,20 +876,24 @@ export function Invoices() {
                             <p className="mt-1 text-sm font-medium text-stone-900">
                               {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
                             </p>
-                          {invoice.notes && !isCompact ? (
-                            <p className="mt-1 line-clamp-1 text-xs text-stone-600">
-                              {invoice.notes}
-                            </p>
-                          ) : null}
-                          {invoice.notes && isCompact ? (
-                            <p className="hidden text-[11px] text-stone-600 md:mt-0.5 md:block">
-                              {truncateString(invoice.notes, 84)}
-                            </p>
-                          ) : null}
-                          </div>
+                            {invoice.notes && !isCompact ? (
+                              <p className="mt-1 line-clamp-1 text-xs text-stone-600">
+                                {invoice.notes}
+                              </p>
+                            ) : null}
+                            {invoice.notes && isCompact ? (
+                              <p className="hidden text-[11px] text-stone-600 md:mt-0.5 md:block">
+                                {truncateString(invoice.notes, 84)}
+                              </p>
+                            ) : null}
+                          </button>
                         </div>
 
-                        <div className="text-sm text-stone-600">
+                        <button
+                          type="button"
+                          onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
+                          className="rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                        >
                           <p
                             className={clsx(
                               'font-medium',
@@ -910,9 +910,13 @@ export function Invoices() {
                           >
                             Issued {formatDate(invoice.issue_date)}
                           </p>
-                        </div>
+                        </button>
 
-                        <div className="text-sm text-stone-600">
+                        <button
+                          type="button"
+                          onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
+                          className="rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                        >
                           <p
                             className={clsx(
                               'font-medium tabular-nums',
@@ -931,7 +935,7 @@ export function Invoices() {
                           <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                             Total {formatCurrencyWithDecimals(invoice.amount_total)}
                           </p>
-                        </div>
+                        </button>
 
                         <div className="text-sm text-stone-600">
                           {invoice.mission_ids.length > 0 ? (

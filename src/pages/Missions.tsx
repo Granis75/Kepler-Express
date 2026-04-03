@@ -25,7 +25,7 @@ import {
   isMissionActive,
   mergeSearchParams,
 } from '../lib/operations'
-import { appRoutes } from '../lib/routes'
+import { appRoutes, getMissionDetailRoute } from '../lib/routes'
 import {
   formatCurrencyWithDecimals,
   formatDateTime,
@@ -77,6 +77,9 @@ const primaryActionButtonClasses =
 
 const tertiaryActionButtonClasses =
   'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+
+const rowDetailButtonClasses =
+  'rounded-[1rem] px-1 py-1 text-left transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const checkboxClasses =
   'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
@@ -262,12 +265,6 @@ export function Missions() {
 
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
-  }
-
-  const focusMission = (missionId: string) => {
-    setSearchParams(mergeSearchParams(searchParams, { focus: missionId }), {
-      replace: true,
-    })
   }
 
   const clearSelection = () => {
@@ -789,9 +786,8 @@ export function Missions() {
                     return (
                       <article
                         key={mission.mission_id}
-                        onClick={() => focusMission(mission.mission_id)}
                         className={clsx(
-                          'group grid cursor-pointer border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:items-center',
+                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
                           isSelected &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
@@ -825,11 +821,14 @@ export function Missions() {
                             type="checkbox"
                             checked={selectedMissionIds.includes(mission.mission_id)}
                             onChange={() => toggleMissionSelection(mission.mission_id)}
-                            onClick={(event) => event.stopPropagation()}
                             aria-label={`Select mission ${mission.reference}`}
                             className={clsx(checkboxClasses, 'mt-0.5 shrink-0')}
                           />
-                          <div className="min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
+                            className={clsx('min-w-0 flex-1', rowDetailButtonClasses)}
+                          >
                             <div className="flex flex-wrap items-center gap-2">
                               <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-950">
                                 {mission.reference}
@@ -880,10 +879,14 @@ export function Missions() {
                                 {truncateString(mission.notes, 84)}
                               </p>
                             ) : null}
-                          </div>
+                          </button>
                         </div>
 
-                        <div className="text-sm text-stone-600">
+                        <button
+                          type="button"
+                          onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
+                          className={clsx(rowDetailButtonClasses, 'text-sm text-stone-600')}
+                        >
                           <p className="font-medium text-stone-900">
                             {formatDateTime(mission.departure_datetime)}
                           </p>
@@ -893,16 +896,20 @@ export function Missions() {
                               ? formatDateTime(mission.arrival_datetime)
                               : 'not set'}
                           </p>
-                        </div>
+                        </button>
 
-                        <div className="text-sm text-stone-600">
+                        <button
+                          type="button"
+                          onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
+                          className={clsx(rowDetailButtonClasses, 'text-sm text-stone-600')}
+                        >
                           <p className="font-medium text-stone-900">
                             {mission.driver_name || 'Driver unassigned'}
                           </p>
                           <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                             {mission.vehicle_name || 'Vehicle not set'}
                           </p>
-                        </div>
+                        </button>
 
                         <div
                           className={clsx(
@@ -910,7 +917,11 @@ export function Missions() {
                             isCompact ? 'space-y-2' : 'space-y-2.5'
                           )}
                         >
-                          <div>
+                          <button
+                            type="button"
+                            onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
+                            className={clsx('w-full', rowDetailButtonClasses)}
+                          >
                             <p className="font-medium text-stone-900 tabular-nums">
                               {formatCurrencyWithDecimals(mission.revenue_amount)}
                             </p>
@@ -926,7 +937,7 @@ export function Missions() {
                               {margin.sourceLabel} cost{' '}
                               {formatCurrencyWithDecimals(margin.baselineCost)}
                             </p>
-                          </div>
+                          </button>
 
                           <div className="border-t border-dashed border-stone-200 pt-2">
                             <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500">

@@ -4,8 +4,10 @@ export const appRoutes = {
   clients: '/app/clients',
   clientDetail: '/app/clients/:id',
   missions: '/app/missions',
+  missionDetail: '/app/missions/:id',
   expenses: '/app/expenses',
   invoices: '/app/invoices',
+  invoiceDetail: '/app/invoices/:id',
   settings: '/app/settings',
 } as const
 
@@ -21,4 +23,12 @@ export function isAppRoute(pathname: string) {
 
 export function getClientDetailRoute(clientId: string) {
   return `${appRoutes.clients}/${clientId}`
+}
+
+export function getMissionDetailRoute(missionId: string) {
+  return `${appRoutes.missions}/${missionId}`
+}
+
+export function getInvoiceDetailRoute(invoiceId: string) {
+  return `${appRoutes.invoices}/${invoiceId}`
 }

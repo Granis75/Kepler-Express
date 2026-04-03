@@ -21,7 +21,7 @@ import {
   getMissionMarginSnapshot,
   isMissionActive,
 } from '../lib/operations'
-import { appRoutes } from '../lib/routes'
+import { appRoutes, getInvoiceDetailRoute, getMissionDetailRoute } from '../lib/routes'
 import {
   formatCurrencyWithDecimals,
   formatDate,
@@ -286,37 +286,11 @@ export function ClientDetail() {
   }
 
   const openMission = (missionId: string) => {
-    if (!client) {
-      return
-    }
-
-    navigate({
-      pathname: appRoutes.missions,
-      search: createSearchParams({
-        client: client.client_id,
-        focus: missionId,
-      }).toString(),
-    })
+    navigate(getMissionDetailRoute(missionId))
   }
 
-  const openInvoice = (invoiceId: string, missionId?: string) => {
-    if (!client) {
-      return
-    }
-
-    const params = new URLSearchParams({
-      client: client.client_id,
-      focus: invoiceId,
-    })
-
-    if (missionId) {
-      params.set('mission', missionId)
-    }
-
-    navigate({
-      pathname: appRoutes.invoices,
-      search: params.toString(),
-    })
+  const openInvoice = (invoiceId: string) => {
+    navigate(getInvoiceDetailRoute(invoiceId))
   }
 
   const openInvoiceComposer = (missionId: string) => {
@@ -726,9 +700,7 @@ export function ClientDetail() {
                               <button
                                 key={invoice.invoice_id}
                                 type="button"
-                                onClick={() =>
-                                  openInvoice(invoice.invoice_id, mission.mission_id)
-                                }
+                                onClick={() => openInvoice(invoice.invoice_id)}
                                 className={inlineButtonClasses}
                               >
                                 {invoice.invoice_number}

@@ -10,7 +10,13 @@ import {
 } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { useAuthState } from './lib/auth'
-import { appRoutes, getClientDetailRoute, publicRoutes } from './lib/routes'
+import {
+  appRoutes,
+  getClientDetailRoute,
+  getInvoiceDetailRoute,
+  getMissionDetailRoute,
+  publicRoutes,
+} from './lib/routes'
 import { useWorkspaceState } from './lib/workspace'
 
 const Landing = lazy(() => import('./pages/Landing').then((module) => ({ default: module.Landing })))
@@ -26,11 +32,17 @@ const ClientDetail = lazy(() =>
 const Missions = lazy(() =>
   import('./pages/Missions').then((module) => ({ default: module.Missions }))
 )
+const MissionDetail = lazy(() =>
+  import('./pages/MissionDetail').then((module) => ({ default: module.MissionDetail }))
+)
 const Expenses = lazy(() =>
   import('./pages/Expenses').then((module) => ({ default: module.Expenses }))
 )
 const Invoices = lazy(() =>
   import('./pages/Invoices').then((module) => ({ default: module.Invoices }))
+)
+const InvoiceDetail = lazy(() =>
+  import('./pages/InvoiceDetail').then((module) => ({ default: module.InvoiceDetail }))
 )
 const Settings = lazy(() =>
   import('./pages/Settings').then((module) => ({ default: module.Settings }))
@@ -223,6 +235,18 @@ function LegacyClientDetailRedirect() {
   return <Navigate to={id ? getClientDetailRoute(id) : appRoutes.clients} replace />
 }
 
+function LegacyInvoiceDetailRedirect() {
+  const { id } = useParams<{ id: string }>()
+
+  return <Navigate to={id ? getInvoiceDetailRoute(id) : appRoutes.invoices} replace />
+}
+
+function LegacyMissionDetailRedirect() {
+  const { id } = useParams<{ id: string }>()
+
+  return <Navigate to={id ? getMissionDetailRoute(id) : appRoutes.missions} replace />
+}
+
 function App() {
   return (
     <Router>
@@ -244,8 +268,10 @@ function App() {
                 <Route path={appRoutes.clients} element={<Clients />} />
                 <Route path={appRoutes.clientDetail} element={<ClientDetail />} />
                 <Route path={appRoutes.missions} element={<Missions />} />
+                <Route path={appRoutes.missionDetail} element={<MissionDetail />} />
                 <Route path={appRoutes.expenses} element={<Expenses />} />
                 <Route path={appRoutes.invoices} element={<Invoices />} />
+                <Route path={appRoutes.invoiceDetail} element={<InvoiceDetail />} />
                 <Route path={appRoutes.settings} element={<Settings />} />
               </Route>
             </Route>
@@ -256,12 +282,12 @@ function App() {
           <Route path="/clients/:id" element={<LegacyClientDetailRedirect />} />
           <Route path="/missions" element={<Navigate to={appRoutes.missions} replace />} />
           <Route path="/missions/new" element={<Navigate to={appRoutes.missions} replace />} />
-          <Route path="/missions/:id" element={<Navigate to={appRoutes.missions} replace />} />
+          <Route path="/missions/:id" element={<LegacyMissionDetailRedirect />} />
           <Route path="/missions/:id/edit" element={<Navigate to={appRoutes.missions} replace />} />
           <Route path="/expenses" element={<Navigate to={appRoutes.expenses} replace />} />
           <Route path="/invoices" element={<Navigate to={appRoutes.invoices} replace />} />
           <Route path="/invoices/new" element={<Navigate to={appRoutes.invoices} replace />} />
-          <Route path="/invoices/:id" element={<Navigate to={appRoutes.invoices} replace />} />
+          <Route path="/invoices/:id" element={<LegacyInvoiceDetailRedirect />} />
           <Route path="/invoices/:id/edit" element={<Navigate to={appRoutes.invoices} replace />} />
           <Route path="/drivers" element={<Navigate to={appRoutes.dashboard} replace />} />
           <Route path="/vehicles" element={<Navigate to={appRoutes.dashboard} replace />} />

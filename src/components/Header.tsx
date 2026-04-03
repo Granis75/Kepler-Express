@@ -44,6 +44,20 @@ function getRouteMeta(pathname: string) {
     }
   }
 
+  if (pathname.startsWith(`${appRoutes.missions}/`)) {
+    return {
+      title: 'Mission Detail',
+      subtitle: 'Route context, margin health, and billing linkage',
+    }
+  }
+
+  if (pathname.startsWith(`${appRoutes.invoices}/`)) {
+    return {
+      title: 'Invoice Detail',
+      subtitle: 'Cash position, linked missions, and collection state',
+    }
+  }
+
   return routeMeta[pathname] ?? routeMeta[appRoutes.dashboard]
 }
 
