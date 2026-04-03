@@ -115,9 +115,11 @@ export function StatePanel({
 export function StatusBadge({
   label,
   tone = 'neutral',
+  className,
 }: {
   label: string
   tone?: 'neutral' | 'info' | 'success' | 'warning' | 'danger'
+  className?: string
 }) {
   const toneClasses =
     tone === 'info'
@@ -134,7 +136,8 @@ export function StatusBadge({
     <span
       className={clsx(
         'inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]',
-        toneClasses
+        toneClasses,
+        className
       )}
     >
       {label}
@@ -169,18 +172,18 @@ export function ActiveFilterBar({
             key={item.id}
             type="button"
             onClick={item.onClear}
-            className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50/90 px-3 py-1.5 text-xs text-stone-600 transition hover:border-stone-300 hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50/90 px-3 py-1.5 text-xs text-stone-600 transition hover:border-stone-300 hover:bg-stone-100 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
           >
             <span className="text-stone-500">{item.label}</span>
             <span className="font-medium text-stone-900">{item.value}</span>
-            <X className="h-3 w-3 text-stone-400" />
+            <X className="h-3 w-3 text-stone-500" />
           </button>
         ))}
         {onClearAll ? (
           <button
             type="button"
             onClick={onClearAll}
-            className="ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+            className="ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
           >
             Clear all
           </button>
@@ -207,7 +210,7 @@ export function DensityToggle({
         aria-pressed={value === 'compact'}
         onClick={() => onChange('compact')}
         className={clsx(
-          'rounded-full px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
+          'rounded-full px-3 py-1.5 text-xs font-medium transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
           value === 'compact'
             ? 'bg-stone-950 text-white shadow-[0_8px_18px_rgba(28,25,23,0.12)]'
             : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -220,7 +223,7 @@ export function DensityToggle({
         aria-pressed={value === 'comfortable'}
         onClick={() => onChange('comfortable')}
         className={clsx(
-          'rounded-full px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
+          'rounded-full px-3 py-1.5 text-xs font-medium transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
           value === 'comfortable'
             ? 'bg-stone-950 text-white shadow-[0_8px_18px_rgba(28,25,23,0.12)]'
             : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -264,12 +267,93 @@ export function SelectionToolbar({
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
         >
           Clear
         </button>
       </div>
     </div>
+  )
+}
+
+export function ActionPanel({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <SectionCard className={clsx('overflow-hidden p-0', className)}>
+      <div className="divide-y divide-stone-200">{children}</div>
+    </SectionCard>
+  )
+}
+
+export function ActionItem({
+  title,
+  actionLabel,
+  onClick,
+  tone = 'neutral',
+  count,
+}: {
+  title: string
+  actionLabel: string
+  onClick: () => void
+  tone?: 'neutral' | 'warning' | 'danger'
+  count?: number
+}) {
+  const rowToneClasses =
+    tone === 'danger'
+      ? 'border-l-2 border-rose-300 bg-[linear-gradient(180deg,_rgba(255,244,245,0.7),_rgba(255,255,255,0.98))] pl-[18px] pr-5 hover:bg-rose-50/90'
+      : tone === 'warning'
+        ? 'border-l-2 border-amber-300 bg-[linear-gradient(180deg,_rgba(255,251,235,0.75),_rgba(255,255,255,0.98))] pl-[18px] pr-5 hover:bg-amber-50/90'
+        : 'px-5 hover:bg-stone-100'
+
+  const actionToneClasses =
+    tone === 'danger'
+      ? 'border-rose-200 text-rose-700 group-hover:border-rose-300 group-hover:bg-rose-50'
+      : tone === 'warning'
+        ? 'border-amber-200 text-amber-800 group-hover:border-amber-300 group-hover:bg-amber-50'
+        : 'border-stone-300 text-stone-700 group-hover:bg-stone-100'
+
+  const countToneClasses =
+    tone === 'danger'
+      ? 'border-rose-200 bg-rose-50 text-rose-700'
+      : tone === 'warning'
+        ? 'border-amber-200 bg-amber-50 text-amber-800'
+        : 'border-stone-200 bg-stone-100 text-stone-700'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={clsx(
+        'group flex w-full items-center justify-between gap-4 py-4 text-left transition active:scale-[0.998] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
+        rowToneClasses
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          className={clsx(
+            'inline-flex min-w-8 items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-semibold tabular-nums',
+            countToneClasses
+          )}
+        >
+          {count ?? 0}
+        </span>
+        <p className="min-w-0 text-sm font-semibold text-stone-950">{title}</p>
+      </div>
+      <div
+        className={clsx(
+          'inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-medium transition group-hover:text-stone-900',
+          actionToneClasses
+        )}
+      >
+        <span>{actionLabel}</span>
+        <ArrowUpRight className="h-3.5 w-3.5" />
+      </div>
+    </button>
   )
 }
 

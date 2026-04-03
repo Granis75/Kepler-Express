@@ -6,6 +6,7 @@ import { useWorkspaceState } from '../lib/workspace'
 interface HeaderProps {
   onMenuClick: () => void
   onCommandPaletteOpen: () => void
+  commandShortcutLabel: string
 }
 
 const routeMeta: Record<string, { title: string; subtitle: string }> = {
@@ -35,7 +36,11 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
   },
 }
 
-export function Header({ onMenuClick, onCommandPaletteOpen }: HeaderProps) {
+export function Header({
+  onMenuClick,
+  onCommandPaletteOpen,
+  commandShortcutLabel,
+}: HeaderProps) {
   const location = useLocation()
   const { organization, profile } = useWorkspaceState()
   const meta = routeMeta[location.pathname] ?? routeMeta[appRoutes.dashboard]
@@ -79,7 +84,7 @@ export function Header({ onMenuClick, onCommandPaletteOpen }: HeaderProps) {
               <p className="mt-0.5 text-xs text-stone-500">Command palette</p>
             </div>
             <span className="hidden rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-stone-500 lg:inline-flex">
-              Ctrl K
+              {commandShortcutLabel}
             </span>
           </button>
 

@@ -49,19 +49,27 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [commandQuery, setCommandQuery] = useState('')
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0)
   const commandInputRef = useRef<HTMLInputElement | null>(null)
+  const commandItemRefs = useRef<Array<HTMLButtonElement | null>>([])
   const gotoTimeoutRef = useRef<number | null>(null)
   const awaitingGotoRef = useRef(false)
+  const commandShortcutLabel =
+    typeof navigator !== 'undefined' && /(Mac|iPhone|iPad|iPod)/i.test(navigator.platform)
+      ? 'Cmd K'
+      : 'Ctrl K'
 
   const openCommandPalette = () => {
     setSidebarOpen(false)
     setCommandQuery('')
+    setSelectedCommandIndex(0)
     setCommandPaletteOpen(true)
   }
 
   const closeCommandPalette = () => {
     setCommandPaletteOpen(false)
     setCommandQuery('')
+    setSelectedCommandIndex(0)
   }
 
   const focusPageSearch = () => {
@@ -86,6 +94,7 @@ export function Layout({ children }: LayoutProps) {
     navigate(pathname)
   }
 
+  // Future command system hook placeholder: route high-frequency operator actions here.
   const commandItems = useMemo<CommandItem[]>(
     () => [
       {
@@ -196,6 +205,29 @@ export function Layout({ children }: LayoutProps) {
   }, [location.pathname, location.search])
 
   useEffect(() => {
+    if (!commandPaletteOpen) {
+      return
+    }
+
+    setSelectedCommandIndex((current) => {
+      if (filteredCommands.length === 0) {
+        return 0
+      }
+
+      return Math.min(current, filteredCommands.length - 1)
+    })
+  }, [commandPaletteOpen, filteredCommands.length])
+
+  useEffect(() => {
+    if (!commandPaletteOpen) {
+      return
+    }
+
+    const activeNode = commandItemRefs.current[selectedCommandIndex]
+    activeNode?.scrollIntoView({ block: 'nearest' })
+  }, [commandPaletteOpen, selectedCommandIndex])
+
+  useEffect(() => {
     const resetGoto = () => {
       awaitingGotoRef.current = false
       if (gotoTimeoutRef.current) {
@@ -243,7 +275,11 @@ export function Layout({ children }: LayoutProps) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        openCommandPalette()
+        if (commandPaletteOpen) {
+          closeCommandPalette()
+        } else {
+          openCommandPalette()
+        }
         resetGoto()
         return
       }
@@ -321,6 +357,7 @@ export function Layout({ children }: LayoutProps) {
         <Header
           onMenuClick={() => setSidebarOpen((current) => !current)}
           onCommandPaletteOpen={openCommandPalette}
+          commandShortcutLabel={commandShortcutLabel}
         />
         <main className="flex-1 overflow-y-auto pb-8">{children}</main>
       </div>
@@ -341,14 +378,54 @@ export function Layout({ children }: LayoutProps) {
                   ref={commandInputRef}
                   type="text"
                   value={commandQuery}
-                  onChange={(event) => setCommandQuery(event.target.value)}
+                  onChange={(event) => {
+                    setCommandQuery(event.target.value)
+                    setSelectedCommandIndex(0)
+                  }}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter' && filteredCommands[0]) {
+                    if (event.key === 'ArrowDown' && filteredCommands.length > 0) {
                       event.preventDefault()
-                      filteredCommands[0].run()
+                      setSelectedCommandIndex((current) =>
+                        current >= filteredCommands.length - 1 ? 0 : current + 1
+                      )
+                      return
+                    }
+
+                    if (event.key === 'ArrowUp' && filteredCommands.length > 0) {
+                      event.preventDefault()
+                      setSelectedCommandIndex((current) =>
+                        current <= 0 ? filteredCommands.length - 1 : current - 1
+                      )
+                      return
+                    }
+
+                    if (event.key === 'Home' && filteredCommands.length > 0) {
+                      event.preventDefault()
+                      setSelectedCommandIndex(0)
+                      return
+                    }
+
+                    if (event.key === 'End' && filteredCommands.length > 0) {
+                      event.preventDefault()
+                      setSelectedCommandIndex(filteredCommands.length - 1)
+                      return
+                    }
+
+                    if (event.key === 'Enter' && filteredCommands[selectedCommandIndex]) {
+                      event.preventDefault()
+                      filteredCommands[selectedCommandIndex].run()
                     }
                   }}
                   placeholder="Search commands, jump to a page, or create a record"
+                  aria-activedescendant={
+                    filteredCommands[selectedCommandIndex]
+                      ? `command-item-${filteredCommands[selectedCommandIndex].id}`
+                      : undefined
+                  }
+                  aria-autocomplete="list"
+                  aria-controls="command-palette-results"
+                  aria-expanded="true"
+                  role="combobox"
                   className="w-full bg-transparent text-sm text-stone-900 outline-none placeholder:text-stone-400"
                 />
                 <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-stone-500">
@@ -357,10 +434,13 @@ export function Layout({ children }: LayoutProps) {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-stone-500">
                 <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
-                  Ctrl K
+                  {commandShortcutLabel}
                 </span>
                 <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
                   /
+                </span>
+                <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
+                  Up Down
                 </span>
                 <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
                   G then key
@@ -368,22 +448,38 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto px-3 py-3">
+            <div
+              id="command-palette-results"
+              role="listbox"
+              className="max-h-[60vh] overflow-y-auto px-3 py-3"
+            >
               {filteredCommands.length === 0 ? (
                 <div className="rounded-[1.25rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">
                   No commands match the current search.
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  {filteredCommands.map((item) => {
+                  {filteredCommands.map((item, itemIndex) => {
                     const Icon = item.icon
+                    const isSelected = itemIndex === selectedCommandIndex
 
                     return (
                       <button
                         key={item.id}
+                        id={`command-item-${item.id}`}
+                        ref={(node) => {
+                          commandItemRefs.current[itemIndex] = node
+                        }}
                         type="button"
                         onClick={item.run}
-                        className="flex w-full items-center gap-3 rounded-[1.2rem] px-3 py-3 text-left transition hover:bg-stone-100/80"
+                        onMouseEnter={() => setSelectedCommandIndex(itemIndex)}
+                        role="option"
+                        aria-selected={isSelected}
+                        className={
+                          isSelected
+                            ? 'flex w-full items-center gap-3 rounded-[1.2rem] bg-stone-100 px-3 py-3 text-left shadow-[inset_0_0_0_1px_rgba(214,211,209,0.8)] transition'
+                            : 'flex w-full items-center gap-3 rounded-[1.2rem] px-3 py-3 text-left transition hover:bg-stone-100/80'
+                        }
                       >
                         <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] border border-stone-200 bg-white text-stone-700 shadow-sm">
                           <Icon className="h-4 w-4" />

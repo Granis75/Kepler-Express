@@ -1,15 +1,10 @@
 import { useMemo } from 'react'
-import {
-  AlertTriangle,
-  ArrowRight,
-  FileText,
-  Receipt,
-  Truck,
-} from 'lucide-react'
 import { createSearchParams, useNavigate } from 'react-router-dom'
 import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
+  ActionItem,
+  ActionPanel,
   PageLoadingSkeleton,
   SectionCard,
   StatCard,
@@ -175,78 +170,6 @@ export function Dashboard() {
     }
   }, [activeMissions, collectionQueue, expenses, invoices, missionInvoiceMap])
 
-  const needsAttention = useMemo(
-    () =>
-      [
-        {
-          label: 'Active missions without invoice',
-          count: metrics.activeWithoutInvoice,
-          note: 'Assigned or in-progress work is still missing billing linkage.',
-          tone: 'warning' as const,
-          icon: Truck,
-          onClick: () => {
-            navigate({
-              pathname: appRoutes.missions,
-              search: createSearchParams({ queue: 'uninvoiced' }).toString(),
-            })
-          },
-        },
-        {
-          label: 'Overdue invoices',
-          count: metrics.overdueCount,
-          note: 'Collection follow-up is already past due.',
-          tone: 'danger' as const,
-          icon: FileText,
-          onClick: () => {
-            navigate({
-              pathname: appRoutes.invoices,
-              search: createSearchParams({ queue: 'overdue' }).toString(),
-            })
-          },
-        },
-        {
-          label: 'Pending expenses',
-          count: metrics.pendingExpenses,
-          note: 'Operational reimbursements are waiting for approval.',
-          tone: 'warning' as const,
-          icon: Receipt,
-          onClick: () => {
-            navigate({
-              pathname: appRoutes.expenses,
-              search: createSearchParams({ queue: 'pending' }).toString(),
-            })
-          },
-        },
-        {
-          label: 'Expenses without receipt',
-          count: metrics.missingReceipts,
-          note: 'Receipt gaps weaken cost traceability.',
-          tone: 'danger' as const,
-          icon: Receipt,
-          onClick: () => {
-            navigate({
-              pathname: appRoutes.expenses,
-              search: createSearchParams({ queue: 'missing-receipt' }).toString(),
-            })
-          },
-        },
-        {
-          label: 'Margin-sensitive missions',
-          count: metrics.marginSensitive,
-          note: 'Current mission economics are below the working margin threshold.',
-          tone: 'warning' as const,
-          icon: AlertTriangle,
-          onClick: () => {
-            navigate({
-              pathname: appRoutes.missions,
-              search: createSearchParams({ queue: 'margin' }).toString(),
-            })
-          },
-        },
-      ].filter((item) => item.count > 0),
-    [metrics, navigate]
-  )
-
   return (
     <PageContainer>
       <PageHeader
@@ -373,53 +296,49 @@ export function Dashboard() {
           </div>
 
           <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-            <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Needs attention
-                  </h2>
-                  <p className="mt-1 text-sm text-stone-500">
-                    Exception queues to review before the next dispatch or billing cycle.
-                  </p>
-                </div>
+            <ActionPanel>
+              <div className="px-5 py-4">
+                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  Action queue
+                </h2>
               </div>
-
-              {needsAttention.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-stone-500">
-                  No urgent exceptions are visible right now.
-                </div>
-              ) : (
-                <div className="divide-y divide-stone-200">
-                  {needsAttention.map((item) => {
-                    const Icon = item.icon
-
-                    return (
-                      <button
-                        key={item.label}
-                        type="button"
-                        onClick={item.onClick}
-                        className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-stone-50/80"
-                      >
-                        <div className="flex min-w-0 gap-3">
-                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white">
-                            <Icon className="h-4 w-4 text-stone-600" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-semibold text-stone-950">{item.label}</p>
-                              <StatusBadge label={String(item.count)} tone={item.tone} />
-                            </div>
-                            <p className="mt-1 text-sm text-stone-500">{item.note}</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-stone-400" />
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </SectionCard>
+              <ActionItem
+                count={metrics.activeWithoutInvoice}
+                tone={metrics.activeWithoutInvoice > 0 ? 'warning' : 'neutral'}
+                title={`${metrics.activeWithoutInvoice} mission${metrics.activeWithoutInvoice === 1 ? '' : 's'} need${metrics.activeWithoutInvoice === 1 ? 's' : ''} invoicing`}
+                actionLabel="Create invoice"
+                onClick={() =>
+                  navigate({
+                    pathname: appRoutes.missions,
+                    search: createSearchParams({ queue: 'uninvoiced' }).toString(),
+                  })
+                }
+              />
+              <ActionItem
+                count={metrics.overdueCount}
+                tone={metrics.overdueCount > 0 ? 'danger' : 'neutral'}
+                title={`${metrics.overdueCount} overdue invoice${metrics.overdueCount === 1 ? '' : 's'}`}
+                actionLabel="Review invoices"
+                onClick={() =>
+                  navigate({
+                    pathname: appRoutes.invoices,
+                    search: createSearchParams({ queue: 'overdue' }).toString(),
+                  })
+                }
+              />
+              <ActionItem
+                count={metrics.pendingExpenses}
+                tone={metrics.pendingExpenses > 0 ? 'warning' : 'neutral'}
+                title={`${metrics.pendingExpenses} expense${metrics.pendingExpenses === 1 ? '' : 's'} pending`}
+                actionLabel="Review expenses"
+                onClick={() =>
+                  navigate({
+                    pathname: appRoutes.expenses,
+                    search: createSearchParams({ queue: 'pending' }).toString(),
+                  })
+                }
+              />
+            </ActionPanel>
 
             <SectionCard className="p-0">
               <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
@@ -461,7 +380,7 @@ export function Dashboard() {
                           search: createSearchParams({ focus: expense.expense_id }).toString(),
                         })
                       }
-                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50/80 md:grid-cols-[minmax(0,1fr)_160px_140px]"
+                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_140px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -546,7 +465,7 @@ export function Dashboard() {
                             search: createSearchParams({ focus: mission.mission_id }).toString(),
                           })
                         }
-                        className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50/80 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
+                        className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -632,7 +551,7 @@ export function Dashboard() {
                           search: createSearchParams({ focus: invoice.invoice_id }).toString(),
                         })
                       }
-                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50/80 md:grid-cols-[minmax(0,1fr)_160px_180px]"
+                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_180px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">

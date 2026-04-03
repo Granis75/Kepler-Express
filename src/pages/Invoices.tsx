@@ -70,16 +70,16 @@ const invoiceQueueOptions = [
 ] as const
 
 const inlineLinkButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900'
+  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const primaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800'
+  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const utilityActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900'
+  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const tertiaryActionButtonClasses =
-  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900'
+  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const checkboxClasses =
   'h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-300'
@@ -254,6 +254,12 @@ export function Invoices() {
 
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
+  }
+
+  const focusInvoice = (invoiceId: string) => {
+    setSearchParams(mergeSearchParams(searchParams, { focus: invoiceId }), {
+      replace: true,
+    })
   }
 
   const clearSelection = () => {
@@ -483,17 +489,33 @@ export function Invoices() {
     .map((missionId) => missionReferenceById.get(missionId))
     .filter(Boolean) as string[]
 
+  const copyToClipboard = async ({
+    content,
+    successMessage,
+    errorMessage,
+  }: {
+    content: string
+    successMessage: string
+    errorMessage: string
+  }) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      toast.success(successMessage)
+    } catch {
+      toast.error(errorMessage)
+    }
+  }
+
   const handleCopySelectedInvoiceNumbers = async () => {
     if (selectedInvoiceNumbers.length === 0) {
       return
     }
 
-    try {
-      await navigator.clipboard.writeText(selectedInvoiceNumbers.join('\n'))
-      toast.success('Invoice numbers copied.')
-    } catch {
-      toast.error('Clipboard is unavailable in this browser.')
-    }
+    await copyToClipboard({
+      content: selectedInvoiceNumbers.join('\n'),
+      successMessage: 'Invoice numbers copied.',
+      errorMessage: 'Clipboard is unavailable in this browser.',
+    })
   }
 
   const handleCopySelectedMissionReferences = async () => {
@@ -501,14 +523,19 @@ export function Invoices() {
       return
     }
 
-    try {
-      await navigator.clipboard.writeText(
-        [...new Set(selectedLinkedMissionReferences)].join('\n')
-      )
-      toast.success('Linked mission references copied.')
-    } catch {
-      toast.error('Clipboard is unavailable in this browser.')
-    }
+    await copyToClipboard({
+      content: [...new Set(selectedLinkedMissionReferences)].join('\n'),
+      successMessage: 'Linked mission references copied.',
+      errorMessage: 'Clipboard is unavailable in this browser.',
+    })
+  }
+
+  const handleCopyInvoiceNumber = async (invoiceNumber: string) => {
+    await copyToClipboard({
+      content: invoiceNumber,
+      successMessage: 'Invoice number copied.',
+      errorMessage: 'Clipboard is unavailable in this browser.',
+    })
   }
 
   useEffect(() => {
@@ -531,7 +558,7 @@ export function Invoices() {
             type="button"
             onClick={openCreate}
             disabled={clients.length === 0 || missions.length === 0}
-            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-primary"
           >
             <Plus className="h-4 w-4" />
             New invoice
@@ -602,11 +629,10 @@ export function Invoices() {
                 <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">Client, mission, and collection state.</p>
               </div>
 
               <label className="relative mt-5 block">
-                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
+                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-500" />
                 <input
                   type="text"
                   data-ops-search="true"
@@ -643,7 +669,7 @@ export function Invoices() {
                         'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
                         queue === option.value || (!queue && option.value === 'all')
                           ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
+                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-100'
                       )}
                     >
                       <span>{option.label}</span>
@@ -755,7 +781,7 @@ export function Invoices() {
                         missionsQuery.refetch(),
                       ])
                     }}
-                    className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                    className="btn-primary"
                   >
                     Retry
                   </button>
@@ -788,7 +814,7 @@ export function Invoices() {
 
                         openCreate()
                       }}
-                      className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                      className="btn-primary"
                     >
                       {clients.length === 0
                         ? 'Open clients'
@@ -800,7 +826,7 @@ export function Invoices() {
                     <button
                       type="button"
                       onClick={resetFilters}
-                      className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                      className="btn-secondary"
                     >
                       Reset filters
                     </button>
@@ -824,12 +850,19 @@ export function Invoices() {
                     >
                       Invoice queue
                     </h2>
-                    <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
+                    <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                       Showing {filteredInvoices.length} of {invoices.length} invoice
                       {filteredInvoices.length === 1 ? '' : 's'}.
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleAllVisibleInvoices}
+                      className={clsx(utilityActionButtonClasses, 'md:hidden')}
+                    >
+                      {allVisibleSelected ? 'Clear visible' : 'Select visible'}
+                    </button>
                     <DensityToggle value={density} onChange={setDensity} />
                     <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
                       {queueLabel}
@@ -878,6 +911,9 @@ export function Invoices() {
                     const remainingMissionCount =
                       invoice.mission_ids.length - visibleMissionIds.length
                     const firstMissionId = invoice.mission_ids[0]
+                    const firstMissionReference = firstMissionId
+                      ? missionReferenceById.get(firstMissionId) ?? 'Mission'
+                      : null
                     const outstandingAmount = getInvoiceBalance(invoice)
                     const isOverdue = invoice.status === 'overdue'
                     const isPartial = invoice.status === 'partial'
@@ -887,18 +923,19 @@ export function Invoices() {
                     return (
                       <article
                         key={invoice.invoice_id}
+                        onClick={() => focusInvoice(invoice.invoice_id)}
                         className={clsx(
-                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
+                          'group grid cursor-pointer border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
                           selectedInvoiceIds.includes(invoice.invoice_id) &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
                           isFocused
-                            ? 'border-l-sky-500 bg-sky-50/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]'
+                            ? 'border-l-sky-500 bg-sky-50/45 shadow-[inset_0_0_0_1px_rgba(125,211,252,0.38),inset_0_1px_0_rgba(255,255,255,0.72)]'
                             : isOverdue
                               ? 'border-l-rose-400 bg-rose-50/25 hover:bg-rose-50/40'
                               : isOpenBalance
                                 ? 'border-l-amber-400 bg-amber-50/20 hover:bg-amber-50/35'
-                                : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-50/80'
+                                : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
                         )}
                       >
                         <div className="flex items-start gap-3">
@@ -906,6 +943,7 @@ export function Invoices() {
                             type="checkbox"
                             checked={selectedInvoiceIds.includes(invoice.invoice_id)}
                             onChange={() => toggleInvoiceSelection(invoice.invoice_id)}
+                            onClick={(event) => event.stopPropagation()}
                             aria-label={`Select invoice ${invoice.invoice_number}`}
                             className={clsx(checkboxClasses, 'mt-0.5 shrink-0')}
                           />
@@ -928,20 +966,20 @@ export function Invoices() {
                             <p className="mt-1 text-sm font-medium text-stone-900">
                               {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
                             </p>
-                            {invoice.notes && !isCompact ? (
-                              <p className="mt-1 line-clamp-1 text-xs text-stone-400">
-                                {invoice.notes}
-                              </p>
-                            ) : null}
-                            {invoice.notes && isCompact ? (
-                              <p className="hidden text-[11px] text-stone-400 md:mt-0.5 md:block">
-                                {truncateString(invoice.notes, 84)}
-                              </p>
-                            ) : null}
+                          {invoice.notes && !isCompact ? (
+                            <p className="mt-1 line-clamp-1 text-xs text-stone-600">
+                              {invoice.notes}
+                            </p>
+                          ) : null}
+                          {invoice.notes && isCompact ? (
+                            <p className="hidden text-[11px] text-stone-600 md:mt-0.5 md:block">
+                              {truncateString(invoice.notes, 84)}
+                            </p>
+                          ) : null}
                           </div>
                         </div>
 
-                        <div className="text-sm text-stone-500">
+                        <div className="text-sm text-stone-600">
                           <p
                             className={clsx(
                               'font-medium',
@@ -953,14 +991,14 @@ export function Invoices() {
                           <p
                             className={clsx(
                               isCompact ? 'mt-0.5 text-xs' : 'mt-1',
-                              isOverdue ? 'text-rose-700' : 'text-stone-500'
+                              isOverdue ? 'text-rose-700' : 'text-stone-600'
                             )}
                           >
                             Issued {formatDate(invoice.issue_date)}
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500">
+                        <div className="text-sm text-stone-600">
                           <p
                             className={clsx(
                               'font-medium tabular-nums',
@@ -981,10 +1019,10 @@ export function Invoices() {
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500">
+                        <div className="text-sm text-stone-600">
                           {invoice.mission_ids.length > 0 ? (
                             <>
-                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-400">
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500">
                                 <span>Invoice</span>
                                 <ArrowRight className="h-3 w-3" />
                                 <span>Missions</span>
@@ -1002,7 +1040,8 @@ export function Invoices() {
                                   <button
                                     key={missionId}
                                     type="button"
-                                    onClick={() =>
+                                    onClick={(event) => {
+                                      event.stopPropagation()
                                       navigate({
                                         pathname: appRoutes.missions,
                                         search: createSearchParams({
@@ -1010,7 +1049,7 @@ export function Invoices() {
                                           focus: missionId,
                                         }).toString(),
                                       })
-                                    }
+                                    }}
                                     className={inlineLinkButtonClasses}
                                   >
                                     <Link2 className="h-3 w-3" />
@@ -1034,10 +1073,24 @@ export function Invoices() {
                         </div>
 
                         <div className="flex flex-col items-stretch gap-1.5 md:items-end">
+                          <div className="pointer-events-none opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void handleCopyInvoiceNumber(invoice.invoice_number)
+                              }}
+                              className={tertiaryActionButtonClasses}
+                            >
+                              Copy no.
+                            </button>
+                          </div>
+
                           {firstMissionId ? (
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={(event) => {
+                                event.stopPropagation()
                                 navigate({
                                   pathname: appRoutes.missions,
                                   search: createSearchParams({
@@ -1045,11 +1098,14 @@ export function Invoices() {
                                     focus: firstMissionId,
                                   }).toString(),
                                 })
-                              }
+                              }}
                               className={primaryActionButtonClasses}
+                              title={firstMissionReference ?? undefined}
                             >
                               <span>
-                                {invoice.mission_ids.length === 1 ? 'Open mission' : 'Open missions'}
+                                {invoice.mission_ids.length === 1
+                                  ? `Open ${truncateString(firstMissionReference ?? 'mission', 16)}`
+                                  : `Open ${invoice.mission_ids.length} missions`}
                               </span>
                               <ArrowRight className="h-3.5 w-3.5" />
                             </button>
@@ -1058,7 +1114,8 @@ export function Invoices() {
                           {isEditableInvoice(invoice.status) ? (
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={(event) => {
+                                event.stopPropagation()
                                 setSelectedInvoice(invoice)
                                 setActionError(null)
                                 setShowForm(true)
