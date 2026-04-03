@@ -198,15 +198,16 @@ export function DensityToggle({
   onChange: (value: 'compact' | 'comfortable') => void
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white/90 p-1 shadow-[0_8px_18px_rgba(28,25,23,0.04)]">
+    <div className="inline-flex items-center gap-1 rounded-full border border-stone-200/90 bg-white/92 p-1 shadow-[0_8px_18px_rgba(28,25,23,0.04)]">
       <span className="px-2.5 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
         Density
       </span>
       <button
         type="button"
+        aria-pressed={value === 'compact'}
         onClick={() => onChange('compact')}
         className={clsx(
-          'rounded-full px-3 py-1.5 text-xs font-medium transition',
+          'rounded-full px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
           value === 'compact'
             ? 'bg-stone-950 text-white shadow-[0_8px_18px_rgba(28,25,23,0.12)]'
             : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -216,9 +217,10 @@ export function DensityToggle({
       </button>
       <button
         type="button"
+        aria-pressed={value === 'comfortable'}
         onClick={() => onChange('comfortable')}
         className={clsx(
-          'rounded-full px-3 py-1.5 text-xs font-medium transition',
+          'rounded-full px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
           value === 'comfortable'
             ? 'bg-stone-950 text-white shadow-[0_8px_18px_rgba(28,25,23,0.12)]'
             : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -226,6 +228,47 @@ export function DensityToggle({
       >
         Comfortable
       </button>
+    </div>
+  )
+}
+
+export function SelectionToolbar({
+  count,
+  label,
+  meta,
+  actions,
+  onClear,
+}: {
+  count: number
+  label: string
+  meta?: string
+  actions?: ReactNode
+  onClear: () => void
+}) {
+  if (count === 0) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-stone-200/90 bg-white/92 px-4 py-3 shadow-[0_10px_24px_rgba(28,25,23,0.05)]">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-stone-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+          {count} selected
+        </span>
+        <p className="text-sm text-stone-700">{label}</p>
+        {meta ? <p className="text-xs text-stone-500">{meta}</p> : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {actions}
+        <button
+          type="button"
+          onClick={onClear}
+          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+        >
+          Clear
+        </button>
+      </div>
     </div>
   )
 }

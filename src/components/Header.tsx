@@ -1,10 +1,11 @@
-import { Menu } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { appRoutes } from '../lib/routes'
 import { useWorkspaceState } from '../lib/workspace'
 
 interface HeaderProps {
   onMenuClick: () => void
+  onCommandPaletteOpen: () => void
 }
 
 const routeMeta: Record<string, { title: string; subtitle: string }> = {
@@ -34,7 +35,7 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
   },
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, onCommandPaletteOpen }: HeaderProps) {
   const location = useLocation()
   const { organization, profile } = useWorkspaceState()
   const meta = routeMeta[location.pathname] ?? routeMeta[appRoutes.dashboard]
@@ -63,13 +64,33 @@ export function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
 
-        <div className="hidden min-w-[220px] rounded-[1.25rem] border border-stone-200 bg-white/82 px-4 py-3 text-right shadow-sm sm:block">
-          <p className="text-sm font-semibold text-stone-900">
-            {profile?.name ?? 'Workspace user'}
-          </p>
-          <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-stone-500">
-            {organization?.name ?? 'Organization'}
-          </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onCommandPaletteOpen}
+            className="inline-flex items-center gap-3 rounded-[1.15rem] border border-stone-200 bg-white/88 px-3.5 py-3 text-left text-sm text-stone-600 shadow-sm transition hover:border-stone-300 hover:text-stone-900"
+            aria-label="Open command palette"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-[0.95rem] bg-stone-100 text-stone-700">
+              <Search className="h-4 w-4" />
+            </div>
+            <div className="hidden min-w-0 sm:block">
+              <p className="text-sm font-medium text-stone-900">Search, jump, or create</p>
+              <p className="mt-0.5 text-xs text-stone-500">Command palette</p>
+            </div>
+            <span className="hidden rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-stone-500 lg:inline-flex">
+              Ctrl K
+            </span>
+          </button>
+
+          <div className="hidden min-w-[220px] rounded-[1.25rem] border border-stone-200 bg-white/82 px-4 py-3 text-right shadow-sm sm:block">
+            <p className="text-sm font-semibold text-stone-900">
+              {profile?.name ?? 'Workspace user'}
+            </p>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-stone-500">
+              {organization?.name ?? 'Organization'}
+            </p>
+          </div>
         </div>
       </div>
     </header>

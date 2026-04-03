@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Link2, Plus, Search } from 'lucide-react'
+import { ArrowRight, Copy, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -11,6 +11,7 @@ import {
   DensityToggle,
   ModalSurface,
   PageLoadingSkeleton,
+  SelectionToolbar,
   SectionCard,
   StatePanel,
   StatCard,
@@ -31,12 +32,10 @@ import {
 } from '../lib/utils'
 import { useWorkspaceState } from '../lib/workspace'
 import { useClients, useInvoices, useMissions } from '../hooks'
-import type { Invoice } from '../types/domain'
+import type { Invoice, Mission } from '../types/domain'
 
 function invoiceTone(status: Invoice['status']) {
   switch (status) {
-    case 'paid':
-      return 'success' as const
     case 'partial':
       return 'warning' as const
     case 'overdue':
@@ -71,10 +70,19 @@ const invoiceQueueOptions = [
 ] as const
 
 const inlineLinkButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900'
 
-const secondaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+const primaryActionButtonClasses =
+  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800'
+
+const utilityActionButtonClasses =
+  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900'
+
+const tertiaryActionButtonClasses =
+  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900'
+
+const checkboxClasses =
+  'h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-300'
 
 const densityStorageKey = 'kepler.ops.queue-density'
 
@@ -84,6 +92,7 @@ export function Invoices() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [showForm, setShowForm] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
@@ -213,6 +222,18 @@ export function Invoices() {
     statusFilter,
   ])
 
+  const selectedInvoices = useMemo(
+    () =>
+      filteredInvoices.filter((invoice) => selectedInvoiceIds.includes(invoice.invoice_id)),
+    [filteredInvoices, selectedInvoiceIds]
+  )
+
+  const allVisibleSelected =
+    filteredInvoices.length > 0 &&
+    filteredInvoices.every((invoice) => selectedInvoiceIds.includes(invoice.invoice_id))
+
+  const someVisibleSelected = selectedInvoiceIds.length > 0 && !allVisibleSelected
+
   const closeForm = () => {
     setShowForm(false)
     setSelectedInvoice(null)
@@ -233,6 +254,35 @@ export function Invoices() {
 
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
+  }
+
+  const clearSelection = () => {
+    setSelectedInvoiceIds([])
+  }
+
+  const toggleInvoiceSelection = (invoiceId: string) => {
+    setSelectedInvoiceIds((current) =>
+      current.includes(invoiceId)
+        ? current.filter((value) => value !== invoiceId)
+        : [...current, invoiceId]
+    )
+  }
+
+  const toggleAllVisibleInvoices = () => {
+    setSelectedInvoiceIds((current) => {
+      if (allVisibleSelected) {
+        return current.filter(
+          (invoiceId) => !filteredInvoices.some((invoice) => invoice.invoice_id === invoiceId)
+        )
+      }
+
+      const next = new Set(current)
+      filteredInvoices.forEach((invoice) => {
+        next.add(invoice.invoice_id)
+      })
+
+      return [...next]
+    })
   }
 
   const openCreate = () => {
@@ -289,40 +339,87 @@ export function Invoices() {
   const focusedInvoice = focusInvoiceId ? invoiceById.get(focusInvoiceId) : null
   const queueLabel =
     invoiceQueueOptions.find((option) => option.value === queue)?.label ?? 'All invoices'
+  const draftMissionIds = (searchParams.get('draft') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value && missionById.has(value))
+  const draftMissions = draftMissionIds
+    .map((missionId) => missionById.get(missionId))
+    .filter(Boolean) as Mission[]
 
-  const draftInvoiceValues = filteredMission
-    ? {
-        client_id: filteredMission.client_id,
-        mission_ids: [filteredMission.mission_id],
-        amount_total: filteredMission.revenue_amount,
-      }
-    : undefined
+  const draftInvoiceValues =
+    draftMissions.length > 0
+      ? {
+          client_id: draftMissions[0].client_id,
+          mission_ids: draftMissions.map((mission) => mission.mission_id),
+          amount_total: draftMissions.reduce((sum, mission) => sum + mission.revenue_amount, 0),
+        }
+      : filteredMission
+        ? {
+            client_id: filteredMission.client_id,
+            mission_ids: [filteredMission.mission_id],
+            amount_total: filteredMission.revenue_amount,
+          }
+        : undefined
+
+  useEffect(() => {
+    setSelectedInvoiceIds((current) =>
+      current.filter((invoiceId) =>
+        filteredInvoices.some((invoice) => invoice.invoice_id === invoiceId)
+      )
+    )
+  }, [filteredInvoices])
 
   useEffect(() => {
     if (composeIntent !== 'new' || showForm || selectedInvoice || isLoading) {
       return
     }
 
-    if (clients.length === 0 || missions.length === 0) {
-      return
-    }
-
-    setSelectedInvoice(null)
-    setActionError(null)
-    setShowForm(true)
-    setSearchParams(mergeSearchParams(searchParams, { compose: null }), {
+    openCreate()
+    setSearchParams(mergeSearchParams(searchParams, { compose: null, draft: null }), {
       replace: true,
     })
   }, [
-    clients.length,
     composeIntent,
     isLoading,
-    missions.length,
+    openCreate,
     searchParams,
     selectedInvoice,
     setSearchParams,
     showForm,
   ])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return
+      }
+
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      if (showForm) {
+        closeForm()
+        return
+      }
+
+      if (selectedInvoiceIds.length > 0) {
+        clearSelection()
+        return
+      }
+
+      if (focusInvoiceId) {
+        clearFocus()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [focusInvoiceId, selectedInvoiceIds.length, showForm])
 
   const activeFilterItems = [
     queue !== 'all'
@@ -379,6 +476,40 @@ export function Invoices() {
     value: string
     onClear: () => void
   }>
+
+  const selectedInvoiceNumbers = selectedInvoices.map((invoice) => invoice.invoice_number)
+  const selectedLinkedMissionReferences = selectedInvoices
+    .flatMap((invoice) => invoice.mission_ids)
+    .map((missionId) => missionReferenceById.get(missionId))
+    .filter(Boolean) as string[]
+
+  const handleCopySelectedInvoiceNumbers = async () => {
+    if (selectedInvoiceNumbers.length === 0) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(selectedInvoiceNumbers.join('\n'))
+      toast.success('Invoice numbers copied.')
+    } catch {
+      toast.error('Clipboard is unavailable in this browser.')
+    }
+  }
+
+  const handleCopySelectedMissionReferences = async () => {
+    if (selectedLinkedMissionReferences.length === 0) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(
+        [...new Set(selectedLinkedMissionReferences)].join('\n')
+      )
+      toast.success('Linked mission references copied.')
+    } catch {
+      toast.error('Clipboard is unavailable in this browser.')
+    }
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -478,6 +609,7 @@ export function Invoices() {
                 <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
                 <input
                   type="text"
+                  data-ops-search="true"
                   value={searchQuery}
                   onChange={(event) => updateFilters({ q: event.target.value || null })}
                   placeholder="Search invoice, client, or mission"
@@ -560,21 +692,51 @@ export function Invoices() {
           </div>
 
           <div className="space-y-3">
-            <div
-              className={clsx(
-                'flex flex-col gap-3',
-                activeFilterItems.length > 0 && 'lg:flex-row lg:items-start lg:justify-between'
-              )}
-            >
-              {activeFilterItems.length > 0 ? (
-                <div className="min-w-0 flex-1">
-                  <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
-                </div>
-              ) : null}
-              <div className="lg:shrink-0">
-                <DensityToggle value={density} onChange={setDensity} />
-              </div>
-            </div>
+            {activeFilterItems.length > 0 ? (
+              <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+            ) : null}
+
+            <SelectionToolbar
+              count={selectedInvoiceIds.length}
+              label="invoice queue rows ready for bulk action"
+              meta={
+                selectedLinkedMissionReferences.length > 0
+                  ? 'Linked mission references are available in the current selection.'
+                  : selectedInvoiceIds.length > 0
+                    ? 'Select invoices linked to missions to copy related work references.'
+                    : undefined
+              }
+              onClear={clearSelection}
+              actions={
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleCopySelectedInvoiceNumbers()
+                    }}
+                    className={primaryActionButtonClasses}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy numbers</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleCopySelectedMissionReferences()
+                    }}
+                    disabled={selectedLinkedMissionReferences.length === 0}
+                    className={clsx(
+                      utilityActionButtonClasses,
+                      selectedLinkedMissionReferences.length === 0 &&
+                        'cursor-not-allowed opacity-50'
+                    )}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy missions</span>
+                  </button>
+                </>
+              }
+            />
 
             {isLoading ? (
               <PageLoadingSkeleton stats={4} rows={4} />
@@ -649,7 +811,7 @@ export function Invoices() {
               <SectionCard className="overflow-hidden p-0">
                 <div
                   className={clsx(
-                    'flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4',
+                    'flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4',
                     isCompact ? 'py-2.5' : 'py-3'
                   )}
                 >
@@ -667,19 +829,34 @@ export function Invoices() {
                       {filteredInvoices.length === 1 ? '' : 's'}.
                     </p>
                   </div>
-                  <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-                    {queueLabel}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <DensityToggle value={density} onChange={setDensity} />
+                    <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+                      {queueLabel}
+                    </div>
                   </div>
                 </div>
 
                 <div
                   className={clsx(
-                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:gap-3',
+                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:gap-3',
                     isCompact ? 'py-1.5' : 'py-2'
                   )}
                 >
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                    Invoice
+                  <span className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      ref={(node) => {
+                        if (node) {
+                          node.indeterminate = someVisibleSelected
+                        }
+                      }}
+                      onChange={toggleAllVisibleInvoices}
+                      aria-label="Select visible invoices"
+                      className={checkboxClasses}
+                    />
+                    <span>Invoice</span>
                   </span>
                   <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
                     Dates
@@ -705,44 +882,63 @@ export function Invoices() {
                     const isOverdue = invoice.status === 'overdue'
                     const isPartial = invoice.status === 'partial'
                     const isOpenBalance = outstandingAmount > 0
+                    const isFocused = focusInvoiceId === invoice.invoice_id
 
                     return (
                       <article
                         key={invoice.invoice_id}
                         className={clsx(
-                          'grid px-4 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_145px] md:items-center',
+                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
-                          focusInvoiceId === invoice.invoice_id && 'bg-sky-50/40 ring-1 ring-inset ring-sky-200/60',
-                          isOverdue && 'bg-rose-50/20',
-                          !isOverdue && isPartial && 'bg-amber-50/20'
+                          selectedInvoiceIds.includes(invoice.invoice_id) &&
+                            'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
+                          isFocused
+                            ? 'border-l-sky-500 bg-sky-50/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]'
+                            : isOverdue
+                              ? 'border-l-rose-400 bg-rose-50/25 hover:bg-rose-50/40'
+                              : isOpenBalance
+                                ? 'border-l-amber-400 bg-amber-50/20 hover:bg-amber-50/35'
+                                : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-50/80'
                         )}
                       >
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-sm font-semibold text-stone-950">
-                              {invoice.invoice_number}
-                            </h2>
-                            <StatusBadge label={invoice.status} tone={invoiceTone(invoice.status)} />
-                            {focusInvoiceId === invoice.invoice_id ? (
-                              <StatusBadge label="focus" tone="info" />
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedInvoiceIds.includes(invoice.invoice_id)}
+                            onChange={() => toggleInvoiceSelection(invoice.invoice_id)}
+                            aria-label={`Select invoice ${invoice.invoice_number}`}
+                            className={clsx(checkboxClasses, 'mt-0.5 shrink-0')}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-950">
+                                {invoice.invoice_number}
+                              </h2>
+                              <StatusBadge
+                                label={invoiceStatusLabels[invoice.status]}
+                                tone={invoiceTone(invoice.status)}
+                              />
+                              {isFocused ? (
+                                <StatusBadge label="focus" tone="info" />
+                              ) : null}
+                              {isOpenBalance ? (
+                                <StatusBadge label="open balance" tone="warning" />
+                              ) : null}
+                            </div>
+                            <p className="mt-1 text-sm font-medium text-stone-900">
+                              {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
+                            </p>
+                            {invoice.notes && !isCompact ? (
+                              <p className="mt-1 line-clamp-1 text-xs text-stone-400">
+                                {invoice.notes}
+                              </p>
                             ) : null}
-                            {isOpenBalance ? (
-                              <StatusBadge label="open balance" tone="warning" />
+                            {invoice.notes && isCompact ? (
+                              <p className="hidden text-[11px] text-stone-400 md:mt-0.5 md:block">
+                                {truncateString(invoice.notes, 84)}
+                              </p>
                             ) : null}
                           </div>
-                          <p className="mt-1 text-sm font-medium text-stone-900">
-                            {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
-                          </p>
-                          {invoice.notes ? (
-                            <p
-                              className={clsx(
-                                'line-clamp-1 text-stone-400',
-                                isCompact ? 'hidden text-xs md:block' : 'mt-1 text-xs'
-                              )}
-                            >
-                              {invoice.notes}
-                            </p>
-                          ) : null}
                         </div>
 
                         <div className="text-sm text-stone-500">
@@ -752,15 +948,15 @@ export function Invoices() {
                               isOverdue ? 'text-rose-700' : 'text-stone-900'
                             )}
                           >
-                            {formatDate(invoice.issue_date)}
+                            Due {formatDate(invoice.due_date)}
                           </p>
                           <p
                             className={clsx(
                               isCompact ? 'mt-0.5 text-xs' : 'mt-1',
-                              isOverdue ? 'font-medium text-rose-700' : 'text-stone-500'
+                              isOverdue ? 'text-rose-700' : 'text-stone-500'
                             )}
                           >
-                            Due {formatDate(invoice.due_date)}
+                            Issued {formatDate(invoice.issue_date)}
                           </p>
                         </div>
 
@@ -778,17 +974,22 @@ export function Invoices() {
                             Outstanding {formatCurrencyWithDecimals(outstandingAmount)}
                           </p>
                           <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
-                            Total {formatCurrencyWithDecimals(invoice.amount_total)}
+                            Collected {formatCurrencyWithDecimals(invoice.amount_paid)}
                           </p>
                           <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
-                            Paid {formatCurrencyWithDecimals(invoice.amount_paid)}
+                            Total {formatCurrencyWithDecimals(invoice.amount_total)}
                           </p>
                         </div>
 
                         <div className="text-sm text-stone-500">
                           {invoice.mission_ids.length > 0 ? (
                             <>
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-400">
+                                <span>Invoice</span>
+                                <ArrowRight className="h-3 w-3" />
+                                <span>Missions</span>
+                              </div>
+                              <div className="mt-1.5 flex flex-wrap items-center gap-2">
                                 <p className="font-medium text-stone-900">
                                   Linked missions
                                 </p>
@@ -796,10 +997,6 @@ export function Invoices() {
                                   {invoice.mission_ids.length}
                                 </span>
                               </div>
-                              <p className={clsx(isCompact ? 'mt-0.5 text-xs text-stone-500' : 'mt-1 font-medium text-stone-900')}>
-                                {invoice.mission_ids.length} linked mission
-                                {invoice.mission_ids.length === 1 ? '' : 's'}
-                              </p>
                               <div className={clsx('flex flex-wrap gap-1.5', isCompact ? 'mt-1.5' : 'mt-2')}>
                                 {visibleMissionIds.map((missionId) => (
                                   <button
@@ -830,11 +1027,13 @@ export function Invoices() {
                               </div>
                             </>
                           ) : (
-                            <p className="mt-1 text-sm text-stone-500">No linked missions</p>
+                            <div className="border-t border-dashed border-stone-200 pt-2">
+                              <p className="text-xs text-stone-500">No linked missions</p>
+                            </div>
                           )}
                         </div>
 
-                        <div className="flex flex-col items-stretch gap-2 md:items-end">
+                        <div className="flex flex-col items-stretch gap-1.5 md:items-end">
                           {firstMissionId ? (
                             <button
                               type="button"
@@ -847,7 +1046,7 @@ export function Invoices() {
                                   }).toString(),
                                 })
                               }
-                              className={secondaryActionButtonClasses}
+                              className={primaryActionButtonClasses}
                             >
                               <span>
                                 {invoice.mission_ids.length === 1 ? 'Open mission' : 'Open missions'}
@@ -864,7 +1063,7 @@ export function Invoices() {
                                 setActionError(null)
                                 setShowForm(true)
                               }}
-                              className={secondaryActionButtonClasses}
+                              className={tertiaryActionButtonClasses}
                             >
                               Edit
                             </button>

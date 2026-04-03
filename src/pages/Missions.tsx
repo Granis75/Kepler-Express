@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, FilePlus2, Link2, Plus, Search } from 'lucide-react'
+import { ArrowRight, Copy, FilePlus2, Link2, Plus, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
@@ -11,6 +11,7 @@ import {
   DensityToggle,
   ModalSurface,
   PageLoadingSkeleton,
+  SelectionToolbar,
   SectionCard,
   StatePanel,
   StatCard,
@@ -69,13 +70,19 @@ const missionQueueOptions = [
 ] as const
 
 const inlineLinkButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900'
 
 const secondaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50'
+  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900'
 
 const primaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-2 text-xs font-medium text-white transition hover:bg-stone-800'
+  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800'
+
+const tertiaryActionButtonClasses =
+  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900'
+
+const checkboxClasses =
+  'h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-300'
 
 const densityStorageKey = 'kepler.ops.queue-density'
 
@@ -85,6 +92,7 @@ export function Missions() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [showForm, setShowForm] = useState(false)
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null)
+  const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
@@ -116,6 +124,7 @@ export function Missions() {
   const clientFilter = searchParams.get('client') ?? ''
   const invoiceFilter = searchParams.get('invoice') ?? ''
   const focusMissionId = searchParams.get('focus') ?? ''
+  const composeIntent = searchParams.get('compose') ?? ''
 
   const clientNameById = useMemo(
     () => new Map(clients.map((client) => [client.client_id, client.name] as const)),
@@ -230,6 +239,18 @@ export function Missions() {
     statusFilter,
   ])
 
+  const selectedMissions = useMemo(
+    () =>
+      filteredMissions.filter((mission) => selectedMissionIds.includes(mission.mission_id)),
+    [filteredMissions, selectedMissionIds]
+  )
+
+  const allVisibleSelected =
+    filteredMissions.length > 0 &&
+    filteredMissions.every((mission) => selectedMissionIds.includes(mission.mission_id))
+
+  const someVisibleSelected = selectedMissionIds.length > 0 && !allVisibleSelected
+
   const closeForm = () => {
     setShowForm(false)
     setSelectedMission(null)
@@ -250,6 +271,35 @@ export function Missions() {
 
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
+  }
+
+  const clearSelection = () => {
+    setSelectedMissionIds([])
+  }
+
+  const toggleMissionSelection = (missionId: string) => {
+    setSelectedMissionIds((current) =>
+      current.includes(missionId)
+        ? current.filter((value) => value !== missionId)
+        : [...current, missionId]
+    )
+  }
+
+  const toggleAllVisibleMissions = () => {
+    setSelectedMissionIds((current) => {
+      if (allVisibleSelected) {
+        return current.filter(
+          (missionId) => !filteredMissions.some((mission) => mission.mission_id === missionId)
+        )
+      }
+
+      const next = new Set(current)
+      filteredMissions.forEach((mission) => {
+        next.add(mission.mission_id)
+      })
+
+      return [...next]
+    })
   }
 
   const openCreate = () => {
@@ -296,10 +346,111 @@ export function Missions() {
     }
   }
 
+  useEffect(() => {
+    setSelectedMissionIds((current) =>
+      current.filter((missionId) =>
+        filteredMissions.some((mission) => mission.mission_id === missionId)
+      )
+    )
+  }, [filteredMissions])
+
+  useEffect(() => {
+    if (composeIntent !== 'new' || showForm || selectedMission || isLoading) {
+      return
+    }
+
+    openCreate()
+    setSearchParams(mergeSearchParams(searchParams, { compose: null }), {
+      replace: true,
+    })
+  }, [
+    composeIntent,
+    isLoading,
+    openCreate,
+    searchParams,
+    selectedMission,
+    setSearchParams,
+    showForm,
+  ])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return
+      }
+
+      if (event.key !== 'Escape') {
+        return
+      }
+
+      if (showForm) {
+        closeForm()
+        return
+      }
+
+      if (selectedMissionIds.length > 0) {
+        clearSelection()
+        return
+      }
+
+      if (focusMissionId) {
+        clearFocus()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [focusMissionId, selectedMissionIds.length, showForm])
+
   const filteredInvoice = invoiceFilter ? invoiceById.get(invoiceFilter) : null
   const focusedMission = focusMissionId ? missionById.get(focusMissionId) : null
   const queueLabel =
     missionQueueOptions.find((option) => option.value === queue)?.label ?? 'All missions'
+
+  const selectedMissionReferences = selectedMissions.map((mission) => mission.reference)
+  const selectedUninvoicedMissions = selectedMissions.filter((mission) => {
+    const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
+    return linkedInvoices.length === 0
+  })
+  const selectedMissionClientCount = new Set(
+    selectedUninvoicedMissions.map((mission) => mission.client_id)
+  ).size
+  const canCreateBulkInvoice =
+    selectedUninvoicedMissions.length > 0 &&
+    selectedUninvoicedMissions.length === selectedMissions.length &&
+    selectedMissionClientCount === 1
+
+  const handleCopySelectedMissionReferences = async () => {
+    if (selectedMissionReferences.length === 0) {
+      return
+    }
+
+    const content = selectedMissionReferences.join('\n')
+
+    try {
+      await navigator.clipboard.writeText(content)
+      toast.success('Mission references copied.')
+    } catch {
+      toast.error('Clipboard is unavailable in this browser.')
+    }
+  }
+
+  const handleCreateBulkInvoice = () => {
+    if (!canCreateBulkInvoice) {
+      return
+    }
+
+    navigate({
+      pathname: appRoutes.invoices,
+      search: createSearchParams({
+        compose: 'new',
+        draft: selectedUninvoicedMissions.map((mission) => mission.mission_id).join(','),
+      }).toString(),
+    })
+  }
 
   const activeFilterItems = [
     queue !== 'all'
@@ -450,6 +601,7 @@ export function Missions() {
                 <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
                 <input
                   type="text"
+                  data-ops-search="true"
                   value={searchQuery}
                   onChange={(event) => updateFilters({ q: event.target.value || null })}
                   placeholder="Search mission, client, route, driver, or invoice"
@@ -531,21 +683,54 @@ export function Missions() {
           </div>
 
           <div className="space-y-3">
-            <div
-              className={clsx(
-                'flex flex-col gap-3',
-                activeFilterItems.length > 0 && 'lg:flex-row lg:items-start lg:justify-between'
-              )}
-            >
-              {activeFilterItems.length > 0 ? (
-                <div className="min-w-0 flex-1">
-                  <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
-                </div>
-              ) : null}
-              <div className="lg:shrink-0">
-                <DensityToggle value={density} onChange={setDensity} />
-              </div>
-            </div>
+            {activeFilterItems.length > 0 ? (
+              <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+            ) : null}
+
+            <SelectionToolbar
+              count={selectedMissionIds.length}
+              label="mission queue rows ready for bulk action"
+              meta={
+                canCreateBulkInvoice
+                  ? 'Ready to open one invoice draft from the current selection.'
+                  : selectedMissionIds.length > 0
+                    ? selectedMissionClientCount > 1
+                      ? 'Bulk invoice draft requires one client.'
+                      : selectedUninvoicedMissions.length !== selectedMissions.length
+                        ? 'Only uninvoiced missions can open a shared draft.'
+                        : undefined
+                    : undefined
+              }
+              onClear={clearSelection}
+              actions={
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleCopySelectedMissionReferences()
+                    }}
+                    className={secondaryActionButtonClasses}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy refs</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateBulkInvoice}
+                    disabled={!canCreateBulkInvoice}
+                    className={clsx(
+                      primaryActionButtonClasses,
+                      !canCreateBulkInvoice && 'cursor-not-allowed opacity-50'
+                    )}
+                  >
+                    <FilePlus2 className="h-3.5 w-3.5" />
+                    <span>
+                      {selectedMissionIds.length === 1 ? 'Create invoice' : 'Create invoice draft'}
+                    </span>
+                  </button>
+                </>
+              }
+            />
 
             {isLoading ? (
               <PageLoadingSkeleton stats={4} rows={4} />
@@ -604,7 +789,7 @@ export function Missions() {
               <SectionCard className="overflow-hidden p-0">
                 <div
                   className={clsx(
-                    'flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-4',
+                    'flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4',
                     isCompact ? 'py-2.5' : 'py-3'
                   )}
                 >
@@ -622,19 +807,34 @@ export function Missions() {
                       {filteredMissions.length === 1 ? '' : 's'}.
                     </p>
                   </div>
-                  <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-                    {queueLabel}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <DensityToggle value={density} onChange={setDensity} />
+                    <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+                      {queueLabel}
+                    </div>
                   </div>
                 </div>
 
                 <div
                   className={clsx(
-                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:gap-3',
+                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:gap-3',
                     isCompact ? 'py-1.5' : 'py-2'
                   )}
                 >
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                    Mission
+                  <span className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      ref={(node) => {
+                        if (node) {
+                          node.indeterminate = someVisibleSelected
+                        }
+                      }}
+                      onChange={toggleAllVisibleMissions}
+                      aria-label="Select visible missions"
+                      className={checkboxClasses}
+                    />
+                    <span>Mission</span>
                   </span>
                   <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
                     Schedule
@@ -658,54 +858,84 @@ export function Missions() {
                       linkedInvoices.length - visibleLinkedInvoices.length
                     const margin = getMissionMarginSnapshot(mission)
                     const primaryInvoice = linkedInvoices[0]
+                    const isFocused = focusMissionId === mission.mission_id
+                    const isIssue = mission.status === MissionStatus.Issue
+                    const isUninvoiced = linkedInvoices.length === 0
+                    const needsInvoice = isUninvoiced && isMissionActive(mission.status)
 
                     return (
                       <article
                         key={mission.mission_id}
                         className={clsx(
-                          'grid px-4 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_150px] md:items-center',
+                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:items-center',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
-                          focusMissionId === mission.mission_id && 'bg-sky-50/40 ring-1 ring-inset ring-sky-200/60',
-                          linkedInvoices.length === 0 &&
-                            isMissionActive(mission.status) &&
-                            'bg-amber-50/20'
+                          selectedMissionIds.includes(mission.mission_id) &&
+                            'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
+                          isFocused
+                            ? 'border-l-sky-500 bg-sky-50/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]'
+                            : isIssue
+                              ? 'border-l-rose-400 bg-rose-50/25 hover:bg-rose-50/40'
+                              : needsInvoice
+                                ? 'border-l-amber-400 bg-amber-50/20 hover:bg-amber-50/35'
+                                : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-50/80'
                         )}
                       >
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-sm font-semibold text-stone-950">
-                              {mission.reference}
-                            </h2>
-                            <StatusBadge
-                              label={mission.status.replace('_', ' ')}
-                              tone={missionTone(mission.status)}
-                            />
-                            {focusMissionId === mission.mission_id ? (
-                              <StatusBadge label="focus" tone="info" />
-                            ) : null}
-                            {linkedInvoices.length === 0 ? (
-                              <StatusBadge label="not invoiced" tone="warning" />
-                            ) : null}
-                            {margin.isSensitive ? (
-                              <StatusBadge label="margin sensitive" tone="danger" />
-                            ) : null}
-                          </div>
-                          <p className="mt-1 text-sm font-medium text-stone-900">
-                            {mission.departure_location} to {mission.arrival_location}
-                          </p>
-                          <p className={clsx('text-stone-500', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
-                            {clientNameById.get(mission.client_id) ?? 'Unknown client'}
-                          </p>
-                          {mission.notes ? (
-                            <p
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedMissionIds.includes(mission.mission_id)}
+                            onChange={() => toggleMissionSelection(mission.mission_id)}
+                            aria-label={`Select mission ${mission.reference}`}
+                            className={clsx(checkboxClasses, 'mt-0.5 shrink-0')}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-950">
+                                {mission.reference}
+                              </h2>
+                              <StatusBadge
+                                label={missionStatusLabels[mission.status]}
+                                tone={missionTone(mission.status)}
+                              />
+                              {isFocused ? (
+                                <StatusBadge label="focus" tone="info" />
+                              ) : null}
+                              {isUninvoiced ? (
+                                <StatusBadge label="not invoiced" tone="warning" />
+                              ) : null}
+                              {margin.isSensitive ? (
+                                <StatusBadge label="margin sensitive" tone="danger" />
+                              ) : null}
+                            </div>
+                            <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-medium text-stone-950">
+                              <span className="truncate">{mission.departure_location}</span>
+                              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-stone-300" />
+                              <span className="truncate">{mission.arrival_location}</span>
+                            </div>
+                            <div
                               className={clsx(
-                                'line-clamp-1 text-stone-400',
-                                isCompact ? 'hidden pt-0.5 text-[11px] md:block' : 'mt-1 text-xs'
+                                'flex min-w-0 items-center gap-2 text-stone-500',
+                                isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm'
                               )}
                             >
-                              {mission.notes}
-                            </p>
-                          ) : null}
+                              <span className="truncate">
+                                {clientNameById.get(mission.client_id) ?? 'Unknown client'}
+                              </span>
+                              {mission.notes && !isCompact ? (
+                                <>
+                                  <span className="text-stone-300">/</span>
+                                  <span className="truncate text-stone-400">
+                                    {mission.notes}
+                                  </span>
+                                </>
+                              ) : null}
+                            </div>
+                            {mission.notes && isCompact ? (
+                              <p className="hidden pt-0.5 text-[11px] text-stone-400 md:block">
+                                {truncateString(mission.notes, 84)}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
 
                         <div className="text-sm text-stone-500">
@@ -729,12 +959,22 @@ export function Missions() {
                           </p>
                         </div>
 
-                        <div className={clsx('text-sm text-stone-500', isCompact ? 'space-y-2' : 'space-y-2.5')}>
+                        <div
+                          className={clsx(
+                            'text-sm text-stone-500',
+                            isCompact ? 'space-y-2' : 'space-y-2.5'
+                          )}
+                        >
                           <div>
                             <p className="font-medium text-stone-900 tabular-nums">
                               {formatCurrencyWithDecimals(mission.revenue_amount)}
                             </p>
-                            <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
+                            <p
+                              className={clsx(
+                                isCompact ? 'mt-0.5 text-xs' : 'mt-1',
+                                margin.isSensitive ? 'font-medium text-rose-700' : undefined
+                              )}
+                            >
                               Margin {formatPercentage(margin.marginRatio * 100, 0)}
                             </p>
                             <p className={clsx(isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
@@ -743,17 +983,27 @@ export function Missions() {
                             </p>
                           </div>
 
-                          <div>
+                          <div className="border-t border-dashed border-stone-200 pt-2">
+                            <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-400">
+                              <span>Mission</span>
+                              <ArrowRight className="h-3 w-3" />
+                              <span>Invoice</span>
+                            </div>
                             {linkedInvoices.length > 0 ? (
                               <>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="font-medium text-stone-900">Billing linked</p>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                  <p className="font-medium text-stone-900">Billed</p>
                                   <span className="text-xs text-stone-500">
                                     {linkedInvoices.length} invoice
                                     {linkedInvoices.length === 1 ? '' : 's'}
                                   </span>
                                 </div>
-                                <div className={clsx('flex flex-wrap gap-1.5', isCompact ? 'mt-1.5' : 'mt-2')}>
+                                <div
+                                  className={clsx(
+                                    'flex flex-wrap gap-1.5',
+                                    isCompact ? 'mt-1.5' : 'mt-2'
+                                  )}
+                                >
                                   {visibleLinkedInvoices.map((invoice) => (
                                     <button
                                       key={invoice.invoice_id}
@@ -781,17 +1031,22 @@ export function Missions() {
                                 </div>
                               </>
                             ) : (
-                              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-3 py-2">
-                                <p className="font-medium text-amber-900">Invoice missing</p>
-                                <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
-                                  Create a linked invoice with mission context prefilled.
+                              <div className="mt-1.5">
+                                <p className="font-medium text-amber-900">Not invoiced</p>
+                                <p
+                                  className={clsx(
+                                    'text-stone-600',
+                                    isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm'
+                                  )}
+                                >
+                                  Billing is still open for this mission.
                                 </p>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-stretch gap-2 md:items-end">
+                        <div className="flex flex-col items-stretch gap-1.5 md:items-end">
                           {linkedInvoices.length > 0 && primaryInvoice ? (
                             <button
                               type="button"
@@ -807,7 +1062,7 @@ export function Missions() {
                               className={secondaryActionButtonClasses}
                             >
                               <span>
-                                {linkedInvoices.length === 1 ? 'Open invoice' : 'Open invoices'}
+                                {linkedInvoices.length === 1 ? 'View invoice' : 'View invoices'}
                               </span>
                               <ArrowRight className="h-3.5 w-3.5" />
                             </button>
@@ -826,7 +1081,7 @@ export function Missions() {
                               className={primaryActionButtonClasses}
                             >
                               <FilePlus2 className="h-3.5 w-3.5" />
-                              <span>Create linked invoice</span>
+                              <span>Create invoice</span>
                             </button>
                           )}
 
@@ -837,7 +1092,7 @@ export function Missions() {
                               setActionError(null)
                               setShowForm(true)
                             }}
-                            className={secondaryActionButtonClasses}
+                            className={tertiaryActionButtonClasses}
                           >
                             Edit
                           </button>
