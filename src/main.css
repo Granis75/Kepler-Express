@@ -63,18 +63,18 @@ select {
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 px-5 py-2.5 text-sm font-medium text-white shadow-[0_14px_34px_rgba(28,25,23,0.14)] transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-stone-200 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-medium text-white shadow-[0_12px_26px_rgba(28,25,23,0.12)] transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-stone-200 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-stone-300/90 bg-white/90 px-5 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition hover:border-stone-400 hover:bg-stone-100 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-stone-100 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-stone-300/90 bg-white/90 px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-stone-400 hover:bg-stone-100 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-stone-100 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-subtle {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-200 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-stone-100 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-200 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-stone-100 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .input-shell {
-    @apply w-full rounded-[1.2rem] border border-stone-300/90 bg-white/90 px-4 py-3 text-sm text-stone-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100;
+    @apply w-full rounded-[1rem] border border-stone-300/90 bg-white/90 px-3.5 py-2.5 text-sm text-stone-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100;
   }
 }

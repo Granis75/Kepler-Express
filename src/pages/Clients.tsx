@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import clsx from 'clsx'
-import { createSearchParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { ClientForm } from '../components/ClientForm'
 import { PageContainer } from '../components/PageContainer'
@@ -25,7 +24,7 @@ import {
 } from '../lib/operations'
 import { formatCurrencyWithDecimals, formatPhoneNumber, toSearchValue } from '../lib/utils'
 import { useWorkspaceState } from '../lib/workspace'
-import { appRoutes, getClientDetailRoute } from '../lib/routes'
+import { getClientDetailRoute } from '../lib/routes'
 import type { Client, CreateClientInput } from '../types'
 
 const clientQueueOptions = [
@@ -243,7 +242,7 @@ export function Clients() {
     <PageContainer>
       <PageHeader
         title="Clients"
-        description={`Customer account view for ${organization?.name ?? 'the current workspace'}, tied directly to active missions and billing workload.`}
+        description={`Customer accounts with live ops and billing exposure for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -252,7 +251,7 @@ export function Clients() {
               setActionError(null)
               setShowForm(true)
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+            className="btn-primary"
           >
             <Plus className="h-4 w-4" />
             New client
@@ -281,7 +280,7 @@ export function Clients() {
         </ModalSurface>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Total clients"
@@ -312,77 +311,60 @@ export function Clients() {
           />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[290px_minmax(0,1fr)]">
-          <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
-            <SectionCard>
+        <div className="space-y-3">
+          <SectionCard className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  Filter accounts by relationship status, live operations, and billing pressure.
-                </p>
+                <p className="mt-1 text-xs text-stone-500">Search, queue, and status.</p>
               </div>
+              <button type="button" onClick={resetFilters} className="btn-secondary">
+                Reset filters
+              </button>
+            </div>
 
-              <label className="relative mt-5 block">
-                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.8fr)_170px_170px]">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
                 <input
+                  data-ops-search="true"
                   type="text"
                   value={searchQuery}
                   onChange={(event) => updateFilters({ q: event.target.value || null })}
                   placeholder="Search client name, email, city, or country"
-                  className="input-shell pl-11"
+                  className="input-shell pl-10"
                 />
               </label>
 
-              <div className="mt-5 space-y-2">
-                {clientQueueOptions.map((option) => {
-                  const count =
-                    option.value === 'active'
-                      ? summary.active
-                      : option.value === 'ops'
-                        ? summary.ops
-                        : option.value === 'billing'
-                          ? summary.billing
-                          : option.value === 'overdue'
-                            ? summary.overdue
-                            : summary.total
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => updateFilters({ queue: option.value === 'all' ? null : option.value })}
-                      className={clsx(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
-                        queue === option.value || (!queue && option.value === 'all')
-                          ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
-                      )}
-                    >
-                      <span>{option.label}</span>
-                      <span>{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
+              <select
+                value={queue === 'all' ? '' : queue}
+                onChange={(event) => updateFilters({ queue: event.target.value || null })}
+                className="input-shell"
+              >
+                <option value="">All queues</option>
+                {clientQueueOptions
+                  .filter((option) => option.value !== 'all')
+                  .map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+              </select>
 
               <select
                 value={statusFilter}
                 onChange={(event) => updateFilters({ status: event.target.value || null })}
-                className="input-shell mt-5"
+                className="input-shell"
               >
                 <option value="">All statuses</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="archived">Archived</option>
               </select>
-
-              <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
-                Reset filters
-              </button>
-            </SectionCard>
-          </div>
+            </div>
+          </SectionCard>
 
           {isLoading ? (
             <PageLoadingSkeleton stats={4} rows={4} />
@@ -401,7 +383,7 @@ export function Clients() {
                       invoicesQuery.refetch(),
                     ])
                   }}
-                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                  className="btn-primary"
                 >
                   Retry
                 </button>
@@ -431,7 +413,7 @@ export function Clients() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                  className="btn-secondary"
                   >
                     Reset filters
                   </button>
@@ -440,18 +422,17 @@ export function Clients() {
             />
           ) : (
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-[1.65rem] font-semibold tracking-tight text-stone-950">
                     Client accounts
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
-                    {filteredClients.length} visible client
-                    {filteredClients.length === 1 ? '' : 's'} with live operations and billing
-                    workload surfaced beside core account data.
+                  <p className="mt-0.5 text-xs text-stone-600">
+                    Showing {filteredClients.length} of {clients.length} client
+                    {filteredClients.length === 1 ? '' : 's'}.
                   </p>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
+                <div className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] text-stone-600">
                   {queue === 'all' ? 'All accounts' : `Queue: ${queue.replace('-', ' ')}`}
                 </div>
               </div>
@@ -481,7 +462,7 @@ export function Clients() {
                           openClientDetail(client.client_id)
                         }
                       }}
-                      className="grid cursor-pointer gap-4 px-5 py-4 transition hover:bg-stone-50/80 focus-within:bg-stone-50/80 md:grid-cols-[minmax(0,1.1fr)_180px_220px_240px_auto] md:items-start"
+                      className="grid cursor-pointer gap-3 px-4 py-3 transition hover:bg-stone-50/80 focus-within:bg-stone-50/80 md:grid-cols-[minmax(0,1.6fr)_minmax(0,160px)_minmax(0,190px)_92px] md:items-start"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -499,55 +480,34 @@ export function Clients() {
                           {overdueInvoices > 0 ? (
                             <StatusBadge label="overdue billing" tone="danger" />
                           ) : null}
+                          {openInvoices > 0 && overdueInvoices === 0 ? (
+                            <StatusBadge label="billing follow-up" tone="warning" />
+                          ) : null}
                         </div>
-                        <p className="mt-1 text-sm text-stone-900">{client.email}</p>
-                        <p className="mt-1 text-sm text-stone-500">
+                        <p className="mt-1 truncate text-sm text-stone-900">{client.email}</p>
+                        <p className="mt-1 truncate text-sm text-stone-500">
                           {[client.city, client.country].filter(Boolean).join(', ') || 'No location set'}
                         </p>
                         {client.notes ? (
-                          <p className="mt-2 text-sm text-stone-500">{client.notes}</p>
+                          <p className="mt-1 line-clamp-1 text-xs text-stone-600">{client.notes}</p>
                         ) : null}
                       </div>
 
-                      <div className="text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
-                          Contact
-                        </p>
-                        <p className="mt-1 font-medium text-stone-900">
-                          {formatPhoneNumber(client.phone)}
-                        </p>
-                        <p className="mt-1">
-                          {client.vat_number || 'VAT not provided'}
-                        </p>
-                      </div>
-
-                      <div className="text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                      <div className="min-w-0 text-sm text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                           Operations
                         </p>
                         <p className="mt-1 font-medium text-stone-900">
                           {activeMissions} active mission{activeMissions === 1 ? '' : 's'}
                         </p>
-                        <p className="mt-1">
-                          Revenue {formatCurrencyWithDecimals(revenue)}
+                        <p className="mt-1">Revenue {formatCurrencyWithDecimals(revenue)}</p>
+                        <p className="mt-1 truncate text-xs text-stone-500">
+                          {formatPhoneNumber(client.phone)} {client.vat_number ? `· ${client.vat_number}` : ''}
                         </p>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            navigate({
-                              pathname: appRoutes.missions,
-                              search: createSearchParams({ client: client.client_id }).toString(),
-                            })
-                          }}
-                          className="mt-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
-                        >
-                          Open missions
-                        </button>
                       </div>
 
-                      <div className="text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                      <div className="min-w-0 text-sm text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                           Billing
                         </p>
                         <p className="mt-1 font-medium text-stone-900">
@@ -557,19 +517,6 @@ export function Clients() {
                           Balance {formatCurrencyWithDecimals(openBalance)}
                         </p>
                         <p className="mt-1">{overdueInvoices} overdue</p>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            navigate({
-                              pathname: appRoutes.invoices,
-                              search: createSearchParams({ client: client.client_id }).toString(),
-                            })
-                          }}
-                          className="mt-2 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
-                        >
-                          Open invoices
-                        </button>
                       </div>
 
                       <div className="flex items-start justify-end">
@@ -581,7 +528,7 @@ export function Clients() {
                             setActionError(null)
                             setShowForm(true)
                           }}
-                          className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                          className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
                         >
                           Edit
                         </button>

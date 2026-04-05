@@ -234,7 +234,7 @@ export function Expenses() {
     <PageContainer>
       <PageHeader
         title="Expenses"
-        description={`Operational cost control for ${organization?.name ?? 'the current workspace'}, with approval, receipt, and mission context kept visible in one queue.`}
+        description={`Cost control, approvals, and receipts for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -243,7 +243,7 @@ export function Expenses() {
               setActionError(null)
               setShowForm(true)
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+            className="btn-primary"
           >
             <Plus className="h-4 w-4" />
             New expense
@@ -272,7 +272,7 @@ export function Expenses() {
         </ModalSurface>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Total spend"
@@ -303,130 +303,91 @@ export function Expenses() {
           />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[290px_minmax(0,1fr)]">
-          <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
-            <SectionCard>
+        <div className="space-y-3">
+          <SectionCard className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  Narrow the expense queue around approval, receipt gaps, and mission context.
+                <p className="mt-1 text-xs text-stone-500">
+                  Search, queue, type, and approval.
                 </p>
               </div>
+              <button type="button" onClick={resetFilters} className="btn-secondary">
+                Reset filters
+              </button>
+            </div>
 
-              <label className="relative mt-5 block">
-                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-400" />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_170px_170px_170px]">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
                 <input
+                  data-ops-search="true"
                   type="text"
                   value={searchQuery}
                   onChange={(event) => updateFilters({ q: event.target.value || null })}
                   placeholder="Search mission, driver, vehicle, notes, or amount"
-                  className="input-shell pl-11"
+                  className="input-shell pl-10"
                 />
               </label>
 
-              <div className="mt-5 space-y-2">
-                {expenseQueueOptions.map((option) => {
-                  const count =
-                    option.value === 'pending'
-                      ? summary.pendingApprovals
-                      : option.value === 'missing-receipt'
-                        ? summary.missingReceipts
-                        : option.value === 'driver-advance'
-                          ? expenses.filter((expense) => expense.advanced_by_driver).length
-                          : option.value === 'paid'
-                            ? expenses.filter((expense) => expense.approval_status === 'paid').length
-                            : expenses.length
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => updateFilters({ queue: option.value === 'all' ? null : option.value })}
-                      className={clsx(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
-                        queue === option.value || (!queue && option.value === 'all')
-                          ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
-                      )}
-                    >
-                      <span>{option.label}</span>
-                      <span>{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="mt-5 space-y-4">
-                <select
-                  value={expenseTypeFilter}
-                  onChange={(event) =>
-                    updateFilters({
-                      type: (event.target.value || null) as Expense['expense_type'] | null,
-                    })
-                  }
-                  className="input-shell"
-                >
-                  <option value="">All types</option>
-                  {Object.entries(expenseTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
+              <select
+                value={queue === 'all' ? '' : queue}
+                onChange={(event) => updateFilters({ queue: event.target.value || null })}
+                className="input-shell"
+              >
+                <option value="">All queues</option>
+                {expenseQueueOptions
+                  .filter((option) => option.value !== 'all')
+                  .map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
-                </select>
+              </select>
 
-                <select
-                  value={approvalFilter}
-                  onChange={(event) =>
-                    updateFilters({
-                      approval: (event.target.value || null) as Expense['approval_status'] | null,
-                    })
-                  }
-                  className="input-shell"
-                >
-                  <option value="">All approvals</option>
-                  {Object.entries(approvalStatusLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+              <select
+                value={expenseTypeFilter}
+                onChange={(event) =>
+                  updateFilters({
+                    type: (event.target.value || null) as Expense['expense_type'] | null,
+                  })
+                }
+                className="input-shell"
+              >
+                <option value="">All types</option>
+                {Object.entries(expenseTypeLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
 
-                <select
-                  value={paidByFilter}
-                  onChange={(event) =>
-                    updateFilters({
-                      paidBy: (event.target.value || null) as 'driver' | 'company' | null,
-                    })
-                  }
-                  className="input-shell"
-                >
-                  <option value="">All payment sources</option>
-                  <option value="driver">Advanced by driver</option>
-                  <option value="company">Company paid</option>
-                </select>
-              </div>
+              <select
+                value={approvalFilter}
+                onChange={(event) =>
+                  updateFilters({
+                    approval: (event.target.value || null) as Expense['approval_status'] | null,
+                  })
+                }
+                className="input-shell"
+              >
+                <option value="">All approvals</option>
+                {Object.entries(approvalStatusLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {filteredMission ? (
-                <div className="mt-5 rounded-[1.2rem] border border-stone-200 bg-stone-50 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                    Mission context
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-stone-950">
-                    {filteredMission.reference}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-500">
-                    Only expenses linked to this mission are visible.
-                  </p>
-                </div>
-              ) : null}
-
-              <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
-                Reset filters
-              </button>
-            </SectionCard>
-          </div>
+            {filteredMission ? (
+              <p className="text-xs text-stone-500">
+                Mission context: <span className="font-medium text-stone-900">{filteredMission.reference}</span>
+              </p>
+            ) : null}
+          </SectionCard>
 
           {isLoading ? (
             <PageLoadingSkeleton stats={4} rows={4} />
@@ -441,7 +402,7 @@ export function Expenses() {
                   onClick={() => {
                     void Promise.all([expensesQuery.refetch(), missionsQuery.refetch()])
                   }}
-                  className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                  className="btn-primary"
                 >
                   Retry
                 </button>
@@ -471,7 +432,7 @@ export function Expenses() {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                  className="btn-secondary"
                   >
                     Reset filters
                   </button>
@@ -480,18 +441,17 @@ export function Expenses() {
             />
           ) : (
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-[1.65rem] font-semibold tracking-tight text-stone-950">
                     Expense queue
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
-                    {filteredExpenses.length} visible expense
-                    {filteredExpenses.length === 1 ? '' : 's'} with approval state, receipt
-                    discipline, and mission linkage kept in one row.
+                  <p className="mt-0.5 text-xs text-stone-600">
+                    Showing {filteredExpenses.length} of {expenses.length} expense
+                    {filteredExpenses.length === 1 ? '' : 's'}.
                   </p>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
+                <div className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] text-stone-600">
                   {queue === 'all' ? 'All expenses' : `Queue: ${queue.replace('-', ' ')}`}
                 </div>
               </div>
@@ -501,7 +461,7 @@ export function Expenses() {
                   <article
                     key={expense.expense_id}
                     className={clsx(
-                      'grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1.1fr)_150px_220px_180px_auto] md:items-start',
+                      'grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,125px)_minmax(0,150px)_minmax(0,150px)_92px] md:items-start',
                       focusExpenseId === expense.expense_id && 'bg-amber-50/50'
                     )}
                   >
@@ -518,7 +478,7 @@ export function Expenses() {
                           <StatusBadge label="receipt missing" tone="danger" />
                         ) : null}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-sm text-stone-500">
                         {expense.mission_id ? (
                           <button
                             type="button"
@@ -530,21 +490,25 @@ export function Expenses() {
                                 }).toString(),
                               })
                             }
-                            className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
+                            className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
                           >
                             {missionReferenceById.get(expense.mission_id) ?? 'Unknown mission'}
                           </button>
                         ) : (
                           <span>No linked mission</span>
                         )}
+                        <span className="text-stone-300">/</span>
+                        <span className="truncate text-xs text-stone-500">
+                          {expense.driver_name || expense.vehicle_name || 'Unassigned'}
+                        </span>
                       </div>
                       {expense.notes ? (
-                        <p className="mt-2 text-sm text-stone-500">{expense.notes}</p>
+                        <p className="mt-1 line-clamp-1 text-xs text-stone-600">{expense.notes}</p>
                       ) : null}
                     </div>
 
-                    <div className="text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                    <div className="min-w-0 text-sm text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                         Amount
                       </p>
                       <p className="mt-1 font-medium text-stone-900">
@@ -553,8 +517,8 @@ export function Expenses() {
                       <p className="mt-1">{formatDate(expense.expense_date)}</p>
                     </div>
 
-                    <div className="text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                    <div className="min-w-0 text-sm text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                         Cost control
                       </p>
                       <p className="mt-1 font-medium text-stone-900">
@@ -565,15 +529,15 @@ export function Expenses() {
                       </p>
                     </div>
 
-                    <div className="text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">
+                    <div className="min-w-0 text-sm text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                         Assignment
                       </p>
-                      <p className="mt-1 font-medium text-stone-900">
-                        {expense.driver_name || 'No driver'}
+                      <p className="mt-1 truncate font-medium text-stone-900">
+                        {expense.advanced_by_driver ? 'Driver advance' : 'Company paid'}
                       </p>
-                      <p className="mt-1">
-                        {expense.vehicle_name || 'No vehicle'}
+                      <p className="mt-1 truncate">
+                        {expense.vehicle_name || expense.driver_name || 'No assignment'}
                       </p>
                     </div>
 
@@ -585,7 +549,7 @@ export function Expenses() {
                           setActionError(null)
                           setShowForm(true)
                         }}
-                        className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+                        className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
                       >
                         Edit
                       </button>

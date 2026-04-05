@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Mail, MapPin, PencilLine, Phone } from 'lucide-react'
+import { ArrowLeft, FileDown, Mail, MapPin, PencilLine, Phone } from 'lucide-react'
 import { createSearchParams, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { InvoiceEditorForm, type InvoiceEditorInput } from '../components/InvoiceEditorForm'
@@ -19,6 +19,7 @@ import {
   getPaymentMethodConfig,
 } from '../lib/domain'
 import { updateInvoiceRecord } from '../lib/api/invoices'
+import { downloadInvoicePdf } from '../lib/export/invoicePdf'
 import {
   getInvoiceBalance,
   getMissionMarginSnapshot,
@@ -36,6 +37,7 @@ import {
   formatPercentage,
   formatPhoneNumber,
 } from '../lib/utils'
+import { useWorkspaceState } from '../lib/workspace'
 import type { Client, Invoice, Mission } from '../types/domain'
 import { PaymentMethod } from '../types'
 
@@ -151,9 +153,11 @@ function getCollectionState(invoice: Invoice) {
 export function InvoiceDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const { organization } = useWorkspaceState()
   const [showForm, setShowForm] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
   const invoiceQuery = useInvoice(id)
   const paymentsQuery = usePaymentsByInvoice(id)
   const clientsQuery = useClients()
@@ -239,6 +243,35 @@ export function InvoiceDetail() {
       toast.error(message)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleExportPdf = async () => {
+    if (!invoice) {
+      return
+    }
+
+    setIsExportingPdf(true)
+
+    try {
+      await downloadInvoicePdf({
+        invoice,
+        client,
+        linkedMissions,
+        payments: paymentHistory,
+        outstanding: getInvoiceBalance(invoice),
+        organizationName: organization?.name,
+        paymentSummaryNote: paymentLoadError,
+      })
+      toast.success('Invoice PDF downloaded.')
+    } catch (exportError) {
+      const message =
+        exportError instanceof Error
+          ? exportError.message
+          : 'Unable to export the invoice PDF.'
+      toast.error(message)
+    } finally {
+      setIsExportingPdf(false)
     }
   }
 
@@ -385,6 +418,18 @@ export function InvoiceDetail() {
                 Open client
               </button>
             ) : null}
+
+            <button
+              type="button"
+              onClick={() => {
+                void handleExportPdf()
+              }}
+              disabled={isExportingPdf}
+              className={secondaryButtonClasses}
+            >
+              <FileDown className="h-4 w-4" />
+              {isExportingPdf ? 'Exporting…' : 'Export PDF'}
+            </button>
 
             <button
               type="button"

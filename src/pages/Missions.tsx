@@ -8,7 +8,6 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
   ActiveFilterBar,
-  DensityToggle,
   ModalSurface,
   PageLoadingSkeleton,
   SelectionToolbar,
@@ -73,7 +72,10 @@ const inlineLinkButtonClasses =
   'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const primaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+
+const secondaryActionButtonClasses =
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
 const tertiaryActionButtonClasses =
   'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
@@ -84,8 +86,6 @@ const rowDetailButtonClasses =
 const checkboxClasses =
   'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
 
-const densityStorageKey = 'kepler.ops.queue-density'
-
 export function Missions() {
   const navigate = useNavigate()
   const { organization } = useWorkspaceState()
@@ -95,14 +95,6 @@ export function Missions() {
   const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
-    if (typeof window === 'undefined') {
-      return 'compact'
-    }
-
-    const savedDensity = window.localStorage.getItem(densityStorageKey)
-    return savedDensity === 'comfortable' ? 'comfortable' : 'compact'
-  })
   const missionsQuery = useMissions()
   const clientsQuery = useClients()
   const invoicesQuery = useInvoices()
@@ -460,21 +452,13 @@ export function Missions() {
     onClear: () => void
   }>
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    window.localStorage.setItem(densityStorageKey, density)
-  }, [density])
-
-  const isCompact = density === 'compact'
+  const isCompact = true
 
   return (
     <PageContainer>
       <PageHeader
         title="Missions"
-        description={`Operational mission queue for ${organization?.name ?? 'the current workspace'}.`}
+        description={`Mission delivery and billing queue for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -508,7 +492,7 @@ export function Missions() {
         </ModalSurface>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Total missions"
@@ -539,99 +523,82 @@ export function Missions() {
           />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[290px_minmax(0,1fr)]">
-          <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
-            <SectionCard>
+        <div className="space-y-3">
+          <SectionCard className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
+                <p className="mt-1 text-xs text-stone-500">
+                  Search, queue, client, and status.
+                </p>
               </div>
+              <button type="button" onClick={resetFilters} className="btn-secondary">
+                Reset filters
+              </button>
+            </div>
 
-              <label className="relative mt-5 block">
-                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-500" />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_170px_180px_170px]">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
                 <input
                   type="text"
                   data-ops-search="true"
                   value={searchQuery}
                   onChange={(event) => updateFilters({ q: event.target.value || null })}
                   placeholder="Search mission, client, route, driver, or invoice"
-                  className="input-shell pl-11"
+                  className="input-shell pl-10"
                 />
               </label>
 
-              <div className="mt-5 space-y-2">
-                {missionQueueOptions.map((option) => {
-                  const count =
-                    option.value === 'active'
-                      ? summary.active
-                      : option.value === 'uninvoiced'
-                        ? summary.uninvoiced
-                        : option.value === 'margin'
-                          ? summary.marginSensitive
-                          : option.value === 'issues'
-                            ? summary.issues
-                            : summary.total
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() =>
-                        updateFilters({ queue: option.value === 'all' ? null : option.value })
-                      }
-                      className={clsx(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
-                        queue === option.value || (!queue && option.value === 'all')
-                          ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-100'
-                      )}
-                    >
-                      <span>{option.label}</span>
-                      <span>{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="mt-5 space-y-4">
-                <select
-                  value={clientFilter}
-                  onChange={(event) => updateFilters({ client: event.target.value || null })}
-                  className="input-shell"
-                >
-                  <option value="">All clients</option>
-                  {clients.map((client) => (
-                    <option key={client.client_id} value={client.client_id}>
-                      {client.name}
+              <select
+                value={queue === 'all' ? '' : queue}
+                onChange={(event) => updateFilters({ queue: event.target.value || null })}
+                className="input-shell"
+              >
+                <option value="">All queues</option>
+                {missionQueueOptions
+                  .filter((option) => option.value !== 'all')
+                  .map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
-                </select>
+              </select>
 
-                <select
-                  value={statusFilter}
-                  onChange={(event) =>
-                    updateFilters({
-                      status: (event.target.value || null) as Mission['status'] | null,
-                    })
-                  }
-                  className="input-shell"
-                >
-                  <option value="">All statuses</option>
-                  <option value={MissionStatus.Planned}>Planned</option>
-                  <option value={MissionStatus.Assigned}>Assigned</option>
-                  <option value={MissionStatus.InProgress}>In progress</option>
-                  <option value={MissionStatus.Delivered}>Delivered</option>
-                  <option value={MissionStatus.Issue}>Issue</option>
-                  <option value={MissionStatus.Cancelled}>Cancelled</option>
-                </select>
-              </div>
+              <select
+                value={clientFilter}
+                onChange={(event) => updateFilters({ client: event.target.value || null })}
+                className="input-shell"
+              >
+                <option value="">All clients</option>
+                {clients.map((client) => (
+                  <option key={client.client_id} value={client.client_id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
 
-              <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
-                Reset filters
-              </button>
-            </SectionCard>
-          </div>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  updateFilters({
+                    status: (event.target.value || null) as Mission['status'] | null,
+                  })
+                }
+                className="input-shell"
+              >
+                <option value="">All statuses</option>
+                <option value={MissionStatus.Planned}>Planned</option>
+                <option value={MissionStatus.Assigned}>Assigned</option>
+                <option value={MissionStatus.InProgress}>In progress</option>
+                <option value={MissionStatus.Delivered}>Delivered</option>
+                <option value={MissionStatus.Issue}>Issue</option>
+                <option value={MissionStatus.Cancelled}>Cancelled</option>
+              </select>
+            </div>
+          </SectionCard>
 
           <div className="space-y-3">
             {activeFilterItems.length > 0 ? (
@@ -718,24 +685,18 @@ export function Missions() {
                       {filteredMissions.length === 1 ? '' : 's'}.
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={toggleAllVisibleMissions}
-                      className={clsx(tertiaryActionButtonClasses, 'md:hidden')}
-                    >
-                      {allVisibleSelected ? 'Clear visible' : 'Select visible'}
-                    </button>
-                    <DensityToggle value={density} onChange={setDensity} />
-                    <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-                      {queueLabel}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleAllVisibleMissions}
+                    className={clsx(tertiaryActionButtonClasses, 'md:hidden')}
+                  >
+                    {allVisibleSelected ? 'Clear visible' : 'Select visible'}
+                  </button>
                 </div>
 
                 <div
                   className={clsx(
-                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:gap-3',
+                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.45fr)_minmax(0,150px)_minmax(0,140px)_minmax(0,220px)_128px] md:gap-3',
                     isCompact ? 'py-1.5' : 'py-2'
                   )}
                 >
@@ -787,7 +748,7 @@ export function Missions() {
                       <article
                         key={mission.mission_id}
                         className={clsx(
-                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.35fr)_155px_175px_235px_135px] md:items-center',
+                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.45fr)_minmax(0,150px)_minmax(0,140px)_minmax(0,220px)_128px] md:items-start',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
                           isSelected &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
@@ -816,7 +777,7 @@ export function Missions() {
                                   : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
                         )}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <input
                             type="checkbox"
                             checked={selectedMissionIds.includes(mission.mission_id)}
@@ -837,9 +798,6 @@ export function Missions() {
                                 label={missionStatusLabels[mission.status]}
                                 tone={missionTone(mission.status)}
                               />
-                              {isFocused ? (
-                                <StatusBadge label="focus" tone="info" />
-                              ) : null}
                               {isUninvoiced ? (
                                 <StatusBadge
                                   label="Not invoiced"
@@ -857,26 +815,15 @@ export function Missions() {
                               <span className="truncate">{mission.arrival_location}</span>
                             </div>
                             <div
-                              className={clsx(
-                                'flex min-w-0 items-center gap-2 text-stone-600',
-                                isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm'
-                              )}
+                              className={clsx('mt-0.5 min-w-0 text-xs text-stone-600')}
                             >
                               <span className="truncate">
                                 {clientNameById.get(mission.client_id) ?? 'Unknown client'}
                               </span>
-                              {mission.notes && !isCompact ? (
-                                <>
-                                  <span className="text-stone-300">/</span>
-                                  <span className="truncate text-stone-600">
-                                    {mission.notes}
-                                  </span>
-                                </>
-                              ) : null}
                             </div>
-                            {mission.notes && isCompact ? (
-                              <p className="hidden pt-0.5 text-[11px] text-stone-600 md:block">
-                                {truncateString(mission.notes, 84)}
+                            {mission.notes ? (
+                              <p className="hidden pt-0.5 text-[11px] text-stone-600 md:line-clamp-1 md:block">
+                                {truncateString(mission.notes, 96)}
                               </p>
                             ) : null}
                           </button>
@@ -885,7 +832,7 @@ export function Missions() {
                         <button
                           type="button"
                           onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                          className={clsx(rowDetailButtonClasses, 'text-sm text-stone-600')}
+                          className={clsx(rowDetailButtonClasses, 'min-w-0 text-sm text-stone-600')}
                         >
                           <p className="font-medium text-stone-900">
                             {formatDateTime(mission.departure_datetime)}
@@ -901,7 +848,7 @@ export function Missions() {
                         <button
                           type="button"
                           onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                          className={clsx(rowDetailButtonClasses, 'text-sm text-stone-600')}
+                          className={clsx(rowDetailButtonClasses, 'min-w-0 text-sm text-stone-600')}
                         >
                           <p className="font-medium text-stone-900">
                             {mission.driver_name || 'Driver unassigned'}
@@ -913,7 +860,7 @@ export function Missions() {
 
                         <div
                           className={clsx(
-                            'text-sm text-stone-600',
+                            'min-w-0 text-sm text-stone-600',
                             isCompact ? 'space-y-2' : 'space-y-2.5'
                           )}
                         >
@@ -940,24 +887,16 @@ export function Missions() {
                           </button>
 
                           <div className="border-t border-dashed border-stone-200 pt-2">
-                            <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                              <span>Mission</span>
-                              <ArrowRight className="h-3 w-3" />
-                              <span>Invoice</span>
-                            </div>
                             {linkedInvoices.length > 0 ? (
                               <>
-                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                  <p className="font-medium text-stone-900">Billed</p>
-                                  <span className="text-xs text-stone-500">
-                                    {linkedInvoices.length} invoice
-                                    {linkedInvoices.length === 1 ? '' : 's'}
-                                  </span>
-                                </div>
+                                <p className="text-[11px] font-medium text-stone-600">
+                                  {linkedInvoices.length} linked invoice
+                                  {linkedInvoices.length === 1 ? '' : 's'}
+                                </p>
                                 <div
                                   className={clsx(
                                     'flex flex-wrap gap-1.5',
-                                    isCompact ? 'mt-1.5' : 'mt-2'
+                                    isCompact ? 'mt-1' : 'mt-1.5'
                                   )}
                                 >
                                   {visibleLinkedInvoices.map((invoice) => (
@@ -977,7 +916,9 @@ export function Missions() {
                                       className={inlineLinkButtonClasses}
                                     >
                                       <Link2 className="h-3 w-3" />
-                                      <span>{invoice.invoice_number}</span>
+                                      <span className="max-w-[120px] truncate">
+                                        {invoice.invoice_number}
+                                      </span>
                                     </button>
                                   ))}
                                   {remainingLinkedInvoiceCount > 0 ? (
@@ -988,17 +929,9 @@ export function Missions() {
                                 </div>
                               </>
                             ) : (
-                              <div className="mt-1.5">
-                                <p className="font-medium text-amber-900">Not invoiced</p>
-                                <p
-                                  className={clsx(
-                                    'text-stone-700',
-                                    isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm'
-                                  )}
-                                >
-                                  Billing action required.
-                                </p>
-                              </div>
+                              <p className="text-xs font-medium text-amber-900">
+                                Not invoiced. Billing action required.
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1017,7 +950,7 @@ export function Missions() {
                                   }).toString(),
                                 })
                               }}
-                              className={primaryActionButtonClasses}
+                              className={secondaryActionButtonClasses}
                               title={primaryInvoice.invoice_number}
                             >
                               <span>

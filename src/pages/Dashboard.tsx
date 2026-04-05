@@ -179,7 +179,7 @@ export function Dashboard() {
     <PageContainer>
       <PageHeader
         title="Dashboard"
-        description={`Cash-first operating control for ${organization?.name ?? 'your workspace'}, with blocked cash, uninvoiced revenue, and next actions surfaced first.`}
+        description={`Cash-first operating control for ${organization?.name ?? 'your workspace'}.`}
         actions={
           <>
             <button
@@ -249,7 +249,7 @@ export function Dashboard() {
           }
         />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Cash blocked"
@@ -319,18 +319,18 @@ export function Dashboard() {
             />
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
             <ActionPanel>
-              <div className="px-5 py-4">
+              <div className="px-4 py-3">
                 <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                   Action queue
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">
+                <p className="mt-1 text-xs text-stone-500">
                   Direct follow-ups across billing conversion, collection, and expense control.
                 </p>
               </div>
               {dashboardActions.length === 0 ? (
-                <div className="px-5 py-8">
+                <div className="px-4 py-6">
                   <div className="flex items-center gap-2">
                     <StatusBadge label="clear" tone="success" />
                     <p className="text-sm font-semibold text-stone-950">
@@ -364,12 +364,12 @@ export function Dashboard() {
             </ActionPanel>
 
             <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
                 <div>
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                     Collection queue
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-xs text-stone-500">
                     Open invoices ordered for follow-up and outstanding cash visibility.
                   </p>
                 </div>
@@ -388,7 +388,7 @@ export function Dashboard() {
               </div>
 
               {collectionQueue.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-stone-500">
+                <div className="px-4 py-6 text-sm text-stone-500">
                   No invoices are waiting for collection.
                 </div>
               ) : (
@@ -403,7 +403,7 @@ export function Dashboard() {
                           search: createSearchParams({ queue: 'unpaid', focus: invoice.invoice_id }).toString(),
                         })
                       }
-                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_140px]"
+                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_140px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -445,14 +445,14 @@ export function Dashboard() {
             </SectionCard>
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-2">
+          <div className="grid gap-4 xl:grid-cols-2">
             <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
                 <div>
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                     Active mission queue
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-xs text-stone-500">
                     Live missions with invoice visibility and margin context.
                   </p>
                 </div>
@@ -471,7 +471,7 @@ export function Dashboard() {
               </div>
 
               {activeMissions.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-stone-500">
+                <div className="px-4 py-6 text-sm text-stone-500">
                   No active missions right now.
                 </div>
               ) : (
@@ -490,7 +490,7 @@ export function Dashboard() {
                             search: createSearchParams({ focus: mission.mission_id }).toString(),
                           })
                         }
-                        className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
+                        className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -537,12 +537,12 @@ export function Dashboard() {
             </SectionCard>
 
             <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
                 <div>
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                     Expense control
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-xs text-stone-500">
                     Pending approvals and missing receipts across the latest expense activity.
                   </p>
                 </div>
@@ -561,7 +561,7 @@ export function Dashboard() {
               </div>
 
               {expenseAttention.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-stone-500">
+                <div className="px-4 py-6 text-sm text-stone-500">
                   Expense approvals and receipt control are clear.
                 </div>
               ) : (
@@ -576,7 +576,7 @@ export function Dashboard() {
                           search: createSearchParams({ focus: expense.expense_id }).toString(),
                         })
                       }
-                      className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_180px]"
+                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_180px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">

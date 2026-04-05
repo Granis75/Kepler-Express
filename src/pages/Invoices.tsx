@@ -8,7 +8,6 @@ import { PageContainer } from '../components/PageContainer'
 import { PageHeader } from '../components/PageHeader'
 import {
   ActiveFilterBar,
-  DensityToggle,
   ModalSurface,
   PageLoadingSkeleton,
   SelectionToolbar,
@@ -72,9 +71,6 @@ const invoiceQueueOptions = [
 const inlineLinkButtonClasses =
   'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
-const primaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
-
 const utilityActionButtonClasses =
   'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
@@ -83,8 +79,6 @@ const tertiaryActionButtonClasses =
 
 const checkboxClasses =
   'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
-
-const densityStorageKey = 'kepler.ops.queue-density'
 
 export function Invoices() {
   const navigate = useNavigate()
@@ -95,14 +89,6 @@ export function Invoices() {
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([])
   const [actionError, setActionError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [density, setDensity] = useState<'compact' | 'comfortable'>(() => {
-    if (typeof window === 'undefined') {
-      return 'compact'
-    }
-
-    const savedDensity = window.localStorage.getItem(densityStorageKey)
-    return savedDensity === 'comfortable' ? 'comfortable' : 'compact'
-  })
   const invoicesQuery = useInvoices()
   const clientsQuery = useClients()
   const missionsQuery = useMissions()
@@ -471,21 +457,13 @@ export function Invoices() {
     onClear: () => void
   }>
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    window.localStorage.setItem(densityStorageKey, density)
-  }, [density])
-
-  const isCompact = density === 'compact'
+  const isCompact = true
 
   return (
     <PageContainer>
       <PageHeader
         title="Invoices"
-        description={`Operational billing queue for ${organization?.name ?? 'the current workspace'}.`}
+        description={`Billing and collection queue for ${organization?.name ?? 'the current workspace'}.`}
         actions={
           <button
             type="button"
@@ -523,7 +501,7 @@ export function Invoices() {
         </ModalSurface>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Outstanding"
@@ -555,100 +533,81 @@ export function Invoices() {
           />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[290px_minmax(0,1fr)]">
-          <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
-            <SectionCard>
+        <div className="space-y-3">
+          <SectionCard className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
                   Filters
                 </h2>
+                <p className="mt-1 text-xs text-stone-500">
+                  Search, queue, client, and status.
+                </p>
               </div>
+              <button type="button" onClick={resetFilters} className="btn-secondary">
+                Reset filters
+              </button>
+            </div>
 
-              <label className="relative mt-5 block">
-                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-500" />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_170px_180px_170px]">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
                 <input
                   type="text"
                   data-ops-search="true"
                   value={searchQuery}
                   onChange={(event) => updateFilters({ q: event.target.value || null })}
                   placeholder="Search invoice, client, or mission"
-                  className="input-shell pl-11"
+                  className="input-shell pl-10"
                 />
               </label>
 
-              <div className="mt-5 space-y-2">
-                {invoiceQueueOptions.map((option) => {
-                  const count =
-                    option.value === 'unpaid'
-                      ? summary.collectionQueue
-                      : option.value === 'overdue'
-                        ? summary.overdue
-                        : option.value === 'partial'
-                          ? invoices.filter((invoice) => invoice.status === 'partial').length
-                          : option.value === 'draft'
-                            ? invoices.filter((invoice) => invoice.status === 'draft').length
-                            : option.value === 'paid'
-                              ? invoices.filter((invoice) => invoice.status === 'paid').length
-                              : invoices.length
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() =>
-                        updateFilters({ queue: option.value === 'all' ? null : option.value })
-                      }
-                      className={clsx(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition',
-                        queue === option.value || (!queue && option.value === 'all')
-                          ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-100'
-                      )}
-                    >
-                      <span>{option.label}</span>
-                      <span>{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="mt-5 space-y-4">
-                <select
-                  value={clientFilter}
-                  onChange={(event) => updateFilters({ client: event.target.value || null })}
-                  className="input-shell"
-                >
-                  <option value="">All clients</option>
-                  {clients.map((client) => (
-                    <option key={client.client_id} value={client.client_id}>
-                      {client.name}
+              <select
+                value={queue === 'all' ? '' : queue}
+                onChange={(event) => updateFilters({ queue: event.target.value || null })}
+                className="input-shell"
+              >
+                <option value="">All queues</option>
+                {invoiceQueueOptions
+                  .filter((option) => option.value !== 'all')
+                  .map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
-                </select>
+              </select>
 
-                <select
-                  value={statusFilter}
-                  onChange={(event) =>
-                    updateFilters({
-                      status: (event.target.value || null) as Invoice['status'] | null,
-                    })
-                  }
-                  className="input-shell"
-                >
-                  <option value="">All statuses</option>
-                  <option value="draft">Draft</option>
-                  <option value="sent">Sent</option>
-                  <option value="partial">Partial</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                </select>
-              </div>
+              <select
+                value={clientFilter}
+                onChange={(event) => updateFilters({ client: event.target.value || null })}
+                className="input-shell"
+              >
+                <option value="">All clients</option>
+                {clients.map((client) => (
+                  <option key={client.client_id} value={client.client_id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
 
-              <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
-                Reset filters
-              </button>
-            </SectionCard>
-          </div>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  updateFilters({
+                    status: (event.target.value || null) as Invoice['status'] | null,
+                  })
+                }
+                className="input-shell"
+              >
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="partial">Partial</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+          </SectionCard>
 
           <div className="space-y-3">
             {activeFilterItems.length > 0 ? (
@@ -751,24 +710,18 @@ export function Invoices() {
                       {filteredInvoices.length === 1 ? '' : 's'}.
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={toggleAllVisibleInvoices}
-                      className={clsx(utilityActionButtonClasses, 'md:hidden')}
-                    >
-                      {allVisibleSelected ? 'Clear visible' : 'Select visible'}
-                    </button>
-                    <DensityToggle value={density} onChange={setDensity} />
-                    <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-                      {queueLabel}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleAllVisibleInvoices}
+                    className={clsx(utilityActionButtonClasses, 'md:hidden')}
+                  >
+                    {allVisibleSelected ? 'Clear visible' : 'Select visible'}
+                  </button>
                 </div>
 
                 <div
                   className={clsx(
-                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:gap-3',
+                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_minmax(0,140px)_minmax(0,170px)_minmax(0,220px)_128px] md:gap-3',
                     isCompact ? 'py-1.5' : 'py-2'
                   )}
                 >
@@ -821,7 +774,7 @@ export function Invoices() {
                       <article
                         key={invoice.invoice_id}
                         className={clsx(
-                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.2fr)_145px_170px_235px_135px] md:items-center',
+                          'group grid border-l-2 px-4 transition-[background-color,border-color,box-shadow] duration-150 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-within:border-l-sky-400 focus-within:bg-sky-50/40 md:grid-cols-[minmax(0,1.35fr)_minmax(0,140px)_minmax(0,170px)_minmax(0,220px)_128px] md:items-start',
                           isCompact ? 'gap-2.5 py-2.5' : 'gap-3 py-3',
                           isSelected &&
                             'shadow-[inset_0_0_0_1px_rgba(41,37,36,0.14)]',
@@ -845,7 +798,7 @@ export function Invoices() {
                                   : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
                         )}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <input
                             type="checkbox"
                             checked={selectedInvoiceIds.includes(invoice.invoice_id)}
@@ -866,23 +819,15 @@ export function Invoices() {
                                 label={invoiceStatusLabels[invoice.status]}
                                 tone={invoiceTone(invoice.status)}
                               />
-                              {isFocused ? (
-                                <StatusBadge label="focus" tone="info" />
-                              ) : null}
                               {isOpenBalance ? (
                                 <StatusBadge label="open balance" tone="warning" />
                               ) : null}
                             </div>
-                            <p className="mt-1 text-sm font-medium text-stone-900">
+                            <p className="mt-1 truncate text-sm font-medium text-stone-900">
                               {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
                             </p>
-                            {invoice.notes && !isCompact ? (
-                              <p className="mt-1 line-clamp-1 text-xs text-stone-600">
-                                {invoice.notes}
-                              </p>
-                            ) : null}
-                            {invoice.notes && isCompact ? (
-                              <p className="hidden text-[11px] text-stone-600 md:mt-0.5 md:block">
+                            {invoice.notes ? (
+                              <p className="hidden text-[11px] text-stone-600 md:mt-0.5 md:block md:line-clamp-1">
                                 {truncateString(invoice.notes, 84)}
                               </p>
                             ) : null}
@@ -892,7 +837,7 @@ export function Invoices() {
                         <button
                           type="button"
                           onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                          className="rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
                         >
                           <p
                             className={clsx(
@@ -915,7 +860,7 @@ export function Invoices() {
                         <button
                           type="button"
                           onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                          className="rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
                         >
                           <p
                             className={clsx(
@@ -937,23 +882,14 @@ export function Invoices() {
                           </p>
                         </button>
 
-                        <div className="text-sm text-stone-600">
+                        <div className="min-w-0 text-sm text-stone-600">
                           {invoice.mission_ids.length > 0 ? (
                             <>
-                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500">
-                                <span>Invoice</span>
-                                <ArrowRight className="h-3 w-3" />
-                                <span>Missions</span>
-                              </div>
-                              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                <p className="font-medium text-stone-900">
-                                  Linked missions
-                                </p>
-                                <span className="text-xs text-stone-500">
-                                  {invoice.mission_ids.length}
-                                </span>
-                              </div>
-                              <div className={clsx('flex flex-wrap gap-1.5', isCompact ? 'mt-1.5' : 'mt-2')}>
+                              <p className="text-[11px] font-medium text-stone-600">
+                                {invoice.mission_ids.length} linked mission
+                                {invoice.mission_ids.length === 1 ? '' : 's'}
+                              </p>
+                              <div className={clsx('flex flex-wrap gap-1.5', isCompact ? 'mt-1' : 'mt-1.5')}>
                                 {visibleMissionIds.map((missionId) => (
                                   <button
                                     key={missionId}
@@ -971,7 +907,7 @@ export function Invoices() {
                                     className={inlineLinkButtonClasses}
                                   >
                                     <Link2 className="h-3 w-3" />
-                                    <span>
+                                    <span className="max-w-[120px] truncate">
                                       {missionReferenceById.get(missionId) ?? 'Unknown mission'}
                                     </span>
                                   </button>
@@ -1004,7 +940,7 @@ export function Invoices() {
                                   }).toString(),
                                 })
                               }}
-                              className={primaryActionButtonClasses}
+                              className={utilityActionButtonClasses}
                               title={firstMissionReference ?? undefined}
                             >
                               <span>
