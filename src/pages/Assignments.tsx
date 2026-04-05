@@ -202,6 +202,18 @@ function getCostBasisLabel(actualCostMissionCount: number, missionsCount: number
   return 'Mixed mission cost basis'
 }
 
+function getCostBasisShortLabel(actualCostMissionCount: number, missionsCount: number) {
+  if (missionsCount === 0 || actualCostMissionCount === 0) {
+    return 'Estimated'
+  }
+
+  if (actualCostMissionCount === missionsCount) {
+    return 'Actual'
+  }
+
+  return 'Mixed'
+}
+
 export function Assignments() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -672,7 +684,7 @@ export function Assignments() {
     <PageContainer>
       <PageHeader
         title="Assignments"
-        description="Derived driver workload, revenue, cost, and margin visibility from mission assignments and linked expenses."
+        description="Derived driver contribution across mission workload, billing exposure, and cost basis."
         actions={
           <button
             type="button"
@@ -689,20 +701,20 @@ export function Assignments() {
         }
       />
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <StatCard
             label="Revenue represented"
             value={formatCurrencyWithDecimals(summary.totalRevenueRepresented)}
-            detail={`Across ${summary.totalAssignedDrivers} derived assignment${
+            detail={`${summary.totalAssignedDrivers} derived assignment${
               summary.totalAssignedDrivers === 1 ? '' : 's'
-            }`}
+            } in view`}
             onClick={resetFilters}
           />
           <StatCard
             label="Cost basis"
             value={formatCurrencyWithDecimals(summary.totalCostRepresented)}
-            detail="Mission actual cost when present, otherwise estimated"
+            detail="Actual when available, otherwise estimated"
             onClick={() => updateFilters({ queue: 'margin' })}
           />
           <StatCard
@@ -710,21 +722,21 @@ export function Assignments() {
             value={formatCurrencyWithDecimals(summary.totalMarginRepresented)}
             detail={`${summary.marginSensitiveCount} assignment${
               summary.marginSensitiveCount === 1 ? '' : 's'
-            } currently margin sensitive`}
+            } margin sensitive`}
             tone={summary.marginSensitiveCount > 0 ? 'danger' : 'success'}
             onClick={() => updateFilters({ queue: 'margin' })}
           />
           <StatCard
             label="Active assignments"
             value={String(summary.activeAssignments)}
-            detail="Drivers currently carrying active operational load"
+            detail="Drivers carrying live work"
             tone={summary.activeAssignments > 0 ? 'warning' : 'default'}
             onClick={() => updateFilters({ queue: 'active' })}
           />
           <StatCard
             label="Operational exposure"
             value={String(summary.exposedAssignmentsCount)}
-            detail="Issue, uninvoiced, or margin-sensitive assignments"
+            detail="Issue, uninvoiced, or low-margin work"
             tone={summary.exposedAssignmentsCount > 0 ? 'warning' : 'default'}
             onClick={() =>
               updateFilters({
@@ -741,20 +753,10 @@ export function Assignments() {
           />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[290px_minmax(0,1fr)]">
-          <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
-            <SectionCard>
-              <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                  Filters
-                </h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  Narrow the assignment surface to active workload, billing exposure, or margin
-                  risk.
-                </p>
-              </div>
-
-              <label className="relative mt-5 block">
+        <SectionCard className="space-y-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
+              <label className="relative min-w-0 flex-1 xl:max-w-xl">
                 <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-500" />
                 <input
                   data-ops-search="true"
@@ -766,7 +768,7 @@ export function Assignments() {
                 />
               </label>
 
-              <div className="mt-5 space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {assignmentQueueOptions.map((option) => {
                   const count =
                     option.value === 'all'
@@ -787,830 +789,839 @@ export function Assignments() {
                         updateFilters({ queue: option.value === 'all' ? null : option.value })
                       }
                       className={clsx(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition active:scale-[0.99]',
+                        'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-[0.98]',
                         queue === option.value
-                          ? 'border-stone-950 bg-stone-950 text-white shadow-[0_10px_22px_rgba(28,25,23,0.16)]'
-                          : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
+                          ? 'border-stone-950 bg-stone-950 text-white'
+                          : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-300 hover:bg-stone-100'
                       )}
                     >
                       <span>{option.label}</span>
-                      <span>{count}</span>
+                      <span
+                        className={clsx(
+                          'rounded-full px-1.5 py-0.5 text-[10px]',
+                          queue === option.value
+                            ? 'bg-white/15 text-white'
+                            : 'bg-white text-stone-500'
+                        )}
+                      >
+                        {count}
+                      </span>
                     </button>
                   )
                 })}
               </div>
+            </div>
 
+            <div className="flex flex-wrap items-center gap-2">
               {selectedAssignment ? (
-                <div className="mt-5 rounded-[1.2rem] border border-stone-200 bg-stone-50 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                    Current assignment
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-stone-950">
-                    {selectedAssignment.driverName}
-                  </p>
-                  <p className="mt-1 text-sm text-stone-500">
-                    {selectedAssignment.missionsCount} mission
-                    {selectedAssignment.missionsCount === 1 ? '' : 's'} across{' '}
-                    {selectedAssignment.clientCount} client
-                    {selectedAssignment.clientCount === 1 ? '' : 's'}.
-                  </p>
-                </div>
+                <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700">
+                  {selectedAssignment.driverName}
+                </span>
               ) : null}
-
-              <div className="mt-5 rounded-[1.2rem] border border-dashed border-stone-200 bg-stone-50/70 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                  Derived view
-                </p>
-                <p className="mt-2 text-sm text-stone-600">
-                  Assignment analytics are derived from mission driver names and linked expense
-                  records. No standalone driver record is stored in the current schema.
-                </p>
-              </div>
-
-              <button type="button" onClick={resetFilters} className="btn-secondary mt-5 w-full">
+              <button
+                type="button"
+                onClick={resetFilters}
+                className={tertiaryButtonClasses}
+              >
                 Reset filters
               </button>
-            </SectionCard>
+            </div>
           </div>
 
-          <div className="space-y-5">
-            <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 pt-3">
+            <p className="text-xs text-stone-500">
+              Derived from mission driver names and linked expense records.
+            </p>
+            {unassignedMissionsCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => navigate(appRoutes.missions)}
+                className={inlineButtonClasses}
+              >
+                {unassignedMissionsCount} unassigned mission
+                {unassignedMissionsCount === 1 ? '' : 's'}
+              </button>
+            ) : null}
+          </div>
+        </SectionCard>
 
-            {isLoading ? (
-              <PageLoadingSkeleton stats={5} rows={4} />
-            ) : error ? (
-              <StatePanel
-                tone="danger"
-                title="Unable to load assignments"
-                message={error}
-                action={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void Promise.all([
-                        missionsQuery.refetch(),
-                        expensesQuery.refetch(),
-                        invoicesQuery.refetch(),
-                        clientsQuery.refetch(),
-                      ])
-                    }}
-                    className={primaryButtonClasses}
-                  >
-                    Retry
-                  </button>
-                }
-              />
-            ) : assignments.length === 0 ? (
-              <StatePanel
-                title="No assignments yet"
-                message={
-                  unassignedMissionsCount > 0
-                    ? `${unassignedMissionsCount} mission${
-                        unassignedMissionsCount === 1 ? '' : 's'
-                      } currently have no driver name. Assignments will appear once missions are assigned.`
-                    : 'Assignments will appear here once missions carry a driver name.'
-                }
-                action={
-                  <button
-                    type="button"
-                    onClick={() => navigate(appRoutes.missions)}
-                    className={primaryButtonClasses}
-                  >
-                    Open missions
-                  </button>
-                }
-              />
-            ) : filteredAssignments.length === 0 ? (
-              <StatePanel
-                title="No matching assignments"
-                message="Adjust the current search or queue to reveal another assignment."
-                action={
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className={secondaryButtonClasses}
-                  >
-                    Reset filters
-                  </button>
-                }
-              />
-            ) : (
-              <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="space-y-5">
-                  <SectionCard className="overflow-hidden p-0">
-                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
-                      <div>
-                        <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                          Assignment ranking
-                        </h2>
-                        <p className="mt-1 text-sm text-stone-500">
-                          {filteredAssignments.length} visible assignment
-                          {filteredAssignments.length === 1 ? '' : 's'} ranked by revenue, cost
-                          basis, margin, and current operational exposure.
+        <ActiveFilterBar items={activeFilterItems} onClearAll={resetFilters} />
+
+        {isLoading ? (
+          <PageLoadingSkeleton stats={5} rows={3} />
+        ) : error ? (
+          <StatePanel
+            tone="danger"
+            title="Unable to load assignments"
+            message={error}
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  void Promise.all([
+                    missionsQuery.refetch(),
+                    expensesQuery.refetch(),
+                    invoicesQuery.refetch(),
+                    clientsQuery.refetch(),
+                  ])
+                }}
+                className={primaryButtonClasses}
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : assignments.length === 0 ? (
+          <StatePanel
+            title="No assignments yet"
+            message={
+              unassignedMissionsCount > 0
+                ? `${unassignedMissionsCount} mission${
+                    unassignedMissionsCount === 1 ? '' : 's'
+                  } currently have no driver name. Assignments appear once missions are assigned.`
+                : 'Assignments appear once missions carry a driver name.'
+            }
+            action={
+              <button
+                type="button"
+                onClick={() => navigate(appRoutes.missions)}
+                className={primaryButtonClasses}
+              >
+                Open missions
+              </button>
+            }
+          />
+        ) : filteredAssignments.length === 0 ? (
+          <StatePanel
+            title="No matching assignments"
+            message="Adjust the current search or queue to reveal another assignment."
+            action={
+              <button
+                type="button"
+                onClick={resetFilters}
+                className={secondaryButtonClasses}
+              >
+                Reset filters
+              </button>
+            }
+          />
+        ) : (
+          <div
+            className={clsx(
+              'grid gap-4',
+              selectedAssignment
+                ? 'xl:grid-cols-[minmax(0,1fr)_320px]'
+                : 'xl:grid-cols-[minmax(0,1fr)_280px]'
+            )}
+          >
+            <div className="space-y-4">
+              <SectionCard className="overflow-hidden p-0">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+                  <div>
+                    <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                      Assignment ranking
+                    </h2>
+                    <p className="mt-1 text-sm text-stone-500">
+                      {filteredAssignments.length} visible assignment
+                      {filteredAssignments.length === 1 ? '' : 's'} ranked by contribution and
+                      current exposure.
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600">
+                    {getQueueLabel(queue)}
+                  </div>
+                </div>
+
+                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.65fr)_140px_150px_130px_150px_auto] lg:gap-3">
+                  {['Assignment', 'Revenue', 'Cost basis', 'Margin', 'Exposure', 'Action'].map(
+                    (label) => (
+                      <p
+                        key={label}
+                        className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
+                      >
+                        {label}
+                      </p>
+                    )
+                  )}
+                </div>
+
+                <div className="divide-y divide-stone-200">
+                  {filteredAssignments.map((assignment) => {
+                    const isSelected = assignment.driverKey === selectedDriverKey
+                    const contextMission =
+                      assignment.nextUpcomingMission ?? assignment.mostRecentMission
+                    const contextLabel = assignment.nextUpcomingMission ? 'Next' : 'Latest'
+                    const costBasisShortLabel = getCostBasisShortLabel(
+                      assignment.actualCostMissionCount,
+                      assignment.missionsCount
+                    )
+
+                    return (
+                      <article
+                        key={assignment.driverKey}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => updateFilters({ driver: assignment.driverKey })}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            updateFilters({ driver: assignment.driverKey })
+                          }
+                        }}
+                        className={clsx(
+                          'group grid cursor-pointer gap-3 px-4 py-3.5 transition hover:bg-stone-50/80 focus:outline-none focus-visible:bg-stone-50/80 lg:grid-cols-[minmax(0,1.65fr)_140px_150px_130px_150px_auto] lg:items-center',
+                          isSelected &&
+                            'bg-stone-50/90 shadow-[inset_0_0_0_1px_rgba(214,211,209,0.95)]'
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-semibold text-stone-950">
+                              {assignment.driverName}
+                            </h3>
+                            {assignment.hasIssue ? (
+                              <StatusBadge label="issue" tone="danger" />
+                            ) : null}
+                            {assignment.hasActiveUninvoiced ? (
+                              <StatusBadge label="uninvoiced" tone="warning" />
+                            ) : null}
+                            {assignment.hasMarginSensitive ? (
+                              <StatusBadge label="margin sensitive" tone="warning" />
+                            ) : null}
+                            {!assignment.hasIssue &&
+                            !assignment.hasActiveUninvoiced &&
+                            assignment.hasHighRevenue ? (
+                              <StatusBadge label="high revenue" tone="success" />
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-sm text-stone-700">
+                            {assignment.missionsCount} mission
+                            {assignment.missionsCount === 1 ? '' : 's'} ·{' '}
+                            {assignment.activeMissionsCount} active · {assignment.clientCount}{' '}
+                            client{assignment.clientCount === 1 ? '' : 's'}
+                          </p>
+                          <p className="mt-1 truncate text-sm text-stone-500">
+                            {contextMission
+                              ? truncateString(
+                                  `${contextLabel} ${contextMission.reference} · ${contextMission.departure_location} to ${contextMission.arrival_location}`,
+                                  92
+                                )
+                              : 'No scheduled mission context yet'}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-stone-500 lg:text-right">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                            Revenue
+                          </p>
+                          <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                            {formatCurrencyWithDecimals(assignment.revenueGenerated)}
+                          </p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            {assignment.deliveredMissionsCount} delivered
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-stone-500 lg:text-right">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                            Cost basis
+                          </p>
+                          <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                            {formatCurrencyWithDecimals(assignment.costBasisGenerated)}
+                          </p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            {costBasisShortLabel} · Exp{' '}
+                            {formatCurrencyWithDecimals(assignment.expensesGenerated)}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-stone-500 lg:text-right">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                            Margin
+                          </p>
+                          <p
+                            className={clsx(
+                              'mt-1 font-medium lg:mt-0',
+                              assignment.marginGenerated < 0 ? 'text-rose-700' : 'text-stone-900'
+                            )}
+                          >
+                            {formatCurrencyWithDecimals(assignment.marginGenerated)}
+                          </p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            {formatPercentage(assignment.marginRatio * 100, 0)}
+                          </p>
+                        </div>
+
+                        <div className="text-sm text-stone-500 lg:text-right">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                            Exposure
+                          </p>
+                          <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                            {assignment.activeMissionsCount} active
+                          </p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            {assignment.uninvoicedActiveCount} uninvoiced ·{' '}
+                            {assignment.issueMissionsCount} issue
+                          </p>
+                        </div>
+
+                        <div className="flex items-start justify-start lg:justify-end">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              navigate({
+                                pathname: appRoutes.missions,
+                                search: createSearchParams(
+                                  assignment.hasActiveUninvoiced
+                                    ? { queue: 'uninvoiced', q: assignment.driverName }
+                                    : { q: assignment.driverName }
+                                ).toString(),
+                              })
+                            }}
+                            className={inlineButtonClasses}
+                          >
+                            {assignment.hasActiveUninvoiced ? 'Open uninvoiced' : 'Open missions'}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </SectionCard>
+
+              {selectedAssignment ? (
+                <>
+                  <SectionCard>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                            {selectedAssignment.driverName}
+                          </h2>
+                          {selectedAssignment.hasIssue ? (
+                            <StatusBadge label="issue" tone="danger" />
+                          ) : null}
+                          {selectedAssignment.hasActiveUninvoiced ? (
+                            <StatusBadge label="uninvoiced work" tone="warning" />
+                          ) : null}
+                          {selectedAssignment.hasMarginSensitive ? (
+                            <StatusBadge label="margin sensitive" tone="warning" />
+                          ) : null}
+                        </div>
+                        <p className="mt-2 text-sm text-stone-600">
+                          {selectedAssignment.missionsCount} mission
+                          {selectedAssignment.missionsCount === 1 ? '' : 's'} across{' '}
+                          {selectedAssignment.clientCount} client
+                          {selectedAssignment.clientCount === 1 ? '' : 's'} with{' '}
+                          {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)} in
+                          revenue represented.
                         </p>
                       </div>
-                      <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
-                        {getQueueLabel(queue)}
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate({
+                              pathname: appRoutes.missions,
+                              search: createSearchParams({
+                                q: selectedAssignment.driverName,
+                              }).toString(),
+                            })
+                          }
+                          className={secondaryButtonClasses}
+                        >
+                          Open missions
+                        </button>
+                        {selectedAssignment.hasActiveUninvoiced ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate({
+                                pathname: appRoutes.missions,
+                                search: createSearchParams({
+                                  queue: 'uninvoiced',
+                                  q: selectedAssignment.driverName,
+                                }).toString(),
+                              })
+                            }
+                            className={primaryButtonClasses}
+                          >
+                            Review uninvoiced work
+                          </button>
+                        ) : null}
                       </div>
                     </div>
 
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Revenue
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-stone-950">
+                          {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)}
+                        </p>
+                      </div>
+                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Cost basis
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-stone-950">
+                          {formatCurrencyWithDecimals(selectedAssignment.costBasisGenerated)}
+                        </p>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {selectedAssignment.costBasisLabel}
+                        </p>
+                      </div>
+                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Margin
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-stone-950">
+                          {formatCurrencyWithDecimals(selectedAssignment.marginGenerated)}
+                        </p>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {formatPercentage(selectedAssignment.marginRatio * 100, 0)} margin
+                        </p>
+                      </div>
+                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Expenses
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-stone-950">
+                          {formatCurrencyWithDecimals(selectedAssignment.expensesGenerated)}
+                        </p>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {selectedAssignment.expenses.length} linked expense
+                          {selectedAssignment.expenses.length === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Exposure
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-stone-950">
+                          {selectedAssignment.activeMissionsCount} active
+                        </p>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {selectedAssignment.uninvoicedActiveCount} uninvoiced ·{' '}
+                          {selectedAssignment.issueMissionsCount} issue
+                        </p>
+                      </div>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard className="overflow-hidden p-0">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+                      <div>
+                        <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                          Linked missions
+                        </h2>
+                        <p className="mt-1 text-sm text-stone-500">
+                          Mission workload and invoice state for this assignment.
+                        </p>
+                      </div>
+                      <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600">
+                        {selectedAssignment.missionsCount} mission
+                        {selectedAssignment.missionsCount === 1 ? '' : 's'}
+                      </div>
+                    </div>
+
+                    <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.25fr)_150px_160px_auto] lg:gap-3">
+                      {['Mission', 'Schedule', 'Finance', 'Billing'].map((label) => (
+                        <p
+                          key={label}
+                          className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
+                        >
+                          {label}
+                        </p>
+                      ))}
+                    </div>
+
                     <div className="divide-y divide-stone-200">
-                      {filteredAssignments.map((assignment) => {
-                        const isSelected = assignment.driverKey === selectedDriverKey
+                      {selectedAssignment.missions.map((mission) => {
+                        const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
+                        const margin = getMissionMarginSnapshot(mission)
 
                         return (
-                          <article
-                            key={assignment.driverKey}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => updateFilters({ driver: assignment.driverKey })}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault()
-                                updateFilters({ driver: assignment.driverKey })
-                              }
-                            }}
-                            className={clsx(
-                              'group grid cursor-pointer gap-4 px-5 py-4 transition hover:bg-stone-50/80 focus:outline-none focus-visible:bg-stone-50/80 md:grid-cols-[minmax(0,1.4fr)_170px_200px_180px_220px_auto] md:items-start',
-                              isSelected &&
-                                'bg-stone-50/90 shadow-[inset_0_0_0_1px_rgba(214,211,209,0.95)]'
-                            )}
+                          <div
+                            key={mission.mission_id}
+                            className="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1.25fr)_150px_160px_auto] lg:items-center"
                           >
-                            <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
+                              className="min-w-0 rounded-[0.9rem] px-1 py-1 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                            >
                               <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-sm font-semibold text-stone-950">
-                                  {assignment.driverName}
-                                </h3>
-                                {assignment.hasHighRevenue ? (
-                                  <StatusBadge label="high revenue" tone="success" />
+                                <p className="text-sm font-semibold text-stone-950">
+                                  {mission.reference}
+                                </p>
+                                <StatusBadge
+                                  label={missionStatusLabels[mission.status]}
+                                  tone={missionTone(mission.status)}
+                                />
+                                {linkedInvoices.length === 0 ? (
+                                  <StatusBadge label="not invoiced" tone="warning" />
                                 ) : null}
-                                {assignment.activeMissionsCount > 0 ? (
-                                  <StatusBadge label="active load" tone="info" />
-                                ) : null}
-                                {assignment.hasIssue ? (
-                                  <StatusBadge label="issue exposure" tone="danger" />
-                                ) : null}
-                                {assignment.hasActiveUninvoiced ? (
-                                  <StatusBadge label="uninvoiced work" tone="warning" />
-                                ) : null}
-                                {assignment.hasMarginSensitive ? (
+                                {margin.isSensitive ? (
                                   <StatusBadge label="margin sensitive" tone="warning" />
                                 ) : null}
                               </div>
-                              <p className="mt-1 text-sm font-medium text-stone-800">
-                                {assignment.missionsCount} mission
-                                {assignment.missionsCount === 1 ? '' : 's'} across{' '}
-                                {assignment.clientCount} client
-                                {assignment.clientCount === 1 ? '' : 's'}
+                              <p className="mt-1 text-sm text-stone-700">
+                                {mission.departure_location} to {mission.arrival_location}
                               </p>
-                              <p className="mt-1 text-sm text-stone-500">
-                                {assignment.nextUpcomingMission
-                                  ? `Next ${assignment.nextUpcomingMission.reference} · ${assignment.nextUpcomingMission.departure_location} to ${assignment.nextUpcomingMission.arrival_location}`
-                                  : assignment.mostRecentMission
-                                    ? `Latest ${assignment.mostRecentMission.reference} · ${assignment.mostRecentMission.departure_location} to ${assignment.mostRecentMission.arrival_location}`
-                                    : 'No dated mission context yet'}
+                              <p className="mt-1 truncate text-sm text-stone-500">
+                                {clientNameById.get(mission.client_id) ?? 'Unknown client'}
+                              </p>
+                            </button>
+
+                            <div className="text-sm text-stone-500 lg:text-right">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                                Schedule
+                              </p>
+                              <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                                {formatDateTime(mission.departure_datetime)}
+                              </p>
+                              <p className="mt-1 text-xs text-stone-500">
+                                {mission.arrival_datetime
+                                  ? formatDateTime(mission.arrival_datetime)
+                                  : 'Arrival not set'}
                               </p>
                             </div>
 
-                            <div className="text-sm text-stone-500">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                Revenue
+                            <div className="text-sm text-stone-500 lg:text-right">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                                Finance
                               </p>
-                              <p className="mt-1 font-medium text-stone-900">
-                                {formatCurrencyWithDecimals(assignment.revenueGenerated)}
+                              <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                                {formatCurrencyWithDecimals(mission.revenue_amount)}
                               </p>
-                              <p className="mt-1">
-                                {assignment.deliveredMissionsCount} delivered mission
-                                {assignment.deliveredMissionsCount === 1 ? '' : 's'}
+                              <p className="mt-1 text-xs text-stone-500">
+                                Margin {formatPercentage(margin.marginRatio * 100, 0)}
                               </p>
-                              <p className="mt-1">
-                                {assignment.clientCount} client
-                                {assignment.clientCount === 1 ? '' : 's'}
-                              </p>
-                            </div>
-
-                            <div className="text-sm text-stone-500">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                Costs
-                              </p>
-                              <p className="mt-1 font-medium text-stone-900">
-                                {formatCurrencyWithDecimals(assignment.costBasisGenerated)}
-                              </p>
-                              <p className="mt-1">{assignment.costBasisLabel}</p>
-                              <p className="mt-1">
-                                Expenses {formatCurrencyWithDecimals(assignment.expensesGenerated)}
+                              <p className="mt-1 text-xs text-stone-500">
+                                {margin.sourceLabel} cost{' '}
+                                {formatCurrencyWithDecimals(margin.baselineCost)}
                               </p>
                             </div>
 
-                            <div className="text-sm text-stone-500">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                Margin
-                              </p>
-                              <p
-                                className={clsx(
-                                  'mt-1 font-medium',
-                                  assignment.marginGenerated < 0
-                                    ? 'text-rose-700'
-                                    : 'text-stone-900'
-                                )}
-                              >
-                                {formatCurrencyWithDecimals(assignment.marginGenerated)}
-                              </p>
-                              <p className="mt-1">
-                                {formatPercentage(assignment.marginRatio * 100, 0)} margin
-                              </p>
-                              <p className="mt-1">
-                                {assignment.marginSensitiveCount} sensitive mission
-                                {assignment.marginSensitiveCount === 1 ? '' : 's'}
-                              </p>
+                            <div className="flex flex-wrap items-start gap-2 lg:justify-end">
+                              {linkedInvoices.length > 0 ? (
+                                linkedInvoices.map((invoice) => (
+                                  <button
+                                    key={invoice.invoice_id}
+                                    type="button"
+                                    onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
+                                    className={inlineButtonClasses}
+                                  >
+                                    {invoice.invoice_number}
+                                  </button>
+                                ))
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    navigate({
+                                      pathname: appRoutes.invoices,
+                                      search: createSearchParams({
+                                        mission: mission.mission_id,
+                                        compose: 'new',
+                                      }).toString(),
+                                    })
+                                  }
+                                  className={inlineButtonClasses}
+                                >
+                                  Create invoice
+                                </button>
+                              )}
                             </div>
-
-                            <div className="text-sm text-stone-500">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                Exposure
-                              </p>
-                              <p className="mt-1 font-medium text-stone-900">
-                                {assignment.activeMissionsCount} active mission
-                                {assignment.activeMissionsCount === 1 ? '' : 's'}
-                              </p>
-                              <p className="mt-1">
-                                {assignment.uninvoicedActiveCount} uninvoiced in queue
-                              </p>
-                              <p className="mt-1">
-                                {assignment.issueMissionsCount} issue mission
-                                {assignment.issueMissionsCount === 1 ? '' : 's'}
-                              </p>
-                            </div>
-
-                            <div className="flex items-start justify-end">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  navigate({
-                                    pathname: appRoutes.missions,
-                                    search: createSearchParams(
-                                      assignment.hasActiveUninvoiced
-                                        ? { queue: 'uninvoiced', q: assignment.driverName }
-                                        : { q: assignment.driverName }
-                                    ).toString(),
-                                  })
-                                }}
-                                className={inlineButtonClasses}
-                              >
-                                {assignment.hasActiveUninvoiced ? 'Open uninvoiced' : 'Open missions'}
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </article>
+                          </div>
                         )
                       })}
                     </div>
                   </SectionCard>
+                </>
+              ) : null}
+            </div>
 
-                  {selectedAssignment ? (
-                    <>
-                      <SectionCard>
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                                {selectedAssignment.driverName}
-                              </h2>
-                              {selectedAssignment.hasHighRevenue ? (
-                                <StatusBadge label="high revenue" tone="success" />
-                              ) : null}
-                              {selectedAssignment.activeMissionsCount > 0 ? (
-                                <StatusBadge label="active load" tone="info" />
-                              ) : null}
-                              {selectedAssignment.hasIssue ? (
-                                <StatusBadge label="issue exposure" tone="danger" />
-                              ) : null}
-                              {selectedAssignment.hasActiveUninvoiced ? (
-                                <StatusBadge label="uninvoiced work" tone="warning" />
-                              ) : null}
-                              {selectedAssignment.hasMarginSensitive ? (
-                                <StatusBadge label="margin sensitive" tone="warning" />
-                              ) : null}
-                            </div>
-                            <p className="mt-2 max-w-3xl text-sm text-stone-600">
-                              {selectedAssignment.missionsCount} mission
-                              {selectedAssignment.missionsCount === 1 ? '' : 's'} across{' '}
-                              {selectedAssignment.clientCount} client
-                              {selectedAssignment.clientCount === 1 ? '' : 's'} with{' '}
-                              {selectedAssignment.activeMissionsCount} active,{' '}
-                              {selectedAssignment.issueMissionsCount} issue, and{' '}
-                              {selectedAssignment.uninvoicedActiveCount} uninvoiced active mission
-                              {selectedAssignment.uninvoicedActiveCount === 1 ? '' : 's'}.
-                            </p>
-                          </div>
+            <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+              {selectedAssignment ? (
+                <>
+                  <SectionCard>
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
+                      Assignment context
+                    </p>
+                    <div className="mt-3 space-y-3 text-sm text-stone-600">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Next mission
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-stone-900">
+                          {selectedAssignment.nextUpcomingMission
+                            ? `${selectedAssignment.nextUpcomingMission.reference} · ${formatDateTime(selectedAssignment.nextUpcomingMission.departure_datetime)}`
+                            : 'No upcoming mission'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Latest mission
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-stone-900">
+                          {selectedAssignment.mostRecentMission
+                            ? `${selectedAssignment.mostRecentMission.reference} · ${formatDateTime(selectedAssignment.mostRecentMission.departure_datetime)}`
+                            : 'No dated mission'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Cost coverage
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-stone-900">
+                          {selectedAssignment.actualCostMissionCount} of{' '}
+                          {selectedAssignment.missionsCount} mission
+                          {selectedAssignment.missionsCount === 1 ? '' : 's'} use actual cost
+                        </p>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {selectedAssignment.costBasisLabel}
+                        </p>
+                      </div>
+                    </div>
+                  </SectionCard>
 
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                navigate({
-                                  pathname: appRoutes.missions,
-                                  search: createSearchParams({
-                                    q: selectedAssignment.driverName,
-                                  }).toString(),
-                                })
-                              }
-                              className={secondaryButtonClasses}
-                            >
-                              Open missions
-                            </button>
-                            {selectedAssignment.hasActiveUninvoiced ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  navigate({
-                                    pathname: appRoutes.missions,
-                                    search: createSearchParams({
-                                      queue: 'uninvoiced',
-                                      q: selectedAssignment.driverName,
-                                    }).toString(),
-                                  })
-                                }
-                                className={primaryButtonClasses}
-                              >
-                                Review uninvoiced work
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
+                  <SectionCard className="overflow-hidden p-0">
+                    <div className="border-b border-stone-200 px-4 py-3">
+                      <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                        Linked invoices
+                      </h2>
+                      <p className="mt-1 text-sm text-stone-500">
+                        Cash visibility tied to this assignment.
+                      </p>
+                    </div>
 
-                        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-                          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50/80 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                              Revenue
-                            </p>
-                            <p className="mt-2 text-sm font-semibold text-stone-950">
-                              {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)}
-                            </p>
-                          </div>
-                          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50/80 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                              Cost basis
-                            </p>
-                            <p className="mt-2 text-sm font-semibold text-stone-950">
-                              {formatCurrencyWithDecimals(selectedAssignment.costBasisGenerated)}
-                            </p>
-                            <p className="mt-1 text-xs text-stone-500">
-                              {selectedAssignment.costBasisLabel}
-                            </p>
-                          </div>
-                          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50/80 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                              Actual cost
-                            </p>
-                            <p className="mt-2 text-sm font-semibold text-stone-950">
-                              {formatCurrencyWithDecimals(selectedAssignment.actualCostGenerated)}
-                            </p>
-                            <p className="mt-1 text-xs text-stone-500">
-                              {selectedAssignment.actualCostMissionCount} mission
-                              {selectedAssignment.actualCostMissionCount === 1 ? '' : 's'} with
-                              actual cost
-                            </p>
-                          </div>
-                          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50/80 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                              Estimated cost
-                            </p>
-                            <p className="mt-2 text-sm font-semibold text-stone-950">
-                              {formatCurrencyWithDecimals(
-                                selectedAssignment.estimatedCostGenerated
-                              )}
-                            </p>
-                          </div>
-                          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50/80 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                              Margin
-                            </p>
-                            <p className="mt-2 text-sm font-semibold text-stone-950">
-                              {formatCurrencyWithDecimals(selectedAssignment.marginGenerated)}
-                            </p>
-                            <p className="mt-1 text-xs text-stone-500">
-                              {formatPercentage(selectedAssignment.marginRatio * 100, 0)} margin
-                            </p>
-                          </div>
-                          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50/80 px-4 py-3">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                              Expenses
-                            </p>
-                            <p className="mt-2 text-sm font-semibold text-stone-950">
-                              {formatCurrencyWithDecimals(selectedAssignment.expensesGenerated)}
-                            </p>
-                            <p className="mt-1 text-xs text-stone-500">
-                              {selectedAssignment.expenses.length} linked expense
-                              {selectedAssignment.expenses.length === 1 ? '' : 's'}
-                            </p>
-                          </div>
-                        </div>
-                      </SectionCard>
-
-                      <SectionCard className="overflow-hidden p-0">
-                        <div className="border-b border-stone-200 px-5 py-4">
-                          <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                            Linked missions
-                          </h2>
-                          <p className="mt-1 text-sm text-stone-500">
-                            {selectedAssignment.missionsCount} mission
-                            {selectedAssignment.missionsCount === 1 ? '' : 's'} carrying{' '}
-                            {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)} in
-                            revenue for this assignment.
-                          </p>
-                        </div>
-
-                        <div className="divide-y divide-stone-200">
-                          {selectedAssignment.missions.map((mission) => {
-                            const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
-                            const margin = getMissionMarginSnapshot(mission)
-
-                            return (
-                              <div
-                                key={mission.mission_id}
-                                className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.15fr)_170px_180px_auto] md:items-start"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                                  className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
-                                >
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-sm font-semibold text-stone-950">
-                                      {mission.reference}
-                                    </p>
-                                    <StatusBadge
-                                      label={missionStatusLabels[mission.status]}
-                                      tone={missionTone(mission.status)}
-                                    />
-                                    {linkedInvoices.length === 0 ? (
-                                      <StatusBadge label="not invoiced" tone="warning" />
-                                    ) : null}
-                                    {margin.isSensitive ? (
-                                      <StatusBadge label="margin sensitive" tone="warning" />
-                                    ) : null}
-                                  </div>
-                                  <p className="mt-1 text-sm text-stone-700">
-                                    {mission.departure_location} to {mission.arrival_location}
-                                  </p>
-                                  <p className="mt-1 text-sm text-stone-500">
-                                    {clientNameById.get(mission.client_id) ?? 'Unknown client'}
-                                  </p>
-                                </button>
-
-                                <div className="text-sm text-stone-500">
-                                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                    Schedule
-                                  </p>
-                                  <p className="mt-1 font-medium text-stone-900">
-                                    {formatDateTime(mission.departure_datetime)}
-                                  </p>
-                                  <p className="mt-1">
-                                    {mission.arrival_datetime
-                                      ? formatDateTime(mission.arrival_datetime)
-                                      : 'Arrival not set'}
-                                  </p>
-                                </div>
-
-                                <div className="text-sm text-stone-500">
-                                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                    Finance
-                                  </p>
-                                  <p className="mt-1 font-medium text-stone-900">
-                                    {formatCurrencyWithDecimals(mission.revenue_amount)}
-                                  </p>
-                                  <p className="mt-1">
-                                    Margin {formatPercentage(margin.marginRatio * 100, 0)}
-                                  </p>
-                                  <p className="mt-1">
-                                    {margin.sourceLabel} cost{' '}
-                                    {formatCurrencyWithDecimals(margin.baselineCost)}
-                                  </p>
-                                </div>
-
-                                <div className="flex flex-wrap items-start justify-end gap-2">
-                                  {linkedInvoices.length > 0 ? (
-                                    linkedInvoices.map((invoice) => (
-                                      <button
-                                        key={invoice.invoice_id}
-                                        type="button"
-                                        onClick={() =>
-                                          navigate(getInvoiceDetailRoute(invoice.invoice_id))
-                                        }
-                                        className={inlineButtonClasses}
-                                      >
-                                        View {invoice.invoice_number}
-                                      </button>
-                                    ))
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        navigate({
-                                          pathname: appRoutes.invoices,
-                                          search: createSearchParams({
-                                            mission: mission.mission_id,
-                                            compose: 'new',
-                                          }).toString(),
-                                        })
-                                      }
-                                      className={inlineButtonClasses}
-                                    >
-                                      Create invoice
-                                    </button>
-                                  )}
-                                </div>
+                    {selectedLinkedInvoices.length === 0 ? (
+                      <div className="px-4 py-5 text-sm text-stone-500">
+                        No invoices are linked yet. Uninvoiced missions above can open invoicing
+                        directly.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-stone-200">
+                        {selectedLinkedInvoices.map((invoice) => (
+                          <button
+                            key={invoice.invoice_id}
+                            type="button"
+                            onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
+                            className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-semibold text-stone-950">
+                                  {invoice.invoice_number}
+                                </p>
+                                <StatusBadge
+                                  label={invoiceStatusLabels[invoice.status]}
+                                  tone={invoiceTone(invoice.status)}
+                                />
                               </div>
-                            )
-                          })}
-                        </div>
-                      </SectionCard>
+                              <p className="mt-1 text-sm text-stone-500">
+                                Due {formatDate(invoice.due_date)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-stone-900">
+                                {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
+                              </p>
+                              <p className="mt-1 text-xs text-stone-500">Outstanding</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </SectionCard>
 
-                      <SectionCard className="overflow-hidden p-0">
-                        <div className="border-b border-stone-200 px-5 py-4">
-                          <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                            Linked invoices
-                          </h2>
-                          <p className="mt-1 text-sm text-stone-500">
-                            {selectedLinkedInvoices.length} linked invoice
-                            {selectedLinkedInvoices.length === 1 ? '' : 's'} supporting cash
-                            visibility for this assignment.
-                          </p>
-                        </div>
+                  <SectionCard className="overflow-hidden p-0">
+                    <div className="border-b border-stone-200 px-4 py-3">
+                      <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                        Linked expenses
+                      </h2>
+                      <p className="mt-1 text-sm text-stone-500">
+                        Costs safely attributed through driver name or mission linkage.
+                      </p>
+                    </div>
 
-                        {selectedLinkedInvoices.length === 0 ? (
-                          <div className="px-5 py-6 text-sm text-stone-500">
-                            No invoices are linked yet. Uninvoiced missions above can open
-                            invoicing directly.
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-stone-200">
-                            {selectedLinkedInvoices.map((invoice) => (
-                              <button
-                                key={invoice.invoice_id}
-                                type="button"
-                                onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                                className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-50 md:grid-cols-[minmax(0,1fr)_170px_170px_auto] md:items-start"
-                              >
+                    {selectedAssignment.expenses.length === 0 ? (
+                      <div className="px-4 py-5 text-sm text-stone-500">
+                        No linked expenses are currently attributed to this assignment.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-stone-200">
+                        {selectedAssignment.expenses.map((expense) => {
+                          const linkedMission = expense.mission_id
+                            ? missionById.get(expense.mission_id) ?? null
+                            : null
+
+                          return (
+                            <div key={expense.expense_id} className="px-4 py-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <p className="text-sm font-semibold text-stone-950">
-                                      {invoice.invoice_number}
+                                      {expenseTypeLabels[expense.expense_type]}
                                     </p>
                                     <StatusBadge
-                                      label={invoiceStatusLabels[invoice.status]}
-                                      tone={invoiceTone(invoice.status)}
+                                      label={approvalStatusLabels[expense.approval_status]}
+                                      tone={approvalTone(expense.approval_status)}
                                     />
-                                  </div>
-                                  <p className="mt-1 text-sm text-stone-500">
-                                    {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
-                                  </p>
-                                </div>
-
-                                <div className="text-sm text-stone-500">
-                                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                    Due
-                                  </p>
-                                  <p className="mt-1 font-medium text-stone-900">
-                                    {formatDate(invoice.due_date)}
-                                  </p>
-                                  <p className="mt-1">
-                                    Issued {formatDate(invoice.issue_date)}
-                                  </p>
-                                </div>
-
-                                <div className="text-sm text-stone-500">
-                                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                    Cash
-                                  </p>
-                                  <p className="mt-1 font-medium text-stone-900">
-                                    {formatCurrencyWithDecimals(invoice.amount_total)}
-                                  </p>
-                                  <p className="mt-1">
-                                    Outstanding{' '}
-                                    {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
-                                  </p>
-                                </div>
-
-                                <div className="flex justify-end">
-                                  <span className={tertiaryButtonClasses}>Open invoice</span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </SectionCard>
-
-                      <SectionCard className="overflow-hidden p-0">
-                        <div className="border-b border-stone-200 px-5 py-4">
-                          <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                            Linked expenses
-                          </h2>
-                          <p className="mt-1 text-sm text-stone-500">
-                            {selectedAssignment.expenses.length} linked expense
-                            {selectedAssignment.expenses.length === 1 ? '' : 's'} safely
-                            attributed through driver name or mission linkage.
-                          </p>
-                        </div>
-
-                        {selectedAssignment.expenses.length === 0 ? (
-                          <div className="px-5 py-6 text-sm text-stone-500">
-                            No linked expenses are currently attributed to this assignment.
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-stone-200">
-                            {selectedAssignment.expenses.map((expense) => {
-                              const linkedMission = expense.mission_id
-                                ? missionById.get(expense.mission_id) ?? null
-                                : null
-
-                              return (
-                                <div
-                                  key={expense.expense_id}
-                                  className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_140px_180px_auto] md:items-start"
-                                >
-                                  <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <p className="text-sm font-semibold text-stone-950">
-                                        {expenseTypeLabels[expense.expense_type]}
-                                      </p>
-                                      <StatusBadge
-                                        label={approvalStatusLabels[expense.approval_status]}
-                                        tone={approvalTone(expense.approval_status)}
-                                      />
-                                      {!expense.receipt_present ? (
-                                        <StatusBadge label="no receipt" tone="warning" />
-                                      ) : null}
-                                    </div>
-                                    <p className="mt-1 text-sm text-stone-500">
-                                      {linkedMission
-                                        ? `${linkedMission.reference} · ${linkedMission.departure_location} to ${linkedMission.arrival_location}`
-                                        : expense.advanced_by_driver
-                                          ? 'Advanced by driver'
-                                          : 'Paid by company'}
-                                    </p>
-                                    {expense.notes ? (
-                                      <p className="mt-1 text-sm text-stone-500">
-                                        {truncateString(expense.notes, 120)}
-                                      </p>
+                                    {!expense.receipt_present ? (
+                                      <StatusBadge label="no receipt" tone="warning" />
                                     ) : null}
                                   </div>
-
-                                  <div className="text-sm text-stone-500">
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                      Amount
-                                    </p>
-                                    <p className="mt-1 font-medium text-stone-900">
-                                      {formatCurrencyWithDecimals(expense.amount)}
-                                    </p>
-                                  </div>
-
-                                  <div className="text-sm text-stone-500">
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                                      Date
-                                    </p>
-                                    <p className="mt-1 font-medium text-stone-900">
-                                      {formatDate(expense.expense_date)}
-                                    </p>
-                                  </div>
-
-                                  <div className="flex justify-end">
-                                    <span className={tertiaryButtonClasses}>
-                                      {expense.advanced_by_driver
-                                        ? 'Driver advanced'
-                                        : 'Company paid'}
-                                    </span>
-                                  </div>
+                                  <p className="mt-1 truncate text-sm text-stone-500">
+                                    {linkedMission
+                                      ? `${linkedMission.reference} · ${linkedMission.departure_location} to ${linkedMission.arrival_location}`
+                                      : expense.advanced_by_driver
+                                        ? 'Advanced by driver'
+                                        : 'Paid by company'}
+                                  </p>
                                 </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </SectionCard>
-                    </>
-                  ) : null}
-                </div>
-
-                <div className="space-y-5 2xl:sticky 2xl:top-24 2xl:self-start">
-                  <SectionCard>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                      Top revenue driver
-                    </p>
-                    {topRevenueAssignment ? (
-                      <>
-                        <p className="mt-3 text-lg font-semibold text-stone-950">
-                          {topRevenueAssignment.driverName}
-                        </p>
-                        <p className="mt-1 text-sm text-stone-500">
-                          {formatCurrencyWithDecimals(topRevenueAssignment.revenueGenerated)} across{' '}
-                          {topRevenueAssignment.missionsCount} mission
-                          {topRevenueAssignment.missionsCount === 1 ? '' : 's'}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => updateFilters({ driver: topRevenueAssignment.driverKey })}
-                          className={inlineButtonClasses + ' mt-4'}
-                        >
-                          View assignment
-                        </button>
-                      </>
-                    ) : (
-                      <p className="mt-3 text-sm text-stone-500">
-                        Revenue will appear once assignments are recorded.
-                      </p>
+                                <div className="text-right">
+                                  <p className="text-sm font-medium text-stone-900">
+                                    {formatCurrencyWithDecimals(expense.amount)}
+                                  </p>
+                                  <p className="mt-1 text-xs text-stone-500">
+                                    {formatDate(expense.expense_date)}
+                                  </p>
+                                </div>
+                              </div>
+                              {expense.notes ? (
+                                <p className="mt-2 text-xs leading-5 text-stone-500">
+                                  {truncateString(expense.notes, 100)}
+                                </p>
+                              ) : null}
+                            </div>
+                          )
+                        })}
+                      </div>
                     )}
                   </SectionCard>
-
-                  <SectionCard>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                      Top active workload
-                    </p>
-                    {topActiveAssignment ? (
-                      <>
-                        <p className="mt-3 text-lg font-semibold text-stone-950">
-                          {topActiveAssignment.driverName}
-                        </p>
-                        <p className="mt-1 text-sm text-stone-500">
-                          {topActiveAssignment.activeMissionsCount} active mission
-                          {topActiveAssignment.activeMissionsCount === 1 ? '' : 's'} in queue
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => updateFilters({ driver: topActiveAssignment.driverKey })}
-                          className={inlineButtonClasses + ' mt-4'}
-                        >
-                          View assignment
-                        </button>
-                      </>
-                    ) : (
-                      <p className="mt-3 text-sm text-stone-500">
-                        No active mission load is visible right now.
-                      </p>
-                    )}
-                  </SectionCard>
-
-                  <SectionCard>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                      Most exposed assignment
-                    </p>
-                    {mostExposedAssignment ? (
-                      <>
-                        <p className="mt-3 text-lg font-semibold text-stone-950">
-                          {mostExposedAssignment.driverName}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {mostExposedAssignment.hasIssue ? (
-                            <StatusBadge label="issue" tone="danger" />
-                          ) : null}
-                          {mostExposedAssignment.hasActiveUninvoiced ? (
-                            <StatusBadge label="uninvoiced work" tone="warning" />
-                          ) : null}
-                          {mostExposedAssignment.hasMarginSensitive ? (
-                            <StatusBadge label="margin sensitive" tone="warning" />
-                          ) : null}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateFilters({ driver: mostExposedAssignment.driverKey })
-                          }
-                          className={inlineButtonClasses + ' mt-4'}
-                        >
-                          Review exposure
-                        </button>
-                      </>
-                    ) : (
-                      <p className="mt-3 text-sm text-stone-500">
-                        Exposure signals will appear once assignments are active.
-                      </p>
-                    )}
-                  </SectionCard>
-
-                  <SectionCard>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                      Unassigned missions
-                    </p>
-                    <p className="mt-3 text-lg font-semibold text-stone-950">
-                      {unassignedMissionsCount}
-                    </p>
+                </>
+              ) : (
+                <SectionCard className="overflow-hidden p-0">
+                  <div className="border-b border-stone-200 px-4 py-3">
+                    <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                      Portfolio signals
+                    </h2>
                     <p className="mt-1 text-sm text-stone-500">
-                      Missions without a driver name are excluded from the ranking until assigned.
+                      Quick markers for contribution, workload, and exposure.
                     </p>
+                  </div>
+
+                  <div className="divide-y divide-stone-200">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        topRevenueAssignment &&
+                        updateFilters({ driver: topRevenueAssignment.driverKey })
+                      }
+                      disabled={!topRevenueAssignment}
+                      className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50 disabled:cursor-default disabled:hover:bg-transparent"
+                    >
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Top revenue
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-stone-950">
+                          {topRevenueAssignment?.driverName ?? 'No assignment yet'}
+                        </p>
+                        <p className="mt-1 text-sm text-stone-500">
+                          {topRevenueAssignment
+                            ? `${formatCurrencyWithDecimals(topRevenueAssignment.revenueGenerated)} across ${topRevenueAssignment.missionsCount} mission${topRevenueAssignment.missionsCount === 1 ? '' : 's'}`
+                            : 'Revenue appears once assignments are recorded.'}
+                        </p>
+                      </div>
+                      {topRevenueAssignment ? (
+                        <span className={tertiaryButtonClasses}>View</span>
+                      ) : null}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        topActiveAssignment &&
+                        updateFilters({ driver: topActiveAssignment.driverKey })
+                      }
+                      disabled={!topActiveAssignment}
+                      className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50 disabled:cursor-default disabled:hover:bg-transparent"
+                    >
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Active workload
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-stone-950">
+                          {topActiveAssignment?.driverName ?? 'No active load'}
+                        </p>
+                        <p className="mt-1 text-sm text-stone-500">
+                          {topActiveAssignment
+                            ? `${topActiveAssignment.activeMissionsCount} active mission${topActiveAssignment.activeMissionsCount === 1 ? '' : 's'} in queue`
+                            : 'No active mission load is visible right now.'}
+                        </p>
+                      </div>
+                      {topActiveAssignment ? <span className={tertiaryButtonClasses}>View</span> : null}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        mostExposedAssignment &&
+                        updateFilters({ driver: mostExposedAssignment.driverKey })
+                      }
+                      disabled={!mostExposedAssignment}
+                      className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50 disabled:cursor-default disabled:hover:bg-transparent"
+                    >
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Most exposed
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-stone-950">
+                          {mostExposedAssignment?.driverName ?? 'No exposure'}
+                        </p>
+                        <p className="mt-1 text-sm text-stone-500">
+                          {mostExposedAssignment
+                            ? `${mostExposedAssignment.uninvoicedActiveCount} uninvoiced · ${mostExposedAssignment.issueMissionsCount} issue · ${mostExposedAssignment.marginSensitiveCount} sensitive`
+                            : 'Exposure signals appear once assignments are active.'}
+                        </p>
+                      </div>
+                      {mostExposedAssignment ? (
+                        <span className={tertiaryButtonClasses}>Review</span>
+                      ) : null}
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => navigate(appRoutes.missions)}
-                      className={inlineButtonClasses + ' mt-4'}
+                      className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50"
                     >
-                      Open missions
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Unassigned missions
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-stone-950">
+                          {unassignedMissionsCount}
+                        </p>
+                        <p className="mt-1 text-sm text-stone-500">
+                          Missions without a driver name are excluded until assigned.
+                        </p>
+                      </div>
+                      <span className={tertiaryButtonClasses}>Open</span>
                     </button>
-                  </SectionCard>
-                </div>
-              </div>
-            )}
+                  </div>
+                </SectionCard>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </PageContainer>
   )
