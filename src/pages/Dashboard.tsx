@@ -11,9 +11,14 @@ import {
   StatePanel,
   StatusBadge,
 } from '../components/WorkspaceUi'
+import { useClients } from '../hooks'
 import { useExpenses } from '../hooks/useExpenses'
 import { useInvoices } from '../hooks/useInvoices'
 import { useMissions } from '../hooks/useMissions'
+import {
+  getDashboardActionQueue,
+  getDashboardCashMetrics,
+} from '../lib/businessInsights'
 import {
   getInvoiceBalance,
   getMissionInvoiceMap,
@@ -82,16 +87,22 @@ export function Dashboard() {
   const missionsQuery = useMissions()
   const invoicesQuery = useInvoices()
   const expensesQuery = useExpenses()
+  const clientsQuery = useClients()
 
   const missions = missionsQuery.data ?? []
   const invoices = invoicesQuery.data ?? []
   const expenses = expensesQuery.data ?? []
+  const clients = clientsQuery.data ?? []
   const isLoading =
-    missionsQuery.isLoading || invoicesQuery.isLoading || expensesQuery.isLoading
+    missionsQuery.isLoading ||
+    invoicesQuery.isLoading ||
+    expensesQuery.isLoading ||
+    clientsQuery.isLoading
   const error =
     (missionsQuery.error instanceof Error && missionsQuery.error.message) ||
     (invoicesQuery.error instanceof Error && invoicesQuery.error.message) ||
     (expensesQuery.error instanceof Error && expensesQuery.error.message) ||
+    (clientsQuery.error instanceof Error && clientsQuery.error.message) ||
     null
 
   const missionInvoiceMap = useMemo(() => getMissionInvoiceMap(invoices), [invoices])
@@ -142,39 +153,33 @@ export function Dashboard() {
     [expenses]
   )
 
-  const metrics = useMemo(() => {
-    const unpaidCash = collectionQueue.reduce(
-      (sum, invoice) => sum + getInvoiceBalance(invoice),
-      0
-    )
-    const overdueCount = invoices.filter((invoice) => invoice.status === 'overdue').length
-    const pendingExpenses = expenses.filter(
-      (expense) => expense.approval_status === 'pending'
-    ).length
-    const activeWithoutInvoice = activeMissions.filter(
-      (mission) => (missionInvoiceMap.get(mission.mission_id) ?? []).length === 0
-    ).length
-    const marginSensitive = activeMissions.filter((mission) =>
-      getMissionMarginSnapshot(mission).isSensitive
-    ).length
-    const missingReceipts = expenses.filter((expense) => !expense.receipt_present).length
+  const metrics = useMemo(
+    () =>
+      getDashboardCashMetrics({
+        missions,
+        invoices,
+        expenses,
+      }),
+    [expenses, invoices, missions]
+  )
 
-    return {
-      unpaidCash,
-      overdueCount,
-      pendingExpenses,
-      activeMissionCount: activeMissions.length,
-      activeWithoutInvoice,
-      marginSensitive,
-      missingReceipts,
-    }
-  }, [activeMissions, collectionQueue, expenses, invoices, missionInvoiceMap])
+  const dashboardActions = useMemo(
+    () =>
+      getDashboardActionQueue({
+        missions,
+        invoices,
+        expenses,
+        clients,
+        limit: 5,
+      }),
+    [clients, expenses, invoices, missions]
+  )
 
   return (
     <PageContainer>
       <PageHeader
         title="Dashboard"
-        description={`Operational control for ${organization?.name ?? 'your workspace'}, with billing, mission execution, and expense exceptions surfaced as working queues.`}
+        description={`Cash-first operating control for ${organization?.name ?? 'your workspace'}, with blocked cash, uninvoiced revenue, and next actions surfaced first.`}
         actions={
           <>
             <button
@@ -220,6 +225,7 @@ export function Dashboard() {
                   missionsQuery.refetch(),
                   invoicesQuery.refetch(),
                   expensesQuery.refetch(),
+                  clientsQuery.refetch(),
                 ])
               }}
               className="btn-primary"
@@ -246,10 +252,12 @@ export function Dashboard() {
         <div className="space-y-5">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
-              label="Unpaid cash"
-              value={formatCurrencyWithDecimals(metrics.unpaidCash)}
-              detail={`${collectionQueue.length} invoice${collectionQueue.length === 1 ? '' : 's'} in collection`}
-              tone={metrics.overdueCount > 0 ? 'danger' : 'warning'}
+              label="Cash blocked"
+              value={formatCurrencyWithDecimals(metrics.cashBlockedTotal)}
+              detail={`${metrics.collectionQueueCount} invoice${
+                metrics.collectionQueueCount === 1 ? '' : 's'
+              } still open in collection`}
+              tone={metrics.overdueTotal > 0 ? 'danger' : metrics.cashBlockedTotal > 0 ? 'warning' : 'default'}
               onClick={() =>
                 navigate({
                   pathname: appRoutes.invoices,
@@ -258,38 +266,54 @@ export function Dashboard() {
               }
             />
             <StatCard
-              label="Pending expense approvals"
-              value={String(metrics.pendingExpenses)}
-              detail="Waiting on ops or finance review"
-              tone={metrics.pendingExpenses > 0 ? 'warning' : 'default'}
-              onClick={() =>
-                navigate({
-                  pathname: appRoutes.expenses,
-                  search: createSearchParams({ queue: 'pending' }).toString(),
-                })
+              label="Revenue not invoiced"
+              value={formatCurrencyWithDecimals(metrics.revenueNotInvoicedTotal)}
+              detail={`${metrics.uninvoicedMissionCount} active mission${
+                metrics.uninvoicedMissionCount === 1 ? '' : 's'
+              } not yet converted into billing`}
+              tone={
+                metrics.uninvoicedMissionCount >= 3
+                  ? 'danger'
+                  : metrics.uninvoicedMissionCount > 0
+                    ? 'warning'
+                    : 'default'
               }
-            />
-            <StatCard
-              label="Active missions"
-              value={String(metrics.activeMissionCount)}
-              detail={`${metrics.activeWithoutInvoice} without invoice linkage`}
-              tone={metrics.activeWithoutInvoice > 0 ? 'warning' : 'default'}
               onClick={() =>
                 navigate({
                   pathname: appRoutes.missions,
-                  search: createSearchParams({ queue: 'active' }).toString(),
+                  search: createSearchParams({ queue: 'uninvoiced' }).toString(),
                 })
               }
             />
             <StatCard
               label="Overdue invoices"
               value={String(metrics.overdueCount)}
-              detail="Past due and needing follow-up"
+              detail={
+                metrics.overdueTotal > 0
+                  ? `${formatCurrencyWithDecimals(metrics.overdueTotal)} overdue total`
+                  : 'No overdue cash exposure'
+              }
               tone={metrics.overdueCount > 0 ? 'danger' : 'default'}
               onClick={() =>
                 navigate({
                   pathname: appRoutes.invoices,
                   search: createSearchParams({ queue: 'overdue' }).toString(),
+                })
+              }
+            />
+            <StatCard
+              label="Pending expense approvals"
+              value={String(metrics.pendingExpenseCount)}
+              detail={
+                metrics.pendingExpenseAmount > 0
+                  ? `${formatCurrencyWithDecimals(metrics.pendingExpenseAmount)} waiting on review`
+                  : 'No approvals waiting'
+              }
+              tone={metrics.pendingExpenseCount > 0 ? 'warning' : 'default'}
+              onClick={() =>
+                navigate({
+                  pathname: appRoutes.expenses,
+                  search: createSearchParams({ queue: 'pending' }).toString(),
                 })
               }
             />
@@ -301,83 +325,82 @@ export function Dashboard() {
                 <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                   Action queue
                 </h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  Direct follow-ups across billing conversion, collection, and expense control.
+                </p>
               </div>
-              <ActionItem
-                count={metrics.activeWithoutInvoice}
-                tone={metrics.activeWithoutInvoice > 0 ? 'warning' : 'neutral'}
-                title={`${metrics.activeWithoutInvoice} mission${metrics.activeWithoutInvoice === 1 ? '' : 's'} need${metrics.activeWithoutInvoice === 1 ? 's' : ''} invoicing`}
-                actionLabel="Create invoice"
-                onClick={() =>
-                  navigate({
-                    pathname: appRoutes.missions,
-                    search: createSearchParams({ queue: 'uninvoiced' }).toString(),
-                  })
-                }
-              />
-              <ActionItem
-                count={metrics.overdueCount}
-                tone={metrics.overdueCount > 0 ? 'danger' : 'neutral'}
-                title={`${metrics.overdueCount} overdue invoice${metrics.overdueCount === 1 ? '' : 's'}`}
-                actionLabel="Review invoices"
-                onClick={() =>
-                  navigate({
-                    pathname: appRoutes.invoices,
-                    search: createSearchParams({ queue: 'overdue' }).toString(),
-                  })
-                }
-              />
-              <ActionItem
-                count={metrics.pendingExpenses}
-                tone={metrics.pendingExpenses > 0 ? 'warning' : 'neutral'}
-                title={`${metrics.pendingExpenses} expense${metrics.pendingExpenses === 1 ? '' : 's'} pending`}
-                actionLabel="Review expenses"
-                onClick={() =>
-                  navigate({
-                    pathname: appRoutes.expenses,
-                    search: createSearchParams({ queue: 'pending' }).toString(),
-                  })
-                }
-              />
+              {dashboardActions.length === 0 ? (
+                <div className="px-5 py-8">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge label="clear" tone="success" />
+                    <p className="text-sm font-semibold text-stone-950">
+                      No immediate operational risks detected
+                    </p>
+                  </div>
+                  <p className="mt-2 text-sm text-stone-500">
+                    Cash conversion, collection, and expense approvals are currently clear in the
+                    live data.
+                  </p>
+                </div>
+              ) : (
+                dashboardActions.map((action) => (
+                  <ActionItem
+                    key={action.id}
+                    tone={action.tone}
+                    title={action.title}
+                    detail={action.detail}
+                    actionLabel={action.actionLabel}
+                    onClick={() =>
+                      navigate({
+                        pathname: action.action.pathname,
+                        search: action.action.searchParams
+                          ? createSearchParams(action.action.searchParams).toString()
+                          : '',
+                      })
+                    }
+                  />
+                ))
+              )}
             </ActionPanel>
 
             <SectionCard className="p-0">
               <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
                 <div>
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Expense control
+                    Collection queue
                   </h2>
                   <p className="mt-1 text-sm text-stone-500">
-                    Pending approvals and missing receipts across the latest expense activity.
+                    Open invoices ordered for follow-up and outstanding cash visibility.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() =>
                     navigate({
-                      pathname: appRoutes.expenses,
-                      search: createSearchParams({ queue: 'pending' }).toString(),
+                      pathname: appRoutes.invoices,
+                      search: createSearchParams({ queue: 'unpaid' }).toString(),
                     })
                   }
                   className="btn-secondary px-4 py-2"
                 >
-                  Review expenses
+                  Open invoices
                 </button>
               </div>
 
-              {expenseAttention.length === 0 ? (
+              {collectionQueue.length === 0 ? (
                 <div className="px-5 py-8 text-sm text-stone-500">
-                  Expense approvals and receipt control are clear.
+                  No invoices are waiting for collection.
                 </div>
               ) : (
                 <div className="divide-y divide-stone-200">
-                  {expenseAttention.slice(0, 5).map((expense) => (
+                  {collectionQueue.slice(0, 6).map((invoice) => (
                     <button
-                      key={expense.expense_id}
+                      key={invoice.invoice_id}
                       type="button"
                       onClick={() =>
                         navigate({
-                          pathname: appRoutes.expenses,
-                          search: createSearchParams({ focus: expense.expense_id }).toString(),
+                          pathname: appRoutes.invoices,
+                          search: createSearchParams({ queue: 'unpaid', focus: invoice.invoice_id }).toString(),
                         })
                       }
                       className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_140px]"
@@ -385,33 +408,35 @@ export function Dashboard() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-stone-950">
-                            {expense.expense_type}
+                            {invoice.invoice_number}
                           </p>
                           <StatusBadge
-                            label={expense.approval_status}
-                            tone={getExpenseTone(expense)}
+                            label={invoice.status}
+                            tone={getInvoiceTone(invoice.status)}
                           />
-                          {!expense.receipt_present ? (
-                            <StatusBadge label="receipt missing" tone="danger" />
-                          ) : null}
                         </div>
                         <p className="mt-1 text-sm text-stone-500">
-                          {missionReferenceById.get(expense.mission_id ?? '') || 'No linked mission'}
+                          {invoice.mission_ids.length > 0
+                            ? invoice.mission_ids
+                                .map((missionId) => missionReferenceById.get(missionId))
+                                .filter(Boolean)
+                                .join(', ')
+                            : 'No linked missions'}
                         </p>
                       </div>
                       <div className="text-sm text-stone-500">
                         <p className="font-medium text-stone-900">
-                          {formatCurrencyWithDecimals(expense.amount)}
-                        </p>
-                        <p className="mt-1">{formatDate(expense.expense_date)}</p>
-                      </div>
-                      <div className="text-sm text-stone-500">
-                        <p className="font-medium text-stone-900">
-                          {expense.driver_name || 'No driver'}
+                          Due {formatDate(invoice.due_date)}
                         </p>
                         <p className="mt-1">
-                          {expense.advanced_by_driver ? 'Driver advance' : 'Company paid'}
+                          {formatCurrencyWithDecimals(invoice.amount_total)} total
                         </p>
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        <p className="font-medium text-stone-900">
+                          {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
+                        </p>
+                        <p className="mt-1">Outstanding</p>
                       </div>
                     </button>
                   ))}
@@ -515,40 +540,40 @@ export function Dashboard() {
               <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
                 <div>
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Collection queue
+                    Expense control
                   </h2>
                   <p className="mt-1 text-sm text-stone-500">
-                    Invoices still open, ordered for collection follow-up.
+                    Pending approvals and missing receipts across the latest expense activity.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() =>
                     navigate({
-                      pathname: appRoutes.invoices,
-                      search: createSearchParams({ queue: 'unpaid' }).toString(),
+                      pathname: appRoutes.expenses,
+                      search: createSearchParams({ queue: 'pending' }).toString(),
                     })
                   }
                   className="btn-secondary px-4 py-2"
                 >
-                  Open invoices
+                  Review expenses
                 </button>
               </div>
 
-              {collectionQueue.length === 0 ? (
+              {expenseAttention.length === 0 ? (
                 <div className="px-5 py-8 text-sm text-stone-500">
-                  No invoices are waiting for collection.
+                  Expense approvals and receipt control are clear.
                 </div>
               ) : (
                 <div className="divide-y divide-stone-200">
-                  {collectionQueue.slice(0, 6).map((invoice) => (
+                  {expenseAttention.slice(0, 5).map((expense) => (
                     <button
-                      key={invoice.invoice_id}
+                      key={expense.expense_id}
                       type="button"
                       onClick={() =>
                         navigate({
-                          pathname: appRoutes.invoices,
-                          search: createSearchParams({ focus: invoice.invoice_id }).toString(),
+                          pathname: appRoutes.expenses,
+                          search: createSearchParams({ focus: expense.expense_id }).toString(),
                         })
                       }
                       className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_180px]"
@@ -556,32 +581,33 @@ export function Dashboard() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-stone-950">
-                            {invoice.invoice_number}
+                            {expense.expense_type}
                           </p>
-                          <StatusBadge label={invoice.status} tone={getInvoiceTone(invoice.status)} />
+                          <StatusBadge
+                            label={expense.approval_status}
+                            tone={getExpenseTone(expense)}
+                          />
+                          {!expense.receipt_present ? (
+                            <StatusBadge label="receipt missing" tone="danger" />
+                          ) : null}
                         </div>
                         <p className="mt-1 text-sm text-stone-500">
-                          {invoice.mission_ids.length > 0
-                            ? invoice.mission_ids
-                                .map((missionId) => missionReferenceById.get(missionId))
-                                .filter(Boolean)
-                                .join(', ')
-                            : 'No linked missions'}
+                          {missionReferenceById.get(expense.mission_id ?? '') || 'No linked mission'}
                         </p>
                       </div>
                       <div className="text-sm text-stone-500">
                         <p className="font-medium text-stone-900">
-                          Due {formatDate(invoice.due_date)}
+                          {formatCurrencyWithDecimals(expense.amount)}
+                        </p>
+                        <p className="mt-1">{formatDate(expense.expense_date)}</p>
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        <p className="font-medium text-stone-900">
+                          {expense.driver_name || 'No driver'}
                         </p>
                         <p className="mt-1">
-                          {formatCurrencyWithDecimals(invoice.amount_total)} total
+                          {expense.advanced_by_driver ? 'Driver advance' : 'Company paid'}
                         </p>
-                      </div>
-                      <div className="text-sm text-stone-500">
-                        <p className="font-medium text-stone-900">
-                          {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
-                        </p>
-                        <p className="mt-1">Outstanding</p>
                       </div>
                     </button>
                   ))}

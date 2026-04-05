@@ -15,6 +15,7 @@ const navItems = [
   { label: 'Dashboard', href: appRoutes.dashboard, icon: BarChart3 },
   { label: 'Clients', href: appRoutes.clients, icon: Users },
   { label: 'Missions', href: appRoutes.missions, icon: Truck },
+  { label: 'Assignments', href: appRoutes.assignments, icon: BarChart3 },
   { label: 'Expenses', href: appRoutes.expenses, icon: Receipt },
   { label: 'Invoices', href: appRoutes.invoices, icon: FileText },
   { label: 'Settings', href: appRoutes.settings, icon: Settings },

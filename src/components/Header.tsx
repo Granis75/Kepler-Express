@@ -1,6 +1,4 @@
-import { Menu, Search } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
-import { appRoutes } from '../lib/routes'
+import { BarChart3, Menu, Search } from 'lucide-react'
 import { useWorkspaceState } from '../lib/workspace'
 
 interface HeaderProps {
@@ -9,88 +7,37 @@ interface HeaderProps {
   commandShortcutLabel: string
 }
 
-const routeMeta: Record<string, { title: string; subtitle: string }> = {
-  [appRoutes.dashboard]: {
-    title: 'Dashboard',
-    subtitle: 'Operational and financial pulse',
-  },
-  [appRoutes.clients]: {
-    title: 'Clients',
-    subtitle: 'Customer accounts and active relationships',
-  },
-  [appRoutes.missions]: {
-    title: 'Missions',
-    subtitle: 'Planned, active, and delivered operations',
-  },
-  [appRoutes.expenses]: {
-    title: 'Expenses',
-    subtitle: 'Operational costs and reimbursement control',
-  },
-  [appRoutes.invoices]: {
-    title: 'Invoices',
-    subtitle: 'Billing follow-up and outstanding cash',
-  },
-  [appRoutes.settings]: {
-    title: 'Settings',
-    subtitle: 'Workspace visibility and environment status',
-  },
-}
-
-function getRouteMeta(pathname: string) {
-  if (pathname.startsWith(`${appRoutes.clients}/`)) {
-    return {
-      title: 'Client Portfolio',
-      subtitle: 'Account health, missions, and billing exposure',
-    }
-  }
-
-  if (pathname.startsWith(`${appRoutes.missions}/`)) {
-    return {
-      title: 'Mission Detail',
-      subtitle: 'Route context, margin health, and billing linkage',
-    }
-  }
-
-  if (pathname.startsWith(`${appRoutes.invoices}/`)) {
-    return {
-      title: 'Invoice Detail',
-      subtitle: 'Cash position, linked missions, and collection state',
-    }
-  }
-
-  return routeMeta[pathname] ?? routeMeta[appRoutes.dashboard]
-}
-
 export function Header({
   onMenuClick,
   onCommandPaletteOpen,
   commandShortcutLabel,
 }: HeaderProps) {
-  const location = useLocation()
   const { organization, profile } = useWorkspaceState()
-  const meta = getRouteMeta(location.pathname)
 
   return (
     <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#f6f2eb]/86 backdrop-blur">
-      <div className="mx-auto flex max-w-[1560px] items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-[1560px] items-center justify-between gap-3 px-5 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={onMenuClick}
-            className="rounded-[1rem] border border-stone-300 bg-white/90 p-2 text-stone-700 shadow-sm transition hover:border-stone-400 md:hidden"
+            className="rounded-[0.95rem] border border-stone-300 bg-white/90 p-2 text-stone-700 shadow-sm transition hover:border-stone-400 md:hidden"
             aria-label="Toggle navigation"
           >
             <Menu className="h-5 w-5" />
           </button>
 
+          <div className="hidden h-10 w-10 items-center justify-center rounded-[1rem] border border-stone-300/90 bg-white/90 text-teal-700 shadow-sm sm:flex">
+            <BarChart3 className="h-[18px] w-[18px]" />
+          </div>
+
           <div className="min-w-0">
-            <span className="eyebrow-chip">
+            <p className="truncate text-[11px] uppercase tracking-[0.18em] text-stone-500">
               {organization?.slug ?? 'workspace'}
-            </span>
-            <h1 className="mt-3 truncate font-heading text-[2rem] font-semibold tracking-tight text-stone-950">
-              {meta.title}
-            </h1>
-            <p className="mt-1 truncate text-sm text-stone-500">{meta.subtitle}</p>
+            </p>
+            <p className="mt-1 truncate text-sm font-semibold text-stone-900">
+              {organization?.name ?? 'Kepler Express'}
+            </p>
           </div>
         </div>
 
@@ -98,10 +45,10 @@ export function Header({
           <button
             type="button"
             onClick={onCommandPaletteOpen}
-            className="inline-flex items-center gap-3 rounded-[1.15rem] border border-stone-200 bg-white/88 px-3.5 py-3 text-left text-sm text-stone-600 shadow-sm transition hover:border-stone-300 hover:text-stone-900"
+            className="inline-flex items-center gap-3 rounded-[1rem] border border-stone-200 bg-white/88 px-3 py-2.5 text-left text-sm text-stone-600 shadow-sm transition hover:border-stone-300 hover:text-stone-900"
             aria-label="Open command palette"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-[0.95rem] bg-stone-100 text-stone-700">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[0.9rem] bg-stone-100 text-stone-700">
               <Search className="h-4 w-4" />
             </div>
             <div className="hidden min-w-0 sm:block">
@@ -113,11 +60,11 @@ export function Header({
             </span>
           </button>
 
-          <div className="hidden min-w-[220px] rounded-[1.25rem] border border-stone-200 bg-white/82 px-4 py-3 text-right shadow-sm sm:block">
+          <div className="hidden min-w-[210px] rounded-[1.05rem] border border-stone-200 bg-white/82 px-4 py-2.5 text-right shadow-sm sm:block">
             <p className="text-sm font-semibold text-stone-900">
               {profile?.name ?? 'Workspace user'}
             </p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-stone-500">
+            <p className="mt-0.5 text-[11px] uppercase tracking-[0.18em] text-stone-500">
               {organization?.name ?? 'Organization'}
             </p>
           </div>

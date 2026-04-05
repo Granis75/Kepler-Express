@@ -5,6 +5,7 @@ export const appRoutes = {
   clientDetail: '/app/clients/:id',
   missions: '/app/missions',
   missionDetail: '/app/missions/:id',
+  assignments: '/app/assignments',
   expenses: '/app/expenses',
   invoices: '/app/invoices',
   invoiceDetail: '/app/invoices/:id',

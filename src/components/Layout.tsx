@@ -125,6 +125,15 @@ export function Layout({ children }: LayoutProps) {
         run: () => navigateTo(appRoutes.missions),
       },
       {
+        id: 'nav-assignments',
+        label: 'Go to Assignments',
+        description: 'Derived driver workload and margin visibility',
+        shortcut: 'G A',
+        icon: BarChart3,
+        keywords: ['assignments', 'drivers', 'workload', 'margin'],
+        run: () => navigateTo(appRoutes.assignments),
+      },
+      {
         id: 'nav-expenses',
         label: 'Go to Expenses',
         description: 'Approvals, receipts, and cost control',
@@ -254,6 +263,11 @@ export function Layout({ children }: LayoutProps) {
         return true
       }
 
+      if (nextKey === 'a') {
+        navigateTo(appRoutes.assignments)
+        return true
+      }
+
       if (nextKey === 'e') {
         navigateTo(appRoutes.expenses)
         return true
@@ -359,7 +373,7 @@ export function Layout({ children }: LayoutProps) {
           onCommandPaletteOpen={openCommandPalette}
           commandShortcutLabel={commandShortcutLabel}
         />
-        <main className="flex-1 overflow-y-auto pb-8">{children}</main>
+        <main className="flex-1 overflow-y-auto pb-6">{children}</main>
       </div>
 
       {commandPaletteOpen ? (

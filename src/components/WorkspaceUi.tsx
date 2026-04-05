@@ -292,12 +292,14 @@ export function ActionPanel({
 
 export function ActionItem({
   title,
+  detail,
   actionLabel,
   onClick,
   tone = 'neutral',
   count,
 }: {
   title: string
+  detail?: string
   actionLabel: string
   onClick: () => void
   tone?: 'neutral' | 'warning' | 'danger'
@@ -333,16 +335,21 @@ export function ActionItem({
         rowToneClasses
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <span
-          className={clsx(
-            'inline-flex min-w-8 items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-semibold tabular-nums',
-            countToneClasses
-          )}
-        >
-          {count ?? 0}
-        </span>
-        <p className="min-w-0 text-sm font-semibold text-stone-950">{title}</p>
+      <div className="flex min-w-0 items-start gap-3">
+        {typeof count === 'number' ? (
+          <span
+            className={clsx(
+              'mt-0.5 inline-flex min-w-8 items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-semibold tabular-nums',
+              countToneClasses
+            )}
+          >
+            {count}
+          </span>
+        ) : null}
+        <div className="min-w-0">
+          <p className="min-w-0 text-sm font-semibold text-stone-950">{title}</p>
+          {detail ? <p className="mt-1 text-sm text-stone-500">{detail}</p> : null}
+        </div>
       </div>
       <div
         className={clsx(

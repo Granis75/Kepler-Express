@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, Mail, MapPin, PencilLine, Phone } from 'lucide-react'
+import clsx from 'clsx'
+import { ArrowLeft, PencilLine } from 'lucide-react'
 import { createSearchParams, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { ClientForm } from '../components/ClientForm'
@@ -90,6 +91,19 @@ const primaryButtonClasses =
 const inlineButtonClasses =
   'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
 
+type ClientHealthStatus = 'healthy' | 'watch' | 'risk'
+
+function clientHealthTone(status: ClientHealthStatus) {
+  switch (status) {
+    case 'risk':
+      return 'danger' as const
+    case 'watch':
+      return 'warning' as const
+    default:
+      return 'success' as const
+  }
+}
+
 export function ClientDetail() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
@@ -171,7 +185,7 @@ export function ClientDetail() {
       (sum, invoice) => sum + Number(invoice.amount_total ?? 0),
       0
     )
-    const totalPaid = clientInvoices.reduce(
+    const totalCollected = clientInvoices.reduce(
       (sum, invoice) => sum + Number(invoice.amount_paid ?? 0),
       0
     )
@@ -190,38 +204,68 @@ export function ClientDetail() {
       return isMissionActive(mission.status) && linkedInvoices.length === 0
     }).length
     const marginSnapshots = clientMissions.map((mission) => getMissionMarginSnapshot(mission))
-    const portfolioBaselineCost = marginSnapshots.reduce(
+    const totalCost = marginSnapshots.reduce(
       (sum, snapshot) => sum + snapshot.baselineCost,
       0
     )
-    const marginAmount = totalRevenue - portfolioBaselineCost
+    const marginAmount = totalRevenue - totalCost
     const marginRatio = totalRevenue > 0 ? marginAmount / totalRevenue : 0
     const marginSensitiveCount = marginSnapshots.filter((snapshot) => snapshot.isSensitive).length
     const actualCostCoverageCount = clientMissions.filter(
       (mission) => Number(mission.actual_cost_amount ?? 0) > 0
     ).length
+    const estimatedCostCoverageCount = Math.max(
+      0,
+      clientMissions.length - actualCostCoverageCount
+    )
+    const uninvoicedRevenue = clientMissions.reduce((sum, mission) => {
+      const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
+
+      if (!isMissionActive(mission.status) || linkedInvoices.length > 0) {
+        return sum
+      }
+
+      return sum + Number(mission.revenue_amount ?? 0)
+    }, 0)
+    const openInvoiceCount = clientInvoices.filter(
+      (invoice) => getInvoiceBalance(invoice) > 0
+    ).length
+    const collectionRatio = totalInvoiced > 0 ? totalCollected / totalInvoiced : 0
+    const outstandingRatio = totalInvoiced > 0 ? outstanding / totalInvoiced : 0
+    const costBasisLabel =
+      actualCostCoverageCount === clientMissions.length && clientMissions.length > 0
+        ? 'Actual cost basis'
+        : actualCostCoverageCount === 0
+          ? 'Estimated cost basis'
+          : 'Mixed cost basis'
 
     return {
       totalRevenue,
       totalInvoiced,
-      totalPaid,
+      totalCollected,
       outstanding,
+      totalCost,
       activeMissionCount,
       overdueInvoiceCount,
       activeUninvoicedMissionCount,
+      uninvoicedRevenue,
       marginAmount,
       marginRatio,
       marginSensitiveCount,
       missionCount: clientMissions.length,
       invoiceCount: clientInvoices.length,
       actualCostCoverageCount,
+      estimatedCostCoverageCount,
+      openInvoiceCount,
+      collectionRatio,
+      outstandingRatio,
+      costBasisLabel,
     }
   }, [clientInvoices, clientMissions, missionInvoiceMap])
 
   const locationLine = [client?.city, client?.postal_code, client?.country]
     .filter(Boolean)
     .join(', ')
-  const addressLine = [client?.address, locationLine].filter(Boolean).join(' • ')
   const statusConfig = client ? getClientStatusConfig(client.status) : null
 
   const portfolioSummary = useMemo(() => {
@@ -229,33 +273,75 @@ export function ClientDetail() {
       return ''
     }
 
-    const segments = [
-      `${metrics.missionCount} mission${metrics.missionCount === 1 ? '' : 's'}`,
-      `${metrics.invoiceCount} invoice${metrics.invoiceCount === 1 ? '' : 's'}`,
-    ]
-
-    if (metrics.activeMissionCount > 0) {
-      segments.push(
-        `${metrics.activeMissionCount} active mission${
-          metrics.activeMissionCount === 1 ? '' : 's'
-        }`
-      )
+    if (metrics.missionCount === 0 && metrics.invoiceCount === 0) {
+      return `${statusConfig.label} account with no missions or invoices recorded yet.`
     }
 
-    if (metrics.outstanding > 0) {
-      segments.push(`${formatCurrencyWithDecimals(metrics.outstanding)} outstanding`)
-    }
-
-    if (metrics.overdueInvoiceCount > 0) {
-      segments.push(
-        `${metrics.overdueInvoiceCount} overdue invoice${
-          metrics.overdueInvoiceCount === 1 ? '' : 's'
-        }`
-      )
-    }
-
-    return `${statusConfig.label} account with ${segments.join(' • ')}.`
+    return `${statusConfig.label} account with ${formatCurrencyWithDecimals(
+      metrics.totalCollected
+    )} collected of ${formatCurrencyWithDecimals(
+      metrics.totalInvoiced
+    )} invoiced, and ${formatCurrencyWithDecimals(metrics.marginAmount)} margin on ${formatCurrencyWithDecimals(
+      metrics.totalCost
+    )} ${metrics.costBasisLabel.toLowerCase()}.`
   }, [client, metrics, statusConfig])
+
+  const health = useMemo(() => {
+    const weakMargin = metrics.totalRevenue > 0 && metrics.marginRatio < 0.15
+    const highOutstanding =
+      metrics.outstanding > 0 &&
+      (metrics.outstandingRatio >= 0.45 || metrics.outstanding >= metrics.totalRevenue * 0.25)
+    const hasOverdueExposure = metrics.overdueInvoiceCount > 0
+    const hasBillingGap = metrics.activeUninvoicedMissionCount > 0
+
+    let status: ClientHealthStatus = 'healthy'
+
+    if (
+      metrics.overdueInvoiceCount >= 2 ||
+      (hasOverdueExposure && highOutstanding) ||
+      (weakMargin && metrics.outstanding > 0) ||
+      (metrics.marginAmount <= 0 && metrics.totalRevenue > 0)
+    ) {
+      status = 'risk'
+    } else if (hasOverdueExposure || highOutstanding || weakMargin || hasBillingGap) {
+      status = 'watch'
+    }
+
+    const reasons = [
+      metrics.overdueInvoiceCount > 0
+        ? `${metrics.overdueInvoiceCount} overdue invoice${
+            metrics.overdueInvoiceCount === 1 ? '' : 's'
+          } currently require collection follow-up`
+        : null,
+      metrics.outstanding > 0
+        ? `${formatCurrencyWithDecimals(metrics.outstanding)} still outstanding across issued billing`
+        : null,
+      hasBillingGap
+        ? `${metrics.activeUninvoicedMissionCount} active mission${
+            metrics.activeUninvoicedMissionCount === 1 ? '' : 's'
+          } still not converted into billing`
+        : null,
+      weakMargin
+        ? `Margin is running at ${formatPercentage(metrics.marginRatio * 100, 0)} on the current cost basis`
+        : null,
+    ].filter(Boolean) as string[]
+
+    return {
+      status,
+      label: status === 'risk' ? 'Risk' : status === 'watch' ? 'Watch' : 'Healthy',
+      tone: clientHealthTone(status),
+      summary:
+        status === 'risk'
+          ? 'Collection pressure or weak margin is materially affecting this account.'
+          : status === 'watch'
+            ? 'This account has billing conversion, collection, or margin items worth monitoring.'
+            : 'Collection and margin signals are currently stable for this account.',
+      reasons:
+        reasons.length > 0
+          ? reasons
+          : ['No overdue invoices, no active uninvoiced work, and no current margin pressure.'],
+    }
+  }, [metrics])
 
   const closeForm = () => {
     setShowForm(false)
@@ -403,6 +489,7 @@ export function ClientDetail() {
                 {client.name}
               </h1>
               <StatusBadge label={statusConfig.label} tone={clientTone(client.status)} />
+              <StatusBadge label={health.label} tone={health.tone} />
               {metrics.overdueInvoiceCount > 0 ? (
                 <StatusBadge label="overdue billing" tone="danger" />
               ) : null}
@@ -412,7 +499,7 @@ export function ClientDetail() {
             </div>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">
-              Account portfolio across missions, invoicing, and collection exposure.
+              Revenue, collection, and margin visibility across this client portfolio.
             </p>
           </div>
 
@@ -432,7 +519,7 @@ export function ClientDetail() {
           <StatCard
             label="Revenue"
             value={formatCurrencyWithDecimals(metrics.totalRevenue)}
-            detail={`${metrics.missionCount} mission${metrics.missionCount === 1 ? '' : 's'}`}
+            detail={`${formatCurrencyWithDecimals(metrics.totalInvoiced)} invoiced so far`}
             onClick={() =>
               navigate({
                 pathname: appRoutes.missions,
@@ -441,9 +528,9 @@ export function ClientDetail() {
             }
           />
           <StatCard
-            label="Paid"
-            value={formatCurrencyWithDecimals(metrics.totalPaid)}
-            detail={`${metrics.invoiceCount} invoice${metrics.invoiceCount === 1 ? '' : 's'} issued`}
+            label="Collected"
+            value={formatCurrencyWithDecimals(metrics.totalCollected)}
+            detail={`Of ${formatCurrencyWithDecimals(metrics.totalInvoiced)} invoiced`}
             tone="success"
             onClick={() =>
               navigate({
@@ -455,8 +542,16 @@ export function ClientDetail() {
           <StatCard
             label="Outstanding"
             value={formatCurrencyWithDecimals(metrics.outstanding)}
-            detail={`${metrics.invoiceCount} invoice${metrics.invoiceCount === 1 ? '' : 's'} tracked`}
-            tone={metrics.outstanding > 0 ? 'warning' : 'default'}
+            detail={`${metrics.openInvoiceCount} open invoice${
+              metrics.openInvoiceCount === 1 ? '' : 's'
+            } in billing`}
+            tone={
+              metrics.overdueInvoiceCount > 0
+                ? 'danger'
+                : metrics.outstanding > 0
+                  ? 'warning'
+                  : 'default'
+            }
             onClick={() =>
               navigate({
                 pathname: appRoutes.invoices,
@@ -468,10 +563,18 @@ export function ClientDetail() {
             }
           />
           <StatCard
-            label="Missions"
-            value={String(metrics.missionCount)}
-            detail={`${metrics.activeMissionCount} active`}
-            tone={metrics.activeMissionCount > 0 ? 'warning' : 'default'}
+            label="Margin"
+            value={formatCurrencyWithDecimals(metrics.marginAmount)}
+            detail={`${formatPercentage(metrics.marginRatio * 100, 0)} on ${formatCurrencyWithDecimals(
+              metrics.totalCost
+            )} ${metrics.costBasisLabel.toLowerCase()}`}
+            tone={
+              metrics.marginAmount <= 0
+                ? 'danger'
+                : metrics.marginRatio < 0.15
+                  ? 'warning'
+                  : 'success'
+            }
             onClick={() =>
               navigate({
                 pathname: appRoutes.missions,
@@ -480,16 +583,16 @@ export function ClientDetail() {
             }
           />
           <StatCard
-            label="Overdue invoices"
-            value={String(metrics.overdueInvoiceCount)}
-            detail={`${metrics.activeUninvoicedMissionCount} active not invoiced`}
-            tone={metrics.overdueInvoiceCount > 0 ? 'danger' : 'default'}
+            label="Active missions"
+            value={String(metrics.activeMissionCount)}
+            detail={`${metrics.activeUninvoicedMissionCount} awaiting invoicing`}
+            tone={metrics.activeUninvoicedMissionCount > 0 ? 'warning' : 'default'}
             onClick={() =>
               navigate({
-                pathname: appRoutes.invoices,
+                pathname: appRoutes.missions,
                 search: createSearchParams({
                   client: client.client_id,
-                  queue: 'overdue',
+                  queue: 'active',
                 }).toString(),
               })
             }
@@ -502,68 +605,46 @@ export function ClientDetail() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
-                    Portfolio summary
+                    Account P&L
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-stone-600">{portfolioSummary}</p>
                 </div>
                 <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
-                  {statusConfig.label}
+                  {health.label}
                 </div>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <div>
+                <div className="rounded-[1.1rem] border border-stone-200 bg-stone-50/90 px-4 py-4">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                    Relationship
+                    Collection position
                   </p>
-                  <p className="mt-2 text-sm text-stone-900">
-                    {metrics.activeMissionCount > 0
-                      ? 'Active logistics workload currently in motion.'
-                      : 'No live missions are currently assigned to this account.'}
+                  <p className="mt-2 text-sm font-medium text-stone-900">
+                    {formatCurrencyWithDecimals(metrics.totalCollected)} collected of{' '}
+                    {formatCurrencyWithDecimals(metrics.totalInvoiced)} invoiced
                   </p>
                   <p className="mt-2 text-sm text-stone-500">
                     {metrics.outstanding > 0
-                      ? `${formatCurrencyWithDecimals(metrics.outstanding)} remains outstanding across active billing.`
-                      : 'No open balance is currently outstanding.'}
+                      ? `${formatCurrencyWithDecimals(metrics.outstanding)} remains open across ${metrics.openInvoiceCount} invoice${
+                          metrics.openInvoiceCount === 1 ? '' : 's'
+                        }.`
+                      : 'No billed cash is currently outstanding.'}
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Mail className="mt-0.5 h-4 w-4 text-stone-500" />
-                    <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                        Email
-                      </p>
-                      <p className="mt-1 text-sm text-stone-900">
-                        {client.email || 'No email on file'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Phone className="mt-0.5 h-4 w-4 text-stone-500" />
-                    <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                        Phone
-                      </p>
-                      <p className="mt-1 text-sm text-stone-900">
-                        {formatPhoneNumber(client.phone)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 text-stone-500" />
-                    <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                        Location
-                      </p>
-                      <p className="mt-1 text-sm text-stone-900">
-                        {addressLine || 'No address on file'}
-                      </p>
-                    </div>
-                  </div>
+                <div className="rounded-[1.1rem] border border-stone-200 bg-stone-50/90 px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    Cost basis
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-stone-900">
+                    {formatCurrencyWithDecimals(metrics.totalCost)} using{' '}
+                    {metrics.costBasisLabel.toLowerCase()}
+                  </p>
+                  <p className="mt-2 text-sm text-stone-500">
+                    {metrics.actualCostCoverageCount} mission
+                    {metrics.actualCostCoverageCount === 1 ? '' : 's'} with actual cost,{' '}
+                    {metrics.estimatedCostCoverageCount} on estimated basis.
+                  </p>
                 </div>
               </div>
 
@@ -583,7 +664,7 @@ export function ClientDetail() {
                   </h2>
                   <p className="mt-1 text-sm text-stone-500">
                     {metrics.missionCount} linked mission
-                    {metrics.missionCount === 1 ? '' : 's'} in this account portfolio.
+                    {metrics.missionCount === 1 ? '' : 's'} with route, margin, and invoice linkage.
                   </p>
                 </div>
                 <button
@@ -731,7 +812,7 @@ export function ClientDetail() {
                   </h2>
                   <p className="mt-1 text-sm text-stone-500">
                     {metrics.invoiceCount} invoice{metrics.invoiceCount === 1 ? '' : 's'} linked
-                    to this client.
+                    to this client, tracking billed and collected cash.
                   </p>
                 </div>
                 <button
@@ -867,6 +948,39 @@ export function ClientDetail() {
           </div>
 
           <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
+            <SectionCard
+              className={clsx(
+                health.status === 'risk'
+                  ? 'border-rose-200 bg-rose-50/70'
+                  : health.status === 'watch'
+                    ? 'border-amber-200 bg-amber-50/70'
+                    : 'border-emerald-200 bg-emerald-50/60'
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    Account health
+                  </p>
+                  <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                    {health.label}
+                  </h2>
+                </div>
+                <StatusBadge label={health.label} tone={health.tone} />
+              </div>
+              <p className="mt-3 text-sm leading-7 text-stone-600">{health.summary}</p>
+              <div className="mt-4 space-y-2">
+                {health.reasons.map((reason) => (
+                  <div
+                    key={reason}
+                    className="rounded-[1rem] border border-white/80 bg-white/75 px-3 py-2 text-sm text-stone-700"
+                  >
+                    {reason}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+
             <SectionCard>
               <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
                 Account details
@@ -916,35 +1030,17 @@ export function ClientDetail() {
               <div className="mt-5 space-y-3">
                 <div className="rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                    Active missions
+                    Collection coverage
                   </p>
                   <p className="mt-1 text-sm font-medium text-stone-900">
-                    {metrics.activeMissionCount} in progress or scheduled
+                    {formatPercentage(metrics.collectionRatio * 100, 0)} of invoiced cash collected
                   </p>
-                </div>
-
-                <div
-                  className={
-                    metrics.overdueInvoiceCount > 0
-                      ? 'rounded-[1.05rem] border border-rose-200 bg-rose-50/90 px-4 py-3'
-                      : 'rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3'
-                  }
-                >
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                    Overdue invoices
-                  </p>
-                  <p
-                    className={
-                      metrics.overdueInvoiceCount > 0
-                        ? 'mt-1 text-sm font-medium text-rose-700'
-                        : 'mt-1 text-sm font-medium text-stone-900'
-                    }
-                  >
-                    {metrics.overdueInvoiceCount === 0
-                      ? 'No overdue balance'
-                      : `${metrics.overdueInvoiceCount} invoice${
-                          metrics.overdueInvoiceCount === 1 ? '' : 's'
-                        } require follow-up`}
+                  <p className="mt-1 text-xs leading-6 text-stone-500">
+                    {metrics.invoiceCount === 0
+                      ? 'No invoices issued yet.'
+                      : `${formatCurrencyWithDecimals(metrics.totalCollected)} collected of ${formatCurrencyWithDecimals(
+                          metrics.totalInvoiced
+                        )} invoiced.`}
                   </p>
                 </div>
 
@@ -956,7 +1052,7 @@ export function ClientDetail() {
                   }
                 >
                   <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                    Uninvoiced workload
+                    Uninvoiced revenue
                   </p>
                   <p
                     className={
@@ -966,10 +1062,39 @@ export function ClientDetail() {
                     }
                   >
                     {metrics.activeUninvoicedMissionCount === 0
-                      ? 'No active missions waiting for invoicing'
-                      : `${metrics.activeUninvoicedMissionCount} active mission${
+                      ? 'No active revenue is waiting for billing'
+                      : `${formatCurrencyWithDecimals(metrics.uninvoicedRevenue)} across ${metrics.activeUninvoicedMissionCount} mission${
                           metrics.activeUninvoicedMissionCount === 1 ? '' : 's'
-                        } still need billing`}
+                        }`}
+                  </p>
+                </div>
+
+                <div
+                  className={
+                    metrics.overdueInvoiceCount > 0
+                      ? 'rounded-[1.05rem] border border-rose-200 bg-rose-50/90 px-4 py-3'
+                      : 'rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3'
+                  }
+                >
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    Active workload
+                  </p>
+                  <p
+                    className={
+                      metrics.overdueInvoiceCount > 0
+                        ? 'mt-1 text-sm font-medium text-rose-700'
+                        : 'mt-1 text-sm font-medium text-stone-900'
+                    }
+                  >
+                    {metrics.activeMissionCount} active mission
+                    {metrics.activeMissionCount === 1 ? '' : 's'} in progress or scheduled
+                  </p>
+                  <p className="mt-1 text-xs leading-6 text-stone-500">
+                    {metrics.overdueInvoiceCount === 0
+                      ? 'No overdue billing pressure right now.'
+                      : `${metrics.overdueInvoiceCount} overdue invoice${
+                          metrics.overdueInvoiceCount === 1 ? '' : 's'
+                        } are still open.`}
                   </p>
                 </div>
 

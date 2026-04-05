@@ -32,6 +32,9 @@ const ClientDetail = lazy(() =>
 const Missions = lazy(() =>
   import('./pages/Missions').then((module) => ({ default: module.Missions }))
 )
+const Assignments = lazy(() =>
+  import('./pages/Assignments').then((module) => ({ default: module.Assignments }))
+)
 const MissionDetail = lazy(() =>
   import('./pages/MissionDetail').then((module) => ({ default: module.MissionDetail }))
 )
@@ -268,6 +271,7 @@ function App() {
                 <Route path={appRoutes.clients} element={<Clients />} />
                 <Route path={appRoutes.clientDetail} element={<ClientDetail />} />
                 <Route path={appRoutes.missions} element={<Missions />} />
+                <Route path={appRoutes.assignments} element={<Assignments />} />
                 <Route path={appRoutes.missionDetail} element={<MissionDetail />} />
                 <Route path={appRoutes.expenses} element={<Expenses />} />
                 <Route path={appRoutes.invoices} element={<Invoices />} />
@@ -284,12 +288,13 @@ function App() {
           <Route path="/missions/new" element={<Navigate to={appRoutes.missions} replace />} />
           <Route path="/missions/:id" element={<LegacyMissionDetailRedirect />} />
           <Route path="/missions/:id/edit" element={<Navigate to={appRoutes.missions} replace />} />
+          <Route path="/assignments" element={<Navigate to={appRoutes.assignments} replace />} />
           <Route path="/expenses" element={<Navigate to={appRoutes.expenses} replace />} />
           <Route path="/invoices" element={<Navigate to={appRoutes.invoices} replace />} />
           <Route path="/invoices/new" element={<Navigate to={appRoutes.invoices} replace />} />
           <Route path="/invoices/:id" element={<LegacyInvoiceDetailRedirect />} />
           <Route path="/invoices/:id/edit" element={<Navigate to={appRoutes.invoices} replace />} />
-          <Route path="/drivers" element={<Navigate to={appRoutes.dashboard} replace />} />
+          <Route path="/drivers" element={<Navigate to={appRoutes.assignments} replace />} />
           <Route path="/vehicles" element={<Navigate to={appRoutes.dashboard} replace />} />
           <Route path="/vehicles/new" element={<Navigate to={appRoutes.dashboard} replace />} />
           <Route path="/vehicles/:id" element={<Navigate to={appRoutes.dashboard} replace />} />
