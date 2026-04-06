@@ -932,17 +932,15 @@ export function Assignments() {
                   </div>
                 </div>
 
-                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.65fr)_140px_150px_130px_150px_auto] lg:gap-3">
-                  {['Assignment', 'Revenue', 'Cost basis', 'Margin', 'Exposure', 'Action'].map(
-                    (label) => (
-                      <p
-                        key={label}
-                        className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
-                      >
-                        {label}
-                      </p>
-                    )
-                  )}
+                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.65fr)_minmax(250px,0.95fr)_170px_auto] lg:gap-3">
+                  {['Assignment', 'Portfolio', 'Exposure', 'Action'].map((label) => (
+                    <p
+                      key={label}
+                      className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
+                    >
+                      {label}
+                    </p>
+                  ))}
                 </div>
 
                 <div className="divide-y divide-stone-200">
@@ -969,7 +967,7 @@ export function Assignments() {
                           }
                         }}
                         className={clsx(
-                          'group grid cursor-pointer gap-3 px-4 py-3.5 transition hover:bg-stone-50/80 focus:outline-none focus-visible:bg-stone-50/80 lg:grid-cols-[minmax(0,1.65fr)_140px_150px_130px_150px_auto] lg:items-center',
+                          'group grid cursor-pointer gap-3 px-4 py-3.5 transition hover:bg-stone-50/80 focus:outline-none focus-visible:bg-stone-50/80 lg:grid-cols-[minmax(0,1.65fr)_minmax(250px,0.95fr)_170px_auto] lg:items-center',
                           isSelected &&
                             'bg-stone-50/90 shadow-[inset_0_0_0_1px_rgba(214,211,209,0.95)]'
                         )}
@@ -987,9 +985,12 @@ export function Assignments() {
                             ) : null}
                             {assignment.hasMarginSensitive ? (
                               <StatusBadge label="margin sensitive" tone="warning" />
+                            ) : assignment.activeMissionsCount > 0 ? (
+                              <StatusBadge label="active load" tone="info" />
                             ) : null}
                             {!assignment.hasIssue &&
                             !assignment.hasActiveUninvoiced &&
+                            !assignment.hasMarginSensitive &&
                             assignment.hasHighRevenue ? (
                               <StatusBadge label="high revenue" tone="success" />
                             ) : null}
@@ -1010,58 +1011,73 @@ export function Assignments() {
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500 lg:text-right">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
-                            Revenue
-                          </p>
-                          <p className="mt-1 font-medium text-stone-900 lg:mt-0">
-                            {formatCurrencyWithDecimals(assignment.revenueGenerated)}
-                          </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {assignment.deliveredMissionsCount} delivered
-                          </p>
-                        </div>
-
-                        <div className="text-sm text-stone-500 lg:text-right">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
-                            Cost basis
-                          </p>
-                          <p className="mt-1 font-medium text-stone-900 lg:mt-0">
-                            {formatCurrencyWithDecimals(assignment.costBasisGenerated)}
-                          </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {costBasisShortLabel} · Exp{' '}
+                        <div className="grid gap-1 rounded-[0.95rem] border border-stone-200 bg-stone-50/70 px-3 py-2.5 text-sm text-stone-500">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              Revenue
+                            </span>
+                            <span className="font-medium text-stone-900">
+                              {formatCurrencyWithDecimals(assignment.revenueGenerated)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              Cost
+                            </span>
+                            <span className="font-medium text-stone-900">
+                              {formatCurrencyWithDecimals(assignment.costBasisGenerated)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              Margin
+                            </span>
+                            <span
+                              className={clsx(
+                                'font-medium',
+                                assignment.marginGenerated < 0
+                                  ? 'text-rose-700'
+                                  : 'text-stone-900'
+                              )}
+                            >
+                              {formatCurrencyWithDecimals(assignment.marginGenerated)}
+                            </span>
+                          </div>
+                          <p className="pt-1 text-xs text-stone-500">
+                            {costBasisShortLabel} basis ·{' '}
+                            {formatPercentage(assignment.marginRatio * 100, 0)} margin · Exp{' '}
                             {formatCurrencyWithDecimals(assignment.expensesGenerated)}
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500 lg:text-right">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
-                            Margin
-                          </p>
-                          <p
-                            className={clsx(
-                              'mt-1 font-medium lg:mt-0',
-                              assignment.marginGenerated < 0 ? 'text-rose-700' : 'text-stone-900'
-                            )}
-                          >
-                            {formatCurrencyWithDecimals(assignment.marginGenerated)}
-                          </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {formatPercentage(assignment.marginRatio * 100, 0)}
-                          </p>
-                        </div>
-
-                        <div className="text-sm text-stone-500 lg:text-right">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
-                            Exposure
-                          </p>
-                          <p className="mt-1 font-medium text-stone-900 lg:mt-0">
-                            {assignment.activeMissionsCount} active
-                          </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {assignment.uninvoicedActiveCount} uninvoiced ·{' '}
-                            {assignment.issueMissionsCount} issue
+                        <div className="grid gap-1 text-sm text-stone-500 lg:text-right">
+                          <div className="flex items-center justify-between gap-3 lg:justify-end">
+                            <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              Active
+                            </span>
+                            <span className="font-medium text-stone-900">
+                              {assignment.activeMissionsCount}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 lg:justify-end">
+                            <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              Uninvoiced
+                            </span>
+                            <span className="font-medium text-stone-900">
+                              {assignment.uninvoicedActiveCount}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 lg:justify-end">
+                            <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              Issues
+                            </span>
+                            <span className="font-medium text-stone-900">
+                              {assignment.issueMissionsCount}
+                            </span>
+                          </div>
+                          <p className="pt-1 text-xs text-stone-500">
+                            {assignment.deliveredMissionsCount} delivered ·{' '}
+                            {assignment.marginSensitiveCount} sensitive
                           </p>
                         </div>
 
@@ -1092,6 +1108,128 @@ export function Assignments() {
               </SectionCard>
 
               {selectedAssignment ? (
+                <SectionCard className="overflow-hidden p-0">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+                    <div>
+                      <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                        Linked missions
+                      </h2>
+                      <p className="mt-1 text-sm text-stone-500">
+                        Mission workload and invoice state for this assignment.
+                      </p>
+                    </div>
+                    <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600">
+                      {selectedAssignment.missionsCount} mission
+                      {selectedAssignment.missionsCount === 1 ? '' : 's'}
+                    </div>
+                  </div>
+
+                  <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(210px,0.9fr)_auto] lg:gap-3">
+                    {['Mission', 'Operations', 'Billing'].map((label) => (
+                      <p
+                        key={label}
+                        className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
+                      >
+                        {label}
+                      </p>
+                    ))}
+                  </div>
+
+                  <div className="max-h-[34rem] divide-y divide-stone-200 overflow-y-auto">
+                    {selectedAssignment.missions.map((mission) => {
+                      const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
+                      const margin = getMissionMarginSnapshot(mission)
+
+                      return (
+                        <div
+                          key={mission.mission_id}
+                          className="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(210px,0.9fr)_auto] lg:items-center"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
+                            className="min-w-0 rounded-[0.9rem] px-1 py-1 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold text-stone-950">
+                                {mission.reference}
+                              </p>
+                              <StatusBadge
+                                label={missionStatusLabels[mission.status]}
+                                tone={missionTone(mission.status)}
+                              />
+                              {linkedInvoices.length === 0 ? (
+                                <StatusBadge label="not invoiced" tone="warning" />
+                              ) : null}
+                              {margin.isSensitive ? (
+                                <StatusBadge label="margin sensitive" tone="warning" />
+                              ) : null}
+                            </div>
+                            <p className="mt-1 text-sm text-stone-700">
+                              {mission.departure_location} to {mission.arrival_location}
+                            </p>
+                            <p className="mt-1 truncate text-sm text-stone-500">
+                              {clientNameById.get(mission.client_id) ?? 'Unknown client'}
+                            </p>
+                          </button>
+
+                          <div className="text-sm text-stone-500 lg:text-right">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                              Operations
+                            </p>
+                            <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                              {formatDateTime(mission.departure_datetime)}
+                            </p>
+                            <p className="mt-1 text-xs text-stone-500">
+                              {formatCurrencyWithDecimals(mission.revenue_amount)} · Margin{' '}
+                              {formatPercentage(margin.marginRatio * 100, 0)}
+                            </p>
+                            <p className="mt-1 text-xs text-stone-500">
+                              {margin.sourceLabel} cost{' '}
+                              {formatCurrencyWithDecimals(margin.baselineCost)}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap items-start gap-2 lg:justify-end">
+                            {linkedInvoices.length > 0 ? (
+                              linkedInvoices.map((invoice) => (
+                                <button
+                                  key={invoice.invoice_id}
+                                  type="button"
+                                  onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
+                                  className={inlineButtonClasses}
+                                >
+                                  {invoice.invoice_number}
+                                </button>
+                              ))
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  navigate({
+                                    pathname: appRoutes.invoices,
+                                    search: createSearchParams({
+                                      mission: mission.mission_id,
+                                      compose: 'new',
+                                    }).toString(),
+                                  })
+                                }
+                                className={inlineButtonClasses}
+                              >
+                                Create invoice
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </SectionCard>
+              ) : null}
+            </div>
+
+            <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+              {selectedAssignment ? (
                 <>
                   <SectionCard>
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1114,9 +1252,7 @@ export function Assignments() {
                           {selectedAssignment.missionsCount} mission
                           {selectedAssignment.missionsCount === 1 ? '' : 's'} across{' '}
                           {selectedAssignment.clientCount} client
-                          {selectedAssignment.clientCount === 1 ? '' : 's'} with{' '}
-                          {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)} in
-                          revenue represented.
+                          {selectedAssignment.clientCount === 1 ? '' : 's'}.
                         </p>
                       </div>
 
@@ -1155,24 +1291,13 @@ export function Assignments() {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
                         <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                           Revenue
                         </p>
                         <p className="mt-2 text-sm font-semibold text-stone-950">
                           {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)}
-                        </p>
-                      </div>
-                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                          Cost basis
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-stone-950">
-                          {formatCurrencyWithDecimals(selectedAssignment.costBasisGenerated)}
-                        </p>
-                        <p className="mt-1 text-xs text-stone-500">
-                          {selectedAssignment.costBasisLabel}
                         </p>
                       </div>
                       <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
@@ -1188,6 +1313,17 @@ export function Assignments() {
                       </div>
                       <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
                         <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          Cost basis
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-stone-950">
+                          {formatCurrencyWithDecimals(selectedAssignment.costBasisGenerated)}
+                        </p>
+                        <p className="mt-1 text-xs text-stone-500">
+                          {selectedAssignment.costBasisLabel}
+                        </p>
+                      </div>
+                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                           Expenses
                         </p>
                         <p className="mt-2 text-sm font-semibold text-stone-950">
@@ -1198,163 +1334,9 @@ export function Assignments() {
                           {selectedAssignment.expenses.length === 1 ? '' : 's'}
                         </p>
                       </div>
-                      <div className="rounded-[1rem] border border-stone-200 bg-stone-50/80 px-3.5 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                          Exposure
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-stone-950">
-                          {selectedAssignment.activeMissionsCount} active
-                        </p>
-                        <p className="mt-1 text-xs text-stone-500">
-                          {selectedAssignment.uninvoicedActiveCount} uninvoiced ·{' '}
-                          {selectedAssignment.issueMissionsCount} issue
-                        </p>
-                      </div>
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard className="overflow-hidden p-0">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
-                      <div>
-                        <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
-                          Linked missions
-                        </h2>
-                        <p className="mt-1 text-sm text-stone-500">
-                          Mission workload and invoice state for this assignment.
-                        </p>
-                      </div>
-                      <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600">
-                        {selectedAssignment.missionsCount} mission
-                        {selectedAssignment.missionsCount === 1 ? '' : 's'}
-                      </div>
                     </div>
 
-                    <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.25fr)_150px_160px_auto] lg:gap-3">
-                      {['Mission', 'Schedule', 'Finance', 'Billing'].map((label) => (
-                        <p
-                          key={label}
-                          className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
-                        >
-                          {label}
-                        </p>
-                      ))}
-                    </div>
-
-                    <div className="divide-y divide-stone-200">
-                      {selectedAssignment.missions.map((mission) => {
-                        const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
-                        const margin = getMissionMarginSnapshot(mission)
-
-                        return (
-                          <div
-                            key={mission.mission_id}
-                            className="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1.25fr)_150px_160px_auto] lg:items-center"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                              className="min-w-0 rounded-[0.9rem] px-1 py-1 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
-                            >
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-sm font-semibold text-stone-950">
-                                  {mission.reference}
-                                </p>
-                                <StatusBadge
-                                  label={missionStatusLabels[mission.status]}
-                                  tone={missionTone(mission.status)}
-                                />
-                                {linkedInvoices.length === 0 ? (
-                                  <StatusBadge label="not invoiced" tone="warning" />
-                                ) : null}
-                                {margin.isSensitive ? (
-                                  <StatusBadge label="margin sensitive" tone="warning" />
-                                ) : null}
-                              </div>
-                              <p className="mt-1 text-sm text-stone-700">
-                                {mission.departure_location} to {mission.arrival_location}
-                              </p>
-                              <p className="mt-1 truncate text-sm text-stone-500">
-                                {clientNameById.get(mission.client_id) ?? 'Unknown client'}
-                              </p>
-                            </button>
-
-                            <div className="text-sm text-stone-500 lg:text-right">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
-                                Schedule
-                              </p>
-                              <p className="mt-1 font-medium text-stone-900 lg:mt-0">
-                                {formatDateTime(mission.departure_datetime)}
-                              </p>
-                              <p className="mt-1 text-xs text-stone-500">
-                                {mission.arrival_datetime
-                                  ? formatDateTime(mission.arrival_datetime)
-                                  : 'Arrival not set'}
-                              </p>
-                            </div>
-
-                            <div className="text-sm text-stone-500 lg:text-right">
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
-                                Finance
-                              </p>
-                              <p className="mt-1 font-medium text-stone-900 lg:mt-0">
-                                {formatCurrencyWithDecimals(mission.revenue_amount)}
-                              </p>
-                              <p className="mt-1 text-xs text-stone-500">
-                                Margin {formatPercentage(margin.marginRatio * 100, 0)}
-                              </p>
-                              <p className="mt-1 text-xs text-stone-500">
-                                {margin.sourceLabel} cost{' '}
-                                {formatCurrencyWithDecimals(margin.baselineCost)}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-wrap items-start gap-2 lg:justify-end">
-                              {linkedInvoices.length > 0 ? (
-                                linkedInvoices.map((invoice) => (
-                                  <button
-                                    key={invoice.invoice_id}
-                                    type="button"
-                                    onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                                    className={inlineButtonClasses}
-                                  >
-                                    {invoice.invoice_number}
-                                  </button>
-                                ))
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    navigate({
-                                      pathname: appRoutes.invoices,
-                                      search: createSearchParams({
-                                        mission: mission.mission_id,
-                                        compose: 'new',
-                                      }).toString(),
-                                    })
-                                  }
-                                  className={inlineButtonClasses}
-                                >
-                                  Create invoice
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </SectionCard>
-                </>
-              ) : null}
-            </div>
-
-            <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-              {selectedAssignment ? (
-                <>
-                  <SectionCard>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
-                      Assignment context
-                    </p>
-                    <div className="mt-3 space-y-3 text-sm text-stone-600">
+                    <div className="mt-4 space-y-3 border-t border-stone-200 pt-4 text-sm text-stone-600">
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
                           Next mission
@@ -1384,9 +1366,6 @@ export function Assignments() {
                           {selectedAssignment.missionsCount} mission
                           {selectedAssignment.missionsCount === 1 ? '' : 's'} use actual cost
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
-                          {selectedAssignment.costBasisLabel}
-                        </p>
                       </div>
                     </div>
                   </SectionCard>
@@ -1403,11 +1382,11 @@ export function Assignments() {
 
                     {selectedLinkedInvoices.length === 0 ? (
                       <div className="px-4 py-5 text-sm text-stone-500">
-                        No invoices are linked yet. Uninvoiced missions above can open invoicing
+                        No invoices are linked yet. Uninvoiced missions can open invoicing
                         directly.
                       </div>
                     ) : (
-                      <div className="divide-y divide-stone-200">
+                      <div className="max-h-[16rem] divide-y divide-stone-200 overflow-y-auto">
                         {selectedLinkedInvoices.map((invoice) => (
                           <button
                             key={invoice.invoice_id}
@@ -1456,7 +1435,7 @@ export function Assignments() {
                         No linked expenses are currently attributed to this assignment.
                       </div>
                     ) : (
-                      <div className="divide-y divide-stone-200">
+                      <div className="max-h-[16rem] divide-y divide-stone-200 overflow-y-auto">
                         {selectedAssignment.expenses.map((expense) => {
                           const linkedMission = expense.mission_id
                             ? missionById.get(expense.mission_id) ?? null
@@ -1568,7 +1547,9 @@ export function Assignments() {
                             : 'No active mission load is visible right now.'}
                         </p>
                       </div>
-                      {topActiveAssignment ? <span className={tertiaryButtonClasses}>View</span> : null}
+                      {topActiveAssignment ? (
+                        <span className={tertiaryButtonClasses}>View</span>
+                      ) : null}
                     </button>
 
                     <button
