@@ -112,9 +112,11 @@ function getInvoicePayload(input: CreateInvoiceInput, existingInvoice?: Invoice)
 
 export async function listPaymentsByInvoiceId(invoiceId: string) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('payments')
     .select('*')
+    .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
     .order('payment_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -128,10 +130,15 @@ export async function listPaymentsByInvoiceId(invoiceId: string) {
 
 export async function listInvoices() {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const [{ data: invoiceRows, error: invoiceError }, { data: paymentRows, error: paymentError }] =
     await Promise.all([
-      supabase.from('invoices').select('*').order('invoice_number', { ascending: false }),
-      supabase.from('payments').select('*'),
+      supabase
+        .from('invoices')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('invoice_number', { ascending: false }),
+      supabase.from('payments').select('*').eq('organization_id', organizationId),
     ])
 
   if (invoiceError) {
@@ -154,8 +161,14 @@ export async function listInvoices() {
 
 export async function getInvoiceById(invoiceId: string) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const [{ data: invoiceRow, error: invoiceError }, payments] = await Promise.all([
-    supabase.from('invoices').select('*').eq('invoice_id', invoiceId).maybeSingle(),
+    supabase
+      .from('invoices')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('invoice_id', invoiceId)
+      .maybeSingle(),
     listPaymentsByInvoiceId(invoiceId),
   ])
 
@@ -195,9 +208,11 @@ export async function updateInvoice(
   existingInvoice?: Invoice,
 ) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('invoices')
     .update(getInvoicePayload(input, existingInvoice))
+    .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
     .select('*')
     .maybeSingle()
@@ -216,6 +231,7 @@ export async function updateInvoice(
 
 async function syncInvoicePaymentState(invoiceId: string) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const invoice = await getInvoiceById(invoiceId)
 
   const payload: InvoiceUpdate = {
@@ -227,6 +243,7 @@ async function syncInvoicePaymentState(invoiceId: string) {
   const { data, error } = await supabase
     .from('invoices')
     .update(payload)
+    .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
     .select('*')
     .maybeSingle()

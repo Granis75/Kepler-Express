@@ -15,7 +15,6 @@ export const appRoutes = {
 export const publicRoutes = {
   landing: '/',
   login: '/login',
-  signup: '/signup',
 } as const
 
 export function isAppRoute(pathname: string) {

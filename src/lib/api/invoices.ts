@@ -1,6 +1,7 @@
 import type { Invoice } from '../../types/domain'
 import { getSupabaseClient } from '../supabase'
 import { toUserFacingError } from '../supabase-error'
+import { getAuthorizedOrganizationId } from './session'
 
 export type CreateInvoiceRecordInput = {
   client_id: string
@@ -67,11 +68,13 @@ function getInvoicePayload(input: CreateInvoiceRecordInput) {
 
 export async function getInvoices(): Promise<Invoice[]> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('invoices')
     .select(
       'invoice_id, organization_id, client_id, invoice_number, mission_ids, amount_total, amount_paid, status, issue_date, due_date, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .order('invoice_number', { ascending: false })
 
   if (error) {
@@ -99,11 +102,13 @@ export async function getInvoices(): Promise<Invoice[]> {
 
 export async function getInvoiceById(invoiceId: string): Promise<Invoice> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('invoices')
     .select(
       'invoice_id, organization_id, client_id, invoice_number, mission_ids, amount_total, amount_paid, status, issue_date, due_date, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
     .maybeSingle()
 
@@ -133,10 +138,11 @@ export async function getInvoiceById(invoiceId: string): Promise<Invoice> {
 }
 
 export async function createInvoiceRecord(
-  organizationId: string,
+  _organizationId: string,
   input: CreateInvoiceRecordInput
 ): Promise<Invoice> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('invoices')
     .insert({
@@ -175,9 +181,11 @@ export async function updateInvoiceRecord(
   input: CreateInvoiceRecordInput
 ): Promise<Invoice> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('invoices')
     .update(getInvoicePayload(input))
+    .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
     .select(
       'invoice_id, organization_id, client_id, invoice_number, mission_ids, amount_total, amount_paid, status, issue_date, due_date, notes, created_at, updated_at'

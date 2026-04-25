@@ -1,6 +1,7 @@
 import type { Expense } from '../../types/domain'
 import { getSupabaseClient } from '../supabase'
 import { toUserFacingError } from '../supabase-error'
+import { getAuthorizedOrganizationId } from './session'
 
 export type CreateExpenseInput = {
   mission_id?: string
@@ -77,11 +78,13 @@ function getExpensePayload(input: CreateExpenseInput) {
 
 export async function getExpenses(): Promise<Expense[]> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('expenses')
     .select(
       'expense_id, organization_id, mission_id, driver_name, vehicle_name, expense_type, amount, advanced_by_driver, approval_status, receipt_url, receipt_present, expense_date, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .order('expense_date', { ascending: false })
     .order('created_at', { ascending: false })
 
@@ -114,34 +117,7 @@ export async function createExpenseRecord(
   input: CreateExpenseInput
 ): Promise<Expense> {
   const supabase = getSupabaseClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError) {
-    throw toUserFacingError(authError, 'Unable to resolve the current session.')
-  }
-
-  if (!user) {
-    throw new Error('Sign in required to create an expense.')
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (profileError) {
-    throw toUserFacingError(profileError, 'Unable to resolve the current organization.')
-  }
-
-  const organizationId = profile?.organization_id
-
-  if (!organizationId) {
-    throw new Error('Workspace profile not found for this account.')
-  }
+  const organizationId = await getAuthorizedOrganizationId()
 
   const { data, error } = await supabase
     .from('expenses')
@@ -182,9 +158,11 @@ export async function updateExpenseRecord(
   input: CreateExpenseInput
 ): Promise<Expense> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('expenses')
     .update(getExpensePayload(input))
+    .eq('organization_id', organizationId)
     .eq('expense_id', expenseId)
     .select(
       'expense_id, organization_id, mission_id, driver_name, vehicle_name, expense_type, amount, advanced_by_driver, approval_status, receipt_url, receipt_present, expense_date, notes, created_at, updated_at'

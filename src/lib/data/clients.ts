@@ -28,9 +28,11 @@ function mapClientRow(row: ClientRow): Client {
 
 export async function listClients() {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('clients')
     .select('*')
+    .eq('organization_id', organizationId)
     .order('name', { ascending: true })
 
   if (error) {
@@ -72,6 +74,7 @@ export async function createClient(input: CreateClientInput) {
 
 export async function updateClient(clientId: string, input: CreateClientInput) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const payload: Database['public']['Tables']['clients']['Update'] = {
     name: input.name.trim(),
     email: input.email.trim(),
@@ -88,6 +91,7 @@ export async function updateClient(clientId: string, input: CreateClientInput) {
   const { data, error } = await supabase
     .from('clients')
     .update(payload)
+    .eq('organization_id', organizationId)
     .eq('client_id', clientId)
     .select('*')
     .maybeSingle()

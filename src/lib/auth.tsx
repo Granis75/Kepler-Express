@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import { resetAuthorizedOrganizationCache } from './api/session'
 import { resetOrganizationCache } from './data/session'
 import { getSupabaseClient, isSupabaseConfigured } from './supabase'
 import { toUserFacingError } from './supabase-error'
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       resetOrganizationCache()
+      resetAuthorizedOrganizationCache()
       setSession(nextSession ?? null)
       setUser(nextSession?.user ?? null)
       setAuthReady(true)
@@ -97,26 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signUp = async ({ fullName, organizationName, email, password }: SignUpInput) => {
-    const supabase = getSupabaseClient()
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          organization_name: organizationName.trim(),
-        },
-      },
-    })
-
-    if (error) {
-      throw toUserFacingError(error, 'Unable to create your account.')
-    }
-
-    return {
-      emailConfirmationRequired: !data.session,
-    }
+  const signUp = async (_input: SignUpInput) => {
+    throw new Error('Open signup is disabled. Contact Kepler Express for authorized access.')
   }
 
   const signOut = async () => {
@@ -128,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     resetOrganizationCache()
+    resetAuthorizedOrganizationCache()
   }
 
   const value = useMemo(

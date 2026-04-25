@@ -1,6 +1,7 @@
 import { DriverStatus, type Driver } from '../../types'
 import type { Database } from './database'
 import { toDataLayerError } from './errors'
+import { getCurrentOrganizationId } from './session'
 import { getSupabaseClient } from './supabase'
 
 type DriverRow = Database['public']['Tables']['drivers']['Row']
@@ -23,9 +24,11 @@ function mapDriverRow(row: DriverRow): Driver {
 
 export async function listDrivers() {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('drivers')
     .select('*')
+    .eq('organization_id', organizationId)
     .order('name', { ascending: true })
 
   if (error) {

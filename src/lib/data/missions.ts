@@ -67,9 +67,11 @@ function getMissionPayload(input: MissionWriteInput) {
 
 export async function listMissions() {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .select('*')
+    .eq('organization_id', organizationId)
     .order('departure_datetime', { ascending: false })
 
   if (error) {
@@ -81,9 +83,11 @@ export async function listMissions() {
 
 export async function getMissionById(missionId: string) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .select('*')
+    .eq('organization_id', organizationId)
     .eq('mission_id', missionId)
     .maybeSingle()
 
@@ -120,9 +124,11 @@ export async function createMission(input: MissionWriteInput) {
 
 export async function updateMission(missionId: string, input: MissionWriteInput) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .update(getMissionPayload(input))
+    .eq('organization_id', organizationId)
     .eq('mission_id', missionId)
     .select('*')
     .maybeSingle()

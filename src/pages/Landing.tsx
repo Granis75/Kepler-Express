@@ -3,6 +3,7 @@ import {
   BriefcaseBusiness,
   Building2,
   ChartNoAxesCombined,
+  FileText,
   Receipt,
   ShieldCheck,
 } from 'lucide-react'
@@ -17,10 +18,12 @@ const previewStats = [
 ]
 
 const previewModules = [
-  { icon: Building2, label: 'Clients', note: 'Clean records and account context' },
-  { icon: ChartNoAxesCombined, label: 'Dashboard', note: 'Revenue, margin, overdue exposure' },
-  { icon: BriefcaseBusiness, label: 'Operations', note: 'Missions, expenses, invoices' },
-  { icon: ShieldCheck, label: 'Workspace', note: 'Secure access with organization scoping' },
+  { icon: BriefcaseBusiness, label: 'Missions', note: 'Plan, assign, and track field execution' },
+  { icon: Receipt, label: 'Expenses', note: 'Approve costs, receipts, and driver advances' },
+  { icon: FileText, label: 'Invoicing', note: 'Convert delivered work into billing follow-up' },
+  { icon: ChartNoAxesCombined, label: 'Reporting', note: 'Cash, margin, and operational exposure' },
+  { icon: Building2, label: 'Backoffice', note: 'Client context and coordination records' },
+  { icon: ShieldCheck, label: 'Private access', note: 'Authorized accounts with tenant isolation' },
 ]
 
 const previewQueue = [
@@ -57,7 +60,7 @@ export function Landing() {
                 Kepler Express
               </p>
               <p className="text-xs uppercase tracking-[0.24em] text-stone-500">
-                Internal operations
+                Private logistics workflow
               </p>
             </div>
           </div>
@@ -69,25 +72,32 @@ export function Landing() {
             >
               Log in
             </Link>
-            <Link
-              to={user ? appRoutes.dashboard : publicRoutes.signup}
-              className="btn-primary px-4 py-2"
-            >
-              {user ? 'Open workspace' : 'Create account'}
-            </Link>
+            {user ? (
+              <Link to={appRoutes.dashboard} className="btn-primary px-4 py-2">
+                Open workspace
+              </Link>
+            ) : (
+              <a
+                href="mailto:contact@keplerexpress.com?subject=Kepler%20Express%20demo%20request"
+                className="btn-primary px-4 py-2"
+              >
+                Request demo
+              </a>
+            )}
           </div>
         </header>
 
         <div className="grid flex-1 items-center gap-14 py-12 lg:grid-cols-[0.95fr_1.05fr]">
           <section className="max-w-2xl">
-            <span className="eyebrow-chip">Internal tool V1</span>
+            <span className="eyebrow-chip">Private workflow system for logistics operators</span>
             <h1 className="mt-7 max-w-xl font-heading text-5xl font-semibold leading-[1.02] tracking-tight text-stone-950 sm:text-[4.35rem]">
-              Run daily operations from one quiet workspace.
+              Coordinate missions, costs, billing, and reporting from one internal workspace.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-stone-600">
-              Kepler Express keeps the live surface narrow and dependable: dashboard,
-              clients, missions, expenses, invoices, and workspace access, all aligned
-              to the current Supabase schema.
+              Kepler Express is a protected operations tool for logistics teams that need field
+              activity and backoffice work in sync. Dispatch can follow missions, accounting can
+              control expenses and invoices, and managers can review reporting without chasing
+              disconnected spreadsheets.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -98,12 +108,12 @@ export function Landing() {
                 {user ? 'Open workspace' : 'Log in'}
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                to={user ? appRoutes.clients : publicRoutes.signup}
+              <a
+                href="mailto:contact@keplerexpress.com?subject=Kepler%20Express%20demo%20request"
                 className="btn-secondary"
               >
-                {user ? 'Go to clients' : 'Create account'}
-              </Link>
+                {user ? 'Contact support' : 'Request demo / contact'}
+              </a>
             </div>
 
             <div className="mt-10 grid gap-3 sm:grid-cols-3">
@@ -117,7 +127,7 @@ export function Landing() {
                 <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
                   Access
                 </p>
-                <p className="mt-2 text-sm font-semibold text-stone-950">Stable login and signup</p>
+                <p className="mt-2 text-sm font-semibold text-stone-950">Authorized login only</p>
               </div>
               <div className="rounded-[1.35rem] border border-stone-200/80 bg-white/74 px-4 py-4 shadow-sm">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">
@@ -133,15 +143,15 @@ export function Landing() {
             <div className="overflow-hidden rounded-[2.2rem] border border-stone-300/70 bg-white/84 shadow-[0_34px_100px_rgba(28,25,23,0.14)] ring-1 ring-white/40 backdrop-blur">
               <div className="border-b border-stone-200 bg-stone-950 px-6 py-5 text-stone-100">
                 <p className="text-xs uppercase tracking-[0.28em] text-stone-400">
-                  Product preview
+                  Operations preview
                 </p>
                 <div className="mt-3 flex items-center justify-between">
                   <div>
                     <p className="font-heading text-2xl font-semibold tracking-tight">
-                      Operational workspace
+                      Field-to-backoffice control room
                     </p>
                     <p className="mt-1 text-sm text-stone-400">
-                      One surface for dispatch, cost control, and billing follow-up.
+                      One surface for dispatch, cost control, invoicing, and reporting.
                     </p>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-stone-300">
@@ -175,7 +185,7 @@ export function Landing() {
                       <div>
                         <p className="text-sm font-semibold text-stone-900">Today’s queue</p>
                         <p className="text-sm text-stone-500">
-                          Priority items visible at a glance
+                          Field events and backoffice follow-up in one queue
                         </p>
                       </div>
                       <div className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
@@ -211,11 +221,11 @@ export function Landing() {
                     <div>
                       <p className="text-sm font-semibold text-stone-900">Modules</p>
                       <p className="text-sm text-stone-500">
-                        Built around the current Supabase contract
+                        Built around daily logistics coordination
                       </p>
                     </div>
                     <div className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
-                      Schema-aligned
+                      Private
                     </div>
                   </div>
 

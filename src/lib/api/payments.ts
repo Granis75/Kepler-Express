@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../supabase'
 import { toUserFacingError } from '../supabase-error'
+import { getAuthorizedOrganizationId } from './session'
 
 export type CreatePaymentInput = {
   invoice_id: string
@@ -58,11 +59,13 @@ function mapPaymentRow(row: PaymentRow): PaymentRecord {
 
 export async function getPaymentsByInvoice(invoiceId: string): Promise<PaymentRecord[]> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('payments')
     .select(
       'payment_id, organization_id, invoice_id, amount, payment_method, payment_date, reference, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .eq('invoice_id', invoiceId)
     .order('payment_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -91,35 +94,7 @@ export async function createPaymentRecord(
   input: CreatePaymentInput
 ): Promise<PaymentRecord> {
   const supabase = getSupabaseClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError) {
-    throw toUserFacingError(authError, 'Unable to resolve the current session.')
-  }
-
-  if (!user) {
-    throw new Error('Sign in required to record a payment.')
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (profileError) {
-    throw toUserFacingError(profileError, 'Unable to resolve the current organization.')
-  }
-
-  const organizationId = profile?.organization_id
-
-  if (!organizationId) {
-    throw new Error('Workspace profile not found for this account.')
-  }
+  const organizationId = await getAuthorizedOrganizationId()
 
   const payload = {
     organization_id: organizationId,

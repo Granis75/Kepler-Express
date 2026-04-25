@@ -129,7 +129,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           <p className="mt-3 text-xs text-rose-700">{signOutError}</p>
         ) : (
           <p className="mt-3 px-1 text-xs leading-5 text-stone-500">
-            Only live modules connected to the stable Supabase schema are exposed here.
+            Private logistics workflow with tenant-scoped access controls.
           </p>
         )}
       </div>

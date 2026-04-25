@@ -491,6 +491,10 @@ alter table public.expenses enable row level security;
 alter table public.invoices enable row level security;
 alter table public.payments enable row level security;
 
+alter table if exists public.drivers enable row level security;
+alter table if exists public.vehicles enable row level security;
+alter table if exists public.maintenance_records enable row level security;
+
 drop policy if exists organizations_select_own_org on public.organizations;
 create policy organizations_select_own_org
 on public.organizations
@@ -555,3 +559,36 @@ for all
 to authenticated
 using (organization_id = public.current_organization_id())
 with check (organization_id = public.current_organization_id());
+
+do $$
+begin
+  if to_regclass('public.drivers') is not null then
+    execute 'drop policy if exists drivers_org_access on public.drivers';
+    execute 'create policy drivers_org_access
+      on public.drivers
+      for all
+      to authenticated
+      using (organization_id = public.current_organization_id())
+      with check (organization_id = public.current_organization_id())';
+  end if;
+
+  if to_regclass('public.vehicles') is not null then
+    execute 'drop policy if exists vehicles_org_access on public.vehicles';
+    execute 'create policy vehicles_org_access
+      on public.vehicles
+      for all
+      to authenticated
+      using (organization_id = public.current_organization_id())
+      with check (organization_id = public.current_organization_id())';
+  end if;
+
+  if to_regclass('public.maintenance_records') is not null then
+    execute 'drop policy if exists maintenance_records_org_access on public.maintenance_records';
+    execute 'create policy maintenance_records_org_access
+      on public.maintenance_records
+      for all
+      to authenticated
+      using (organization_id = public.current_organization_id())
+      with check (organization_id = public.current_organization_id())';
+  end if;
+end $$;

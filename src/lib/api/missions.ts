@@ -1,6 +1,7 @@
 import type { Mission } from '../../types/domain'
 import { getSupabaseClient } from '../supabase'
 import { toUserFacingError } from '../supabase-error'
+import { getAuthorizedOrganizationId } from './session'
 
 export type CreateMissionRecordInput = {
   client_id: string
@@ -80,11 +81,13 @@ function getMissionPayload(input: CreateMissionRecordInput) {
 
 export async function getMissions(): Promise<Mission[]> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .select(
       'mission_id, organization_id, client_id, reference, status, driver_name, vehicle_name, revenue_amount, estimated_cost_amount, actual_cost_amount, departure_location, arrival_location, departure_datetime, arrival_datetime, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .order('departure_datetime', { ascending: false })
 
   if (error) {
@@ -116,11 +119,13 @@ export async function getMissions(): Promise<Mission[]> {
 
 export async function getMissionById(missionId: string): Promise<Mission> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .select(
       'mission_id, organization_id, client_id, reference, status, driver_name, vehicle_name, revenue_amount, estimated_cost_amount, actual_cost_amount, departure_location, arrival_location, departure_datetime, arrival_datetime, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .eq('mission_id', missionId)
     .maybeSingle()
 
@@ -154,14 +159,15 @@ export async function getMissionById(missionId: string): Promise<Mission> {
 }
 
 export async function createMissionRecord(
-  organizationId: string,
+  _organizationId: string,
   input: CreateMissionRecordInput
 ): Promise<Mission> {
   const supabase = getSupabaseClient()
+  const authorizedOrganizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .insert({
-      organization_id: organizationId,
+      organization_id: authorizedOrganizationId,
       ...getMissionPayload(input),
     })
     .select(
@@ -199,9 +205,11 @@ export async function updateMissionRecord(
   input: CreateMissionRecordInput
 ): Promise<Mission> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('missions')
     .update(getMissionPayload(input))
+    .eq('organization_id', organizationId)
     .eq('mission_id', missionId)
     .select(
       'mission_id, organization_id, client_id, reference, status, driver_name, vehicle_name, revenue_amount, estimated_cost_amount, actual_cost_amount, departure_location, arrival_location, departure_datetime, arrival_datetime, notes, created_at, updated_at'

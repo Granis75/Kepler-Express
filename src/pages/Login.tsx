@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { AuthScene } from '../components/AuthScene'
 import { TextInput } from '../components/TextInput'
 import { useAuthState } from '../lib/auth'
-import { publicRoutes } from '../lib/routes'
 
 export function Login() {
   const { signIn, isConfigured } = useAuthState()
@@ -36,13 +34,13 @@ export function Login() {
   return (
     <AuthScene
       title="Log in"
-      subtitle="Access the protected workspace with your existing organization account."
+      subtitle="Authorized logistics operators can access the protected workflow system with an existing organization account."
       footer={
         <>
-          Need a workspace?{' '}
-          <Link to={publicRoutes.signup} className="font-medium text-teal-700 hover:text-teal-800">
-            Create account
-          </Link>
+          Access is provisioned privately.{' '}
+          <a href="mailto:contact@keplerexpress.com" className="font-medium text-teal-700 hover:text-teal-800">
+            Contact Kepler Express
+          </a>
         </>
       }
     >

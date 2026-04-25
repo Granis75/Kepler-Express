@@ -53,9 +53,11 @@ function getExpensePayload(input: CreateExpenseInput) {
 
 export async function listExpenses() {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
+    .eq('organization_id', organizationId)
     .order('expense_date', { ascending: false })
     .order('created_at', { ascending: false })
 
@@ -88,9 +90,11 @@ export async function createExpense(input: CreateExpenseInput) {
 
 export async function updateExpense(expenseId: string, input: CreateExpenseInput) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('expenses')
     .update(getExpensePayload(input))
+    .eq('organization_id', organizationId)
     .eq('expense_id', expenseId)
     .select('*')
     .maybeSingle()

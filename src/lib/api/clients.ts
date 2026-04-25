@@ -1,6 +1,7 @@
 import type { Client } from '../../types/domain'
 import { getSupabaseClient } from '../supabase'
 import { toUserFacingError } from '../supabase-error'
+import { getAuthorizedOrganizationId } from './session'
 
 type ClientRow = {
   client_id: string
@@ -40,11 +41,13 @@ function mapClientRow(row: ClientRow): Client {
 
 export async function getClients(): Promise<Client[]> {
   const supabase = getSupabaseClient()
+  const organizationId = await getAuthorizedOrganizationId()
   const { data, error } = await supabase
     .from('clients')
     .select(
       'client_id, organization_id, name, email, phone, address, city, postal_code, country, vat_number, status, notes, created_at, updated_at'
     )
+    .eq('organization_id', organizationId)
     .order('name', { ascending: true })
 
   if (error) {

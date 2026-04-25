@@ -81,9 +81,11 @@ function getVehiclePayload(input: CreateVehicleInput, existingVehicle?: Vehicle)
 
 export async function listVehicles() {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('vehicles')
     .select('*')
+    .eq('organization_id', organizationId)
     .order('name', { ascending: true })
 
   if (error) {
@@ -95,9 +97,11 @@ export async function listVehicles() {
 
 export async function getVehicleById(vehicleId: string) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('vehicles')
     .select('*')
+    .eq('organization_id', organizationId)
     .eq('vehicle_id', vehicleId)
     .maybeSingle()
 
@@ -137,9 +141,11 @@ export async function updateVehicle(
   existingVehicle?: Vehicle,
 ) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('vehicles')
     .update(getVehiclePayload(input, existingVehicle))
+    .eq('organization_id', organizationId)
     .eq('vehicle_id', vehicleId)
     .select('*')
     .maybeSingle()
@@ -157,9 +163,11 @@ export async function updateVehicle(
 
 export async function listMaintenanceRecordsByVehicleId(vehicleId: string) {
   const supabase = getSupabaseClient()
+  const organizationId = await getCurrentOrganizationId()
   const { data, error } = await supabase
     .from('maintenance_records')
     .select('*')
+    .eq('organization_id', organizationId)
     .eq('vehicle_id', vehicleId)
     .order('service_date', { ascending: false })
 

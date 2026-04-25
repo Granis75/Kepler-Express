@@ -480,7 +480,7 @@ export function Invoices() {
       {showForm ? (
         <ModalSurface
           title={selectedInvoice ? 'Edit invoice' : 'Create invoice'}
-          description="Keep invoice creation aligned with the current schema: client, mission set, amount, dates, and workflow status."
+          description="Prepare billing from completed logistics work with client, mission set, amount, due date, and workflow status."
           onClose={closeForm}
         >
           {actionError ? (

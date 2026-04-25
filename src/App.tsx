@@ -21,7 +21,6 @@ import { useWorkspaceState } from './lib/workspace'
 
 const Landing = lazy(() => import('./pages/Landing').then((module) => ({ default: module.Landing })))
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })))
-const Signup = lazy(() => import('./pages/Signup').then((module) => ({ default: module.Signup })))
 const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((module) => ({ default: module.Dashboard }))
 )
@@ -259,8 +258,8 @@ function App() {
 
           <Route element={<PublicOnlyRoute />}>
             <Route path={publicRoutes.login} element={<Login />} />
-            <Route path={publicRoutes.signup} element={<Signup />} />
           </Route>
+          <Route path="/signup" element={<Navigate to={publicRoutes.login} replace />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path={appRoutes.home} element={<AppIndexRedirect />} />

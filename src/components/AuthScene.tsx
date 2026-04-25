@@ -43,11 +43,11 @@ export function AuthScene({
           <p className="mt-2 text-sm text-stone-500">Internal operations workspace</p>
 
           <h2 className="mt-10 max-w-md font-heading text-4xl font-semibold tracking-tight text-stone-950">
-            Stable access to the product surface that is already live.
+            Private workflow system for logistics operators.
           </h2>
           <p className="mt-4 max-w-lg text-sm leading-7 text-stone-600">
-            No marketing shell, no placeholder modules. Only the routes backed by the
-            current schema: dashboard, clients, missions, expenses, invoices, and settings.
+            Authorized teams use this workspace to coordinate missions, expenses,
+            invoicing, reporting, and field-to-backoffice handoffs.
           </p>
 
           <div className="mt-8 space-y-3">

@@ -12,7 +12,7 @@ export function Settings() {
     <PageContainer>
       <PageHeader
         title="Settings"
-        description="Workspace visibility and environment health for the internal tool."
+        description="Access, tenant scope, and environment health for the private logistics workflow."
       />
 
       <div className="space-y-6">
@@ -47,7 +47,7 @@ export function Settings() {
                   Organization
                 </h2>
                 <p className="text-sm text-stone-500">
-                  Current workspace attached through the Supabase signup bootstrap.
+                  Current tenant workspace attached to this authorized account.
                 </p>
               </div>
               <StatusBadge
@@ -130,9 +130,9 @@ export function Settings() {
             Notes
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600">
-            This V1 keeps the product surface narrow on purpose: only modules backed by the
-            current stable schema stay active. Authentication and workspace creation continue
-            to flow through Supabase, while the app focuses on daily operations and billing.
+            Open signup is disabled. Access is provisioned privately, and operational data is
+            scoped by organization across the workflow tables used for missions, expenses,
+            invoices, payments, clients, and reporting.
           </p>
           {error ? (
             <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
