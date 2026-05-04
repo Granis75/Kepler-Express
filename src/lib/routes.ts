@@ -14,6 +14,7 @@ export const appRoutes = {
 
 export const publicRoutes = {
   landing: '/',
+  workflow: '/workflow',
   login: '/login',
 } as const
 

@@ -18,8 +18,9 @@ import {
   publicRoutes,
 } from './lib/routes'
 import { useWorkspaceState } from './lib/workspace'
+import { Landing } from './pages/Landing'
+import { Workflow } from './pages/Workflow'
 
-const Landing = lazy(() => import('./pages/Landing').then((module) => ({ default: module.Landing })))
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })))
 const Dashboard = lazy(() =>
   import('./pages/Dashboard').then((module) => ({ default: module.Dashboard }))
@@ -255,6 +256,7 @@ function App() {
       <Suspense fallback={<RouteLoadingScreen />}>
         <Routes>
           <Route path={publicRoutes.landing} element={<Landing />} />
+          <Route path={publicRoutes.workflow} element={<Workflow />} />
 
           <Route element={<PublicOnlyRoute />}>
             <Route path={publicRoutes.login} element={<Login />} />
