@@ -43,10 +43,10 @@ export function Settings() {
           <SectionCard>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                   Organization
                 </h2>
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-slate-500">
                   Current tenant workspace attached to this authorized account.
                 </p>
               </div>
@@ -57,23 +57,23 @@ export function Settings() {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Name</p>
-                <p className="mt-2 text-sm font-medium text-stone-900">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Name</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
                   {organization?.name ?? 'Not available'}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Slug</p>
-                <p className="mt-2 text-sm font-medium text-stone-900">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Slug</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
                   {organization?.slug ?? 'Not available'}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4 sm:col-span-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                   Organization id
                 </p>
-                <p className="mt-2 break-all text-sm font-medium text-stone-900">
+                <p className="mt-2 break-all text-sm font-medium text-slate-900">
                   {organization?.organization_id ?? 'Not available'}
                 </p>
               </div>
@@ -83,10 +83,10 @@ export function Settings() {
           <SectionCard>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                   Profile
                 </h2>
-                <p className="text-sm text-stone-500">
+                <p className="text-sm text-slate-500">
                   The authenticated user mapped to the workspace profile.
                 </p>
               </div>
@@ -97,27 +97,27 @@ export function Settings() {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Name</p>
-                <p className="mt-2 text-sm font-medium text-stone-900">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Name</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
                   {profile?.name ?? 'Not available'}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Email</p>
-                <p className="mt-2 text-sm font-medium text-stone-900">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Email</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
                   {profile?.email ?? 'Not available'}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Role</p>
-                <p className="mt-2 text-sm font-medium text-stone-900">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Role</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
                   {profile?.role ?? 'Not available'}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Phone</p>
-                <p className="mt-2 text-sm font-medium text-stone-900">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Phone</p>
+                <p className="mt-2 text-sm font-medium text-slate-900">
                   {profile?.phone ?? 'Not provided'}
                 </p>
               </div>
@@ -126,10 +126,10 @@ export function Settings() {
         </div>
 
         <SectionCard>
-          <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
             Notes
           </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600">
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
             Open signup is disabled. Access is provisioned privately, and operational data is
             scoped by organization across the workflow tables used for missions, expenses,
             invoices, payments, clients, and reporting.

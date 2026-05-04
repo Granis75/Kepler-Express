@@ -83,13 +83,13 @@ const invoiceStatusLabels: Record<Invoice['status'], string> = {
 }
 
 const secondaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const primaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const inlineButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 type ClientHealthStatus = 'healthy' | 'watch' | 'risk'
 
@@ -478,14 +478,14 @@ export function ClientDetail() {
             <button
               type="button"
               onClick={() => navigate(appRoutes.clients)}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to clients
             </button>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-4xl font-semibold tracking-tight text-stone-950">
+              <h1 className="font-heading text-4xl font-semibold tracking-tight text-slate-950">
                 {client.name}
               </h1>
               <StatusBadge label={statusConfig.label} tone={clientTone(client.status)} />
@@ -498,7 +498,7 @@ export function ClientDetail() {
               ) : null}
             </div>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500">
               Revenue, collection, and margin visibility across this client portfolio.
             </p>
           </div>
@@ -604,26 +604,26 @@ export function ClientDetail() {
             <SectionCard>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Account P&L
                   </h2>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">{portfolioSummary}</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{portfolioSummary}</p>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
                   {health.label}
                 </div>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <div className="rounded-[1.1rem] border border-stone-200 bg-stone-50/90 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50/90 px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Collection position
                   </p>
-                  <p className="mt-2 text-sm font-medium text-stone-900">
+                  <p className="mt-2 text-sm font-medium text-slate-900">
                     {formatCurrencyWithDecimals(metrics.totalCollected)} collected of{' '}
                     {formatCurrencyWithDecimals(metrics.totalInvoiced)} invoiced
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     {metrics.outstanding > 0
                       ? `${formatCurrencyWithDecimals(metrics.outstanding)} remains open across ${metrics.openInvoiceCount} invoice${
                           metrics.openInvoiceCount === 1 ? '' : 's'
@@ -632,15 +632,15 @@ export function ClientDetail() {
                   </p>
                 </div>
 
-                <div className="rounded-[1.1rem] border border-stone-200 bg-stone-50/90 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50/90 px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Cost basis
                   </p>
-                  <p className="mt-2 text-sm font-medium text-stone-900">
+                  <p className="mt-2 text-sm font-medium text-slate-900">
                     {formatCurrencyWithDecimals(metrics.totalCost)} using{' '}
                     {metrics.costBasisLabel.toLowerCase()}
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     {metrics.actualCostCoverageCount} mission
                     {metrics.actualCostCoverageCount === 1 ? '' : 's'} with actual cost,{' '}
                     {metrics.estimatedCostCoverageCount} on estimated basis.
@@ -649,20 +649,20 @@ export function ClientDetail() {
               </div>
 
               {client.notes ? (
-                <div className="mt-5 rounded-[1.1rem] border border-stone-200 bg-stone-50/90 px-4 py-4">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Notes</p>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">{client.notes}</p>
+                <div className="mt-5 rounded-[1.1rem] border border-slate-200 bg-slate-50/90 px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Notes</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{client.notes}</p>
                 </div>
               ) : null}
             </SectionCard>
 
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Missions
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     {metrics.missionCount} linked mission
                     {metrics.missionCount === 1 ? '' : 's'} with route, margin, and invoice linkage.
                   </p>
@@ -683,10 +683,10 @@ export function ClientDetail() {
 
               {clientMissions.length === 0 ? (
                 <div className="px-5 py-8">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     No missions are linked to this client yet.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     Open the mission queue to schedule the first operation for this account.
                   </p>
                   <button
@@ -697,13 +697,13 @@ export function ClientDetail() {
                         search: createSearchParams({ client: client.client_id }).toString(),
                       })
                     }
-                    className="mt-4 inline-flex items-center rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98]"
+                    className="mt-4 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
                   >
                     Open mission queue
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {clientMissions.map((mission) => {
                     const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
                     const margin = getMissionMarginSnapshot(mission)
@@ -716,10 +716,10 @@ export function ClientDetail() {
                         <button
                           type="button"
                           onClick={() => openMission(mission.mission_id)}
-                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-stone-50"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-slate-50"
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-semibold text-stone-950">
+                            <h3 className="text-sm font-semibold text-slate-950">
                               {mission.reference}
                             </h3>
                             <StatusBadge
@@ -734,24 +734,24 @@ export function ClientDetail() {
                             ) : null}
                           </div>
 
-                          <p className="mt-2 text-sm font-medium text-stone-900">
+                          <p className="mt-2 text-sm font-medium text-slate-900">
                             {mission.departure_location} to {mission.arrival_location}
                           </p>
-                          <p className="mt-1 text-sm text-stone-500">
+                          <p className="mt-1 text-sm text-slate-500">
                             {formatDateTime(mission.departure_datetime)}
                           </p>
                           {mission.notes ? (
-                            <p className="mt-2 line-clamp-2 text-xs leading-6 text-stone-500">
+                            <p className="mt-2 line-clamp-2 text-xs leading-6 text-slate-500">
                               {mission.notes}
                             </p>
                           ) : null}
                         </button>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Assignment
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {mission.driver_name || 'Driver unassigned'}
                           </p>
                           <p className="mt-1">
@@ -759,11 +759,11 @@ export function ClientDetail() {
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Finance
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {formatCurrencyWithDecimals(mission.revenue_amount)}
                           </p>
                           <p className="mt-1">
@@ -805,12 +805,12 @@ export function ClientDetail() {
             </SectionCard>
 
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Invoices
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     {metrics.invoiceCount} invoice{metrics.invoiceCount === 1 ? '' : 's'} linked
                     to this client, tracking billed and collected cash.
                   </p>
@@ -831,10 +831,10 @@ export function ClientDetail() {
 
               {clientInvoices.length === 0 ? (
                 <div className="px-5 py-8">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     No invoices are linked to this client yet.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     Missions can still be prepared first, then billed from the invoice queue.
                   </p>
                   <button
@@ -845,13 +845,13 @@ export function ClientDetail() {
                         search: createSearchParams({ client: client.client_id }).toString(),
                       })
                     }
-                    className="mt-4 inline-flex items-center rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98]"
+                    className="mt-4 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
                   >
                     Open invoice queue
                   </button>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {clientInvoices.map((invoice) => {
                     const balance = getInvoiceBalance(invoice)
                     const linkedMissions = invoice.mission_ids
@@ -866,10 +866,10 @@ export function ClientDetail() {
                         <button
                           type="button"
                           onClick={() => openInvoice(invoice.invoice_id)}
-                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-stone-50"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-slate-50"
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-semibold text-stone-950">
+                            <h3 className="text-sm font-semibold text-slate-950">
                               {invoice.invoice_number}
                             </h3>
                             <StatusBadge
@@ -881,21 +881,21 @@ export function ClientDetail() {
                             ) : null}
                           </div>
 
-                          <p className="mt-2 text-sm text-stone-900">
+                          <p className="mt-2 text-sm text-slate-900">
                             Issued {formatDate(invoice.issue_date)} • Due {formatDate(invoice.due_date)}
                           </p>
                           {invoice.notes ? (
-                            <p className="mt-2 line-clamp-2 text-xs leading-6 text-stone-500">
+                            <p className="mt-2 line-clamp-2 text-xs leading-6 text-slate-500">
                               {invoice.notes}
                             </p>
                           ) : null}
                         </button>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Amount
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {formatCurrencyWithDecimals(invoice.amount_total)}
                           </p>
                           <p className="mt-1">
@@ -903,8 +903,8 @@ export function ClientDetail() {
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Outstanding
                           </p>
                           <p
@@ -913,7 +913,7 @@ export function ClientDetail() {
                                 ? 'mt-1 font-semibold text-rose-700'
                                 : balance > 0
                                   ? 'mt-1 font-semibold text-amber-800'
-                                  : 'mt-1 font-semibold text-stone-900'
+                                  : 'mt-1 font-semibold text-slate-900'
                             }
                           >
                             {formatCurrencyWithDecimals(balance)}
@@ -934,7 +934,7 @@ export function ClientDetail() {
                               </button>
                             ))
                           ) : (
-                            <span className="rounded-full border border-stone-200 bg-stone-100 px-3 py-1.5 text-[11px] font-medium text-stone-600">
+                            <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-600">
                               No linked mission
                             </span>
                           )}
@@ -959,21 +959,21 @@ export function ClientDetail() {
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Account health
                   </p>
-                  <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     {health.label}
                   </h2>
                 </div>
                 <StatusBadge label={health.label} tone={health.tone} />
               </div>
-              <p className="mt-3 text-sm leading-7 text-stone-600">{health.summary}</p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">{health.summary}</p>
               <div className="mt-4 space-y-2">
                 {health.reasons.map((reason) => (
                   <div
                     key={reason}
-                    className="rounded-[1rem] border border-white/80 bg-white/75 px-3 py-2 text-sm text-stone-700"
+                    className="rounded-[1rem] border border-white/80 bg-white/75 px-3 py-2 text-sm text-slate-700"
                   >
                     {reason}
                   </div>
@@ -982,41 +982,41 @@ export function ClientDetail() {
             </SectionCard>
 
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Account details
               </h2>
               <div className="mt-5 space-y-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Email</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Email</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {client.email || 'No email on file'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Phone</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Phone</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {formatPhoneNumber(client.phone)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Address
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {client.address || 'No address on file'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Location
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {locationLine || 'No location on file'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">VAT</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">VAT</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {client.vat_number || 'VAT not provided'}
                   </p>
                 </div>
@@ -1024,18 +1024,18 @@ export function ClientDetail() {
             </SectionCard>
 
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Portfolio signals
               </h2>
               <div className="mt-5 space-y-3">
-                <div className="rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                <div className="rounded-[1.05rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Collection coverage
                   </p>
-                  <p className="mt-1 text-sm font-medium text-stone-900">
+                  <p className="mt-1 text-sm font-medium text-slate-900">
                     {formatPercentage(metrics.collectionRatio * 100, 0)} of invoiced cash collected
                   </p>
-                  <p className="mt-1 text-xs leading-6 text-stone-500">
+                  <p className="mt-1 text-xs leading-6 text-slate-500">
                     {metrics.invoiceCount === 0
                       ? 'No invoices issued yet.'
                       : `${formatCurrencyWithDecimals(metrics.totalCollected)} collected of ${formatCurrencyWithDecimals(
@@ -1048,17 +1048,17 @@ export function ClientDetail() {
                   className={
                     metrics.activeUninvoicedMissionCount > 0
                       ? 'rounded-[1.05rem] border border-amber-200 bg-amber-50/90 px-4 py-3'
-                      : 'rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3'
+                      : 'rounded-[1.05rem] border border-slate-200 bg-slate-50/90 px-4 py-3'
                   }
                 >
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Uninvoiced revenue
                   </p>
                   <p
                     className={
                       metrics.activeUninvoicedMissionCount > 0
                         ? 'mt-1 text-sm font-medium text-amber-800'
-                        : 'mt-1 text-sm font-medium text-stone-900'
+                        : 'mt-1 text-sm font-medium text-slate-900'
                     }
                   >
                     {metrics.activeUninvoicedMissionCount === 0
@@ -1073,23 +1073,23 @@ export function ClientDetail() {
                   className={
                     metrics.overdueInvoiceCount > 0
                       ? 'rounded-[1.05rem] border border-rose-200 bg-rose-50/90 px-4 py-3'
-                      : 'rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3'
+                      : 'rounded-[1.05rem] border border-slate-200 bg-slate-50/90 px-4 py-3'
                   }
                 >
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Active workload
                   </p>
                   <p
                     className={
                       metrics.overdueInvoiceCount > 0
                         ? 'mt-1 text-sm font-medium text-rose-700'
-                        : 'mt-1 text-sm font-medium text-stone-900'
+                        : 'mt-1 text-sm font-medium text-slate-900'
                     }
                   >
                     {metrics.activeMissionCount} active mission
                     {metrics.activeMissionCount === 1 ? '' : 's'} in progress or scheduled
                   </p>
-                  <p className="mt-1 text-xs leading-6 text-stone-500">
+                  <p className="mt-1 text-xs leading-6 text-slate-500">
                     {metrics.overdueInvoiceCount === 0
                       ? 'No overdue billing pressure right now.'
                       : `${metrics.overdueInvoiceCount} overdue invoice${
@@ -1098,28 +1098,28 @@ export function ClientDetail() {
                   </p>
                 </div>
 
-                <div className="rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                <div className="rounded-[1.05rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Margin proxy
                   </p>
-                  <p className="mt-1 text-sm font-medium text-stone-900">
+                  <p className="mt-1 text-sm font-medium text-slate-900">
                     {formatCurrencyWithDecimals(metrics.marginAmount)} •{' '}
                     {formatPercentage(metrics.marginRatio * 100, 0)}
                   </p>
-                  <p className="mt-1 text-xs leading-6 text-stone-500">
+                  <p className="mt-1 text-xs leading-6 text-slate-500">
                     Uses actual mission cost when available, otherwise estimated cost.
                   </p>
                 </div>
 
-                <div className="rounded-[1.05rem] border border-stone-200 bg-stone-50/90 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                <div className="rounded-[1.05rem] border border-slate-200 bg-slate-50/90 px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Cost coverage
                   </p>
-                  <p className="mt-1 text-sm font-medium text-stone-900">
+                  <p className="mt-1 text-sm font-medium text-slate-900">
                     {metrics.actualCostCoverageCount} mission
                     {metrics.actualCostCoverageCount === 1 ? '' : 's'} with actual cost logged
                   </p>
-                  <p className="mt-1 text-xs leading-6 text-stone-500">
+                  <p className="mt-1 text-xs leading-6 text-slate-500">
                     {metrics.marginSensitiveCount} mission
                     {metrics.marginSensitiveCount === 1 ? '' : 's'} flagged margin sensitive.
                   </p>

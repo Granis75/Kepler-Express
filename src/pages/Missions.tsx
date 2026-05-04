@@ -69,22 +69,22 @@ const missionQueueOptions = [
 ] as const
 
 const inlineLinkButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const primaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-stone-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-slate-950 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-slate-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const secondaryActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const tertiaryActionButtonClasses =
-  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const rowDetailButtonClasses =
-  'rounded-[1rem] px-1 py-1 text-left transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'rounded-[1rem] px-1 py-1 text-left transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const checkboxClasses =
-  'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
+  'h-4 w-4 rounded border-slate-300 accent-slate-900 text-slate-900 shadow-sm focus:ring-slate-300'
 
 export function Missions() {
   const navigate = useNavigate()
@@ -527,10 +527,10 @@ export function Missions() {
           <SectionCard className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-slate-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-xs text-stone-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Search, queue, client, and status.
                 </p>
               </div>
@@ -541,7 +541,7 @@ export function Missions() {
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_170px_180px_170px]">
               <label className="relative block">
-                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
                 <input
                   type="text"
                   data-ops-search="true"
@@ -667,20 +667,20 @@ export function Missions() {
               <SectionCard className="overflow-hidden p-0">
                 <div
                   className={clsx(
-                    'flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4',
+                    'flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4',
                     isCompact ? 'py-2.5' : 'py-3'
                   )}
                 >
                   <div>
                     <h2
                       className={clsx(
-                        'font-heading font-semibold tracking-tight text-stone-950',
+                        'font-heading font-semibold tracking-tight text-slate-950',
                         isCompact ? 'text-[1.65rem]' : 'text-2xl'
                       )}
                     >
                       Mission queue
                     </h2>
-                    <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
+                    <p className={clsx('text-slate-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                       Showing {filteredMissions.length} of {missions.length} mission
                       {filteredMissions.length === 1 ? '' : 's'}.
                     </p>
@@ -696,11 +696,11 @@ export function Missions() {
 
                 <div
                   className={clsx(
-                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.45fr)_minmax(0,150px)_minmax(0,140px)_minmax(0,220px)_128px] md:gap-3',
+                    'hidden border-b border-slate-200 bg-slate-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.45fr)_minmax(0,150px)_minmax(0,140px)_minmax(0,220px)_128px] md:gap-3',
                     isCompact ? 'py-1.5' : 'py-2'
                   )}
                 >
-                  <span className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     <input
                       type="checkbox"
                       checked={allVisibleSelected}
@@ -715,21 +715,21 @@ export function Missions() {
                     />
                     <span>Mission</span>
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Schedule
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Assignment
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Finance / Invoice
                   </span>
-                  <span className="text-right text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-right text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Actions
                   </span>
                 </div>
 
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {filteredMissions.map((mission) => {
                     const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
                     const visibleLinkedInvoices = linkedInvoices.slice(0, 2)
@@ -773,8 +773,8 @@ export function Missions() {
                                     isSelected ? 'bg-amber-100/40' : 'bg-amber-50/20'
                                   )
                                 : isSelected
-                                  ? 'border-l-stone-300 bg-stone-100/80'
-                                  : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
+                                  ? 'border-l-slate-300 bg-slate-100/80'
+                                  : 'border-l-transparent hover:border-l-slate-300 hover:bg-slate-100'
                         )}
                       >
                         <div className="flex min-w-0 items-start gap-3">
@@ -791,7 +791,7 @@ export function Missions() {
                             className={clsx('min-w-0 flex-1', rowDetailButtonClasses)}
                           >
                             <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-950">
+                              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-slate-950">
                                 {mission.reference}
                               </h2>
                               <StatusBadge
@@ -809,20 +809,20 @@ export function Missions() {
                                 <StatusBadge label="margin sensitive" tone="danger" />
                               ) : null}
                             </div>
-                            <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-medium text-stone-950">
+                            <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-medium text-slate-950">
                               <span className="truncate">{mission.departure_location}</span>
-                              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-stone-300" />
+                              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
                               <span className="truncate">{mission.arrival_location}</span>
                             </div>
                             <div
-                              className={clsx('mt-0.5 min-w-0 text-xs text-stone-600')}
+                              className={clsx('mt-0.5 min-w-0 text-xs text-slate-600')}
                             >
                               <span className="truncate">
                                 {clientNameById.get(mission.client_id) ?? 'Unknown client'}
                               </span>
                             </div>
                             {mission.notes ? (
-                              <p className="hidden pt-0.5 text-[11px] text-stone-600 md:line-clamp-1 md:block">
+                              <p className="hidden pt-0.5 text-[11px] text-slate-600 md:line-clamp-1 md:block">
                                 {truncateString(mission.notes, 96)}
                               </p>
                             ) : null}
@@ -832,12 +832,12 @@ export function Missions() {
                         <button
                           type="button"
                           onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                          className={clsx(rowDetailButtonClasses, 'min-w-0 text-sm text-stone-600')}
+                          className={clsx(rowDetailButtonClasses, 'min-w-0 text-sm text-slate-600')}
                         >
-                          <p className="font-medium text-stone-900">
+                          <p className="font-medium text-slate-900">
                             {formatDateTime(mission.departure_datetime)}
                           </p>
-                          <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
+                          <p className={clsx('text-slate-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                             Arrives{' '}
                             {mission.arrival_datetime
                               ? formatDateTime(mission.arrival_datetime)
@@ -848,19 +848,19 @@ export function Missions() {
                         <button
                           type="button"
                           onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                          className={clsx(rowDetailButtonClasses, 'min-w-0 text-sm text-stone-600')}
+                          className={clsx(rowDetailButtonClasses, 'min-w-0 text-sm text-slate-600')}
                         >
-                          <p className="font-medium text-stone-900">
+                          <p className="font-medium text-slate-900">
                             {mission.driver_name || 'Driver unassigned'}
                           </p>
-                          <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
+                          <p className={clsx('text-slate-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1')}>
                             {mission.vehicle_name || 'Vehicle not set'}
                           </p>
                         </button>
 
                         <div
                           className={clsx(
-                            'min-w-0 text-sm text-stone-600',
+                            'min-w-0 text-sm text-slate-600',
                             isCompact ? 'space-y-2' : 'space-y-2.5'
                           )}
                         >
@@ -869,7 +869,7 @@ export function Missions() {
                             onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
                             className={clsx('w-full', rowDetailButtonClasses)}
                           >
-                            <p className="font-medium text-stone-900 tabular-nums">
+                            <p className="font-medium text-slate-900 tabular-nums">
                               {formatCurrencyWithDecimals(mission.revenue_amount)}
                             </p>
                             <p
@@ -886,10 +886,10 @@ export function Missions() {
                             </p>
                           </button>
 
-                          <div className="border-t border-dashed border-stone-200 pt-2">
+                          <div className="border-t border-dashed border-slate-200 pt-2">
                             {linkedInvoices.length > 0 ? (
                               <>
-                                <p className="text-[11px] font-medium text-stone-600">
+                                <p className="text-[11px] font-medium text-slate-600">
                                   {linkedInvoices.length} linked invoice
                                   {linkedInvoices.length === 1 ? '' : 's'}
                                 </p>
@@ -922,7 +922,7 @@ export function Missions() {
                                     </button>
                                   ))}
                                   {remainingLinkedInvoiceCount > 0 ? (
-                                    <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-500">
+                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-500">
                                       +{remainingLinkedInvoiceCount} more
                                     </span>
                                   ) : null}

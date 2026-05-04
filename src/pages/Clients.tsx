@@ -315,10 +315,10 @@ export function Clients() {
           <SectionCard className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-slate-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-xs text-stone-500">Search, queue, and status.</p>
+                <p className="mt-1 text-xs text-slate-500">Search, queue, and status.</p>
               </div>
               <button type="button" onClick={resetFilters} className="btn-secondary">
                 Reset filters
@@ -327,7 +327,7 @@ export function Clients() {
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.8fr)_170px_170px]">
               <label className="relative block">
-                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
                 <input
                   data-ops-search="true"
                   type="text"
@@ -405,7 +405,7 @@ export function Clients() {
                       setSelectedClient(null)
                       setShowForm(true)
                     }}
-                    className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                    className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
                   >
                     Create client
                   </button>
@@ -422,22 +422,22 @@ export function Clients() {
             />
           ) : (
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-[1.65rem] font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-[1.65rem] font-semibold tracking-tight text-slate-950">
                     Client accounts
                   </h2>
-                  <p className="mt-0.5 text-xs text-stone-600">
+                  <p className="mt-0.5 text-xs text-slate-600">
                     Showing {filteredClients.length} of {clients.length} client
                     {filteredClients.length === 1 ? '' : 's'}.
                   </p>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] text-stone-600">
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
                   {queue === 'all' ? 'All accounts' : `Queue: ${queue.replace('-', ' ')}`}
                 </div>
               </div>
 
-              <div className="divide-y divide-stone-200">
+              <div className="divide-y divide-slate-200">
                 {filteredClients.map((client) => {
                   const status = getClientStatusConfig(client.status)
                   const activeMissions = clientMetrics.activeMissionCounts.get(client.client_id) ?? 0
@@ -462,11 +462,11 @@ export function Clients() {
                           openClientDetail(client.client_id)
                         }
                       }}
-                      className="grid cursor-pointer gap-3 px-4 py-3 transition hover:bg-stone-50/80 focus-within:bg-stone-50/80 md:grid-cols-[minmax(0,1.6fr)_minmax(0,160px)_minmax(0,190px)_92px] md:items-start"
+                      className="grid cursor-pointer gap-3 px-4 py-3 transition hover:bg-slate-50/80 focus-within:bg-slate-50/80 md:grid-cols-[minmax(0,1.6fr)_minmax(0,160px)_minmax(0,190px)_92px] md:items-start"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-sm font-semibold text-stone-950">{client.name}</h2>
+                          <h2 className="text-sm font-semibold text-slate-950">{client.name}</h2>
                           <StatusBadge
                             label={status.label}
                             tone={
@@ -484,33 +484,33 @@ export function Clients() {
                             <StatusBadge label="billing follow-up" tone="warning" />
                           ) : null}
                         </div>
-                        <p className="mt-1 truncate text-sm text-stone-900">{client.email}</p>
-                        <p className="mt-1 truncate text-sm text-stone-500">
+                        <p className="mt-1 truncate text-sm text-slate-900">{client.email}</p>
+                        <p className="mt-1 truncate text-sm text-slate-500">
                           {[client.city, client.country].filter(Boolean).join(', ') || 'No location set'}
                         </p>
                         {client.notes ? (
-                          <p className="mt-1 line-clamp-1 text-xs text-stone-600">{client.notes}</p>
+                          <p className="mt-1 line-clamp-1 text-xs text-slate-600">{client.notes}</p>
                         ) : null}
                       </div>
 
-                      <div className="min-w-0 text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <div className="min-w-0 text-sm text-slate-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Operations
                         </p>
-                        <p className="mt-1 font-medium text-stone-900">
+                        <p className="mt-1 font-medium text-slate-900">
                           {activeMissions} active mission{activeMissions === 1 ? '' : 's'}
                         </p>
                         <p className="mt-1">Revenue {formatCurrencyWithDecimals(revenue)}</p>
-                        <p className="mt-1 truncate text-xs text-stone-500">
+                        <p className="mt-1 truncate text-xs text-slate-500">
                           {formatPhoneNumber(client.phone)} {client.vat_number ? `· ${client.vat_number}` : ''}
                         </p>
                       </div>
 
-                      <div className="min-w-0 text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <div className="min-w-0 text-sm text-slate-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Billing
                         </p>
-                        <p className="mt-1 font-medium text-stone-900">
+                        <p className="mt-1 font-medium text-slate-900">
                           {openInvoices} open invoice{openInvoices === 1 ? '' : 's'}
                         </p>
                         <p className="mt-1">
@@ -528,7 +528,7 @@ export function Clients() {
                             setActionError(null)
                             setShowForm(true)
                           }}
-                          className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
+                          className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                         >
                           Edit
                         </button>

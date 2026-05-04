@@ -6,7 +6,7 @@ export function Signup() {
   return (
     <AuthScene
       title="Private access only"
-      subtitle="Open signup is disabled. Kepler Express provisions authorized logistics operator accounts directly."
+      subtitle="Open signup is disabled. Kepler Ops provisions authorized logistics operator accounts directly."
       footer={
         <>
           Already authorized?{' '}
@@ -16,8 +16,8 @@ export function Signup() {
         </>
       }
     >
-      <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm leading-6 text-stone-700">
-        Request a demo or access review through Kepler Express. This keeps the workflow private,
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700">
+        Request a demo or access review through Kepler Ops. This keeps the workflow private,
         tenant-scoped, and limited to approved logistics teams.
       </div>
       <a

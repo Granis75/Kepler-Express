@@ -12,7 +12,7 @@ export function SectionCard({
   return (
     <section
       className={clsx(
-        'rounded-[1.3rem] border border-stone-200/90 bg-white/92 p-4 shadow-[0_10px_26px_rgba(28,25,23,0.045)] ring-1 ring-white/65 backdrop-blur',
+        'rounded-xl border border-slate-200 bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.055)]',
         className
       )}
     >
@@ -36,33 +36,33 @@ export function StatCard({
 }) {
   const toneClasses =
     tone === 'success'
-      ? 'border-emerald-200/90 bg-[linear-gradient(180deg,_rgba(241,253,247,0.92),_rgba(255,255,255,0.98))]'
+      ? 'border-emerald-200 bg-emerald-50/70'
       : tone === 'warning'
-        ? 'border-amber-200/90 bg-[linear-gradient(180deg,_rgba(255,251,240,0.94),_rgba(255,255,255,0.98))]'
+        ? 'border-amber-200 bg-amber-50/75'
       : tone === 'danger'
-          ? 'border-rose-200/90 bg-[linear-gradient(180deg,_rgba(255,244,245,0.94),_rgba(255,255,255,0.98))]'
-          : 'border-stone-200/90 bg-[linear-gradient(180deg,_rgba(250,250,249,0.9),_rgba(255,255,255,0.98))]'
+          ? 'border-rose-200 bg-rose-50/75'
+          : 'border-slate-200 bg-slate-50/80'
 
   const cardClasses = clsx(
-    'group relative rounded-[1.1rem] border p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] transition',
-    onClick && 'hover:border-stone-300 hover:shadow-[0_10px_24px_rgba(28,25,23,0.08)] focus:outline-none focus:ring-4 focus:ring-stone-200',
+    'group relative rounded-lg border p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition',
+    onClick && 'hover:border-slate-300 hover:shadow-[0_12px_26px_rgba(15,23,42,0.08)] focus:outline-none focus:ring-4 focus:ring-slate-100',
     toneClasses
   )
 
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-stone-500">
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
           {label}
         </p>
         {onClick ? (
-          <ArrowUpRight className="h-4 w-4 text-stone-400 transition group-hover:text-stone-700" />
+          <ArrowUpRight className="h-4 w-4 text-slate-400 transition group-hover:text-teal-700" />
         ) : null}
       </div>
-      <p className="mt-2.5 text-[1.6rem] font-semibold tracking-[-0.04em] text-stone-950">
+      <p className="mt-2.5 text-[1.6rem] font-semibold tracking-tight text-slate-950">
         {value}
       </p>
-      {detail ? <p className="mt-1 text-xs leading-5 text-stone-500">{detail}</p> : null}
+      {detail ? <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p> : null}
     </>
   )
 
@@ -97,15 +97,15 @@ export function StatePanel({
       ? 'border-rose-200 bg-rose-50/90'
       : tone === 'warning'
         ? 'border-amber-200 bg-amber-50/90'
-        : 'border-stone-200 bg-white/92'
+        : 'border-slate-200 bg-white'
 
   return (
     <SectionCard className={clsx('text-center', toneClasses)}>
       <div className="mx-auto max-w-xl py-2">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+        <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
           {title}
         </h2>
-        <p className="mt-3 text-sm leading-7 text-stone-600">{message}</p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">{message}</p>
         {action ? <div className="mt-6 flex justify-center">{action}</div> : null}
       </div>
     </SectionCard>
@@ -130,7 +130,7 @@ export function StatusBadge({
           ? 'border-amber-200 bg-amber-50 text-amber-800'
           : tone === 'danger'
             ? 'border-rose-200 bg-rose-50 text-rose-700'
-            : 'border-stone-200 bg-stone-100 text-stone-700'
+            : 'border-slate-200 bg-slate-100 text-slate-700'
 
   return (
     <span
@@ -162,9 +162,9 @@ export function ActiveFilterBar({
   }
 
   return (
-    <div className="rounded-[1rem] border border-stone-200/90 bg-white/88 px-3.5 py-2.5 shadow-[0_8px_18px_rgba(28,25,23,0.035)]">
+    <div className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-stone-500">
+        <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
           {items.length} active filter{items.length === 1 ? '' : 's'}
         </span>
         {items.map((item) => (
@@ -172,18 +172,18 @@ export function ActiveFilterBar({
             key={item.id}
             type="button"
             onClick={item.onClear}
-            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50/90 px-2.5 py-1 text-[11px] text-stone-600 transition hover:border-stone-300 hover:bg-stone-100 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600 transition hover:border-slate-300 hover:bg-slate-100 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
           >
-            <span className="text-stone-500">{item.label}</span>
-            <span className="font-medium text-stone-900">{item.value}</span>
-            <X className="h-3 w-3 text-stone-500" />
+            <span className="text-slate-500">{item.label}</span>
+            <span className="font-medium text-slate-950">{item.value}</span>
+            <X className="h-3 w-3 text-slate-500" />
           </button>
         ))}
         {onClearAll ? (
           <button
             type="button"
             onClick={onClearAll}
-            className="ml-auto inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+            className="ml-auto inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
           >
             Clear all
           </button>
@@ -211,13 +211,13 @@ export function SelectionToolbar({
   }
 
   return (
-    <div className="sticky top-20 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[1rem] border border-stone-200/90 bg-white/92 px-3.5 py-2.5 shadow-[0_10px_20px_rgba(28,25,23,0.045)] backdrop-blur">
+    <div className="sticky top-20 z-20 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-stone-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+        <span className="rounded-full bg-teal-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
           {count} selected
         </span>
-        {label ? <p className="text-sm text-stone-700">{label}</p> : null}
-        {meta ? <p className="text-xs text-stone-500">{meta}</p> : null}
+        {label ? <p className="text-sm text-slate-700">{label}</p> : null}
+        {meta ? <p className="text-xs text-slate-500">{meta}</p> : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -225,7 +225,7 @@ export function SelectionToolbar({
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+          className="inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
         >
           Clear selection
         </button>
@@ -243,7 +243,7 @@ export function ActionPanel({
 }) {
   return (
     <SectionCard className={clsx('overflow-hidden p-0', className)}>
-      <div className="divide-y divide-stone-200">{children}</div>
+      <div className="divide-y divide-slate-200">{children}</div>
     </SectionCard>
   )
 }
@@ -265,31 +265,31 @@ export function ActionItem({
 }) {
   const rowToneClasses =
     tone === 'danger'
-      ? 'border-l-2 border-rose-300 bg-[linear-gradient(180deg,_rgba(255,244,245,0.7),_rgba(255,255,255,0.98))] pl-[18px] pr-5 hover:bg-rose-50/90'
+      ? 'border-l-2 border-rose-300 bg-rose-50/70 pl-[18px] pr-5 hover:bg-rose-50'
       : tone === 'warning'
-        ? 'border-l-2 border-amber-300 bg-[linear-gradient(180deg,_rgba(255,251,235,0.75),_rgba(255,255,255,0.98))] pl-[18px] pr-5 hover:bg-amber-50/90'
-        : 'px-5 hover:bg-stone-100'
+        ? 'border-l-2 border-amber-300 bg-amber-50/70 pl-[18px] pr-5 hover:bg-amber-50'
+        : 'px-5 hover:bg-slate-50'
 
   const actionToneClasses =
     tone === 'danger'
       ? 'border-rose-200 text-rose-700 group-hover:border-rose-300 group-hover:bg-rose-50'
       : tone === 'warning'
         ? 'border-amber-200 text-amber-800 group-hover:border-amber-300 group-hover:bg-amber-50'
-        : 'border-stone-300 text-stone-700 group-hover:bg-stone-100'
+        : 'border-slate-300 text-slate-700 group-hover:bg-slate-50'
 
   const countToneClasses =
     tone === 'danger'
       ? 'border-rose-200 bg-rose-50 text-rose-700'
       : tone === 'warning'
         ? 'border-amber-200 bg-amber-50 text-amber-800'
-        : 'border-stone-200 bg-stone-100 text-stone-700'
+        : 'border-slate-200 bg-slate-100 text-slate-700'
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={clsx(
-        'group flex w-full items-center justify-between gap-4 py-4 text-left transition active:scale-[0.998] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300',
+        'group flex w-full items-center justify-between gap-4 py-4 text-left transition active:scale-[0.998] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300',
         rowToneClasses
       )}
     >
@@ -305,13 +305,13 @@ export function ActionItem({
           </span>
         ) : null}
         <div className="min-w-0">
-          <p className="min-w-0 text-sm font-semibold text-stone-950">{title}</p>
-          {detail ? <p className="mt-1 text-sm text-stone-500">{detail}</p> : null}
+          <p className="min-w-0 text-sm font-semibold text-slate-950">{title}</p>
+          {detail ? <p className="mt-1 text-sm text-slate-500">{detail}</p> : null}
         </div>
       </div>
       <div
         className={clsx(
-          'inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-medium transition group-hover:text-stone-900',
+          'inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-medium transition group-hover:text-slate-950',
           actionToneClasses
         )}
       >
@@ -334,14 +334,14 @@ export function ModalSurface({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 px-4 py-6 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[2rem] border border-white/80 bg-[#fcfaf6] shadow-[0_36px_120px_rgba(28,25,23,0.2)] ring-1 ring-stone-200/70">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-stone-200 bg-[#fcfaf6]/96 px-6 py-5 backdrop-blur">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm">
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-[0_36px_120px_rgba(15,23,42,0.2)]">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/96 px-6 py-5 backdrop-blur">
           <div>
-            <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+            <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
               {title}
             </h2>
-            {description ? <p className="mt-1 text-sm text-stone-500">{description}</p> : null}
+            {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
           </div>
           <button
             type="button"
@@ -370,20 +370,20 @@ export function PageLoadingSkeleton({
         {Array.from({ length: stats }).map((_, index) => (
           <div
             key={`stat-${index}`}
-            className="h-32 rounded-[1.55rem] border border-stone-200 bg-white/78"
+            className="h-32 rounded-xl border border-slate-200 bg-white"
           />
         ))}
       </div>
 
-      <div className="rounded-[1.8rem] border border-stone-200 bg-white/80 p-6">
-        <div className="h-12 rounded-2xl bg-stone-100/90" />
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <div className="h-12 rounded-lg bg-slate-100" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
         {Array.from({ length: rows }).map((_, index) => (
           <div
             key={`row-${index}`}
-            className="h-56 rounded-[1.8rem] border border-stone-200 bg-white/80"
+            className="h-56 rounded-xl border border-slate-200 bg-white"
           />
         ))}
       </div>

@@ -152,8 +152,8 @@ export function MissionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Mission Info */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Mission Info</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">Mission Info</h2>
         <div className="space-y-4">
           <TextInput
             label="Mission Reference"
@@ -179,8 +179,8 @@ export function MissionForm({
       </div>
 
       {/* Route */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Route</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">Route</h2>
         <div className="space-y-4">
           <TextInput
             label="Pickup Location"
@@ -207,8 +207,8 @@ export function MissionForm({
       </div>
 
       {/* Assignment */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Assignment</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">Assignment</h2>
         <div className="space-y-4">
           <SelectInput
             label="Driver"
@@ -226,8 +226,8 @@ export function MissionForm({
       </div>
 
       {/* Financials */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Financials</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">Financials</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TextInput
             label="Revenue Amount (€)"
@@ -253,30 +253,30 @@ export function MissionForm({
       </div>
 
       {/* Notes */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Notes</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">Notes</h2>
         <textarea
           placeholder="Any additional notes..."
           value={formData.notes || ''}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-shell"
           rows={3}
         />
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 sticky bottom-0 bg-white py-4 border-t border-gray-200">
+      <div className="sticky bottom-0 flex gap-3 border-t border-slate-200 bg-[#f7f9fb]/95 py-4 backdrop-blur">
         <button
           type="button"
           onClick={() => navigate('/missions')}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="btn-primary"
         >
           {isLoading ? 'Saving...' : 'Save Mission'}
         </button>

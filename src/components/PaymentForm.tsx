@@ -95,11 +95,11 @@ export function PaymentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-gray-900">Record payment</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-sm font-medium text-slate-950">Record payment</p>
+          <p className="mt-1 text-xs text-slate-500">
             Remaining balance {formatCurrencyWithDecimals(remainingAmount)}
           </p>
         </div>
@@ -142,14 +142,14 @@ export function PaymentForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-900 mb-1.5">
+        <label className="mb-1.5 block text-sm font-medium text-slate-950">
           Notes
         </label>
         <textarea
           value={formData.notes}
           onChange={(event) => handleChange('notes', event.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-shell"
         />
       </div>
 
@@ -157,14 +157,14 @@ export function PaymentForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-white transition-colors"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="btn-primary"
         >
           {isLoading ? 'Saving...' : submitLabel}
         </button>

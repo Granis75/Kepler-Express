@@ -76,19 +76,19 @@ const assignmentQueueOptions = [
 ] as const
 
 const inlineButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const primaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const secondaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const tertiaryButtonClasses =
-  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const rowPrimaryActionClasses =
-  'inline-flex items-center gap-1.5 rounded-full bg-stone-950 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-slate-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 function normalizeDriverKey(name?: string | null) {
   return toSearchValue(name).replace(/\s+/g, ' ').trim()
@@ -772,7 +772,7 @@ export function Assignments() {
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-center">
               <label className="relative min-w-0 flex-1 xl:max-w-xl">
-                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-stone-500" />
+                <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-slate-500" />
                 <input
                   data-ops-search="true"
                   type="text"
@@ -806,8 +806,8 @@ export function Assignments() {
                       className={clsx(
                         'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-[0.98]',
                         queue === option.value
-                          ? 'border-stone-950 bg-stone-950 text-white'
-                          : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-300 hover:bg-stone-100'
+                          ? 'border-slate-950 bg-slate-950 text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
                       )}
                     >
                       <span>{option.label}</span>
@@ -816,7 +816,7 @@ export function Assignments() {
                           'rounded-full px-1.5 py-0.5 text-[10px]',
                           queue === option.value
                             ? 'bg-white/15 text-white'
-                            : 'bg-white text-stone-500'
+                            : 'bg-white text-slate-500'
                         )}
                       >
                         {count}
@@ -829,7 +829,7 @@ export function Assignments() {
 
             <div className="flex flex-wrap items-center gap-2">
               {selectedAssignment ? (
-                <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-700">
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
                   {selectedAssignment.driverName}
                 </span>
               ) : null}
@@ -843,8 +843,8 @@ export function Assignments() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 pt-3">
-            <p className="text-xs text-stone-500">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3">
+            <p className="text-xs text-slate-500">
               Derived from mission driver names and linked expense records.
             </p>
             {unassignedMissionsCount > 0 ? (
@@ -931,34 +931,34 @@ export function Assignments() {
           >
             <div className="space-y-4">
               <SectionCard className="overflow-hidden p-0">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                   <div>
-                    <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                    <h2 className="font-heading text-xl font-semibold tracking-tight text-slate-950">
                       Assignment ranking
                     </h2>
-                    <p className="mt-1 text-sm text-stone-500">
+                    <p className="mt-1 text-sm text-slate-500">
                       {filteredAssignments.length} visible assignment
                       {filteredAssignments.length === 1 ? '' : 's'} ranked by contribution and
                       current exposure.
                     </p>
                   </div>
-                  <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600">
+                  <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
                     {getQueueLabel(queue)}
                   </div>
                 </div>
 
-                <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:gap-3">
+                <div className="hidden border-b border-slate-200 bg-slate-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:gap-3">
                   {['Assignment', 'Performance', 'Action'].map((label) => (
                     <p
                       key={label}
-                      className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
+                      className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500"
                     >
                       {label}
                     </p>
                   ))}
                 </div>
 
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {filteredAssignments.map((assignment) => {
                     const isSelected = assignment.driverKey === selectedDriverKey
                     const primarySignal = getAssignmentSignal(assignment)
@@ -976,51 +976,51 @@ export function Assignments() {
                           }
                         }}
                         className={clsx(
-                          'group grid cursor-pointer gap-2.5 px-4 py-3 transition hover:bg-stone-50/80 focus:outline-none focus-visible:bg-stone-50/80 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:items-center',
+                          'group grid cursor-pointer gap-2.5 px-4 py-3 transition hover:bg-slate-50/80 focus:outline-none focus-visible:bg-slate-50/80 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:items-center',
                           isSelected &&
-                            'bg-stone-50/90 shadow-[inset_0_0_0_1px_rgba(214,211,209,0.95)]'
+                            'bg-slate-50/90 shadow-[inset_0_0_0_1px_rgba(214,211,209,0.95)]'
                         )}
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-semibold text-stone-950">
+                            <h3 className="text-sm font-semibold text-slate-950">
                               {assignment.driverName}
                             </h3>
                             {primarySignal ? (
                               <StatusBadge label={primarySignal.label} tone={primarySignal.tone} />
                             ) : null}
                           </div>
-                          <p className="mt-1 text-sm text-stone-900">
+                          <p className="mt-1 text-sm text-slate-900">
                             Revenue {formatCurrencyWithDecimals(assignment.revenueGenerated)}{' '}
-                            <span className="text-stone-400">•</span> Cost{' '}
+                            <span className="text-slate-400">•</span> Cost{' '}
                             {formatCurrencyWithDecimals(assignment.costBasisGenerated)}{' '}
-                            <span className="text-stone-400">•</span> Margin{' '}
+                            <span className="text-slate-400">•</span> Margin{' '}
                             <span
                               className={clsx(
                                 'font-medium',
                                 assignment.marginGenerated < 0
                                   ? 'text-rose-700'
-                                  : 'text-stone-900'
+                                  : 'text-slate-900'
                               )}
                             >
                               {formatCurrencyWithDecimals(assignment.marginGenerated)}
                             </span>
                           </p>
-                          <p className="mt-1 text-xs text-stone-500">
-                            {assignment.activeMissionsCount} active <span className="text-stone-400">•</span>{' '}
-                            {assignment.uninvoicedActiveCount} uninvoiced <span className="text-stone-400">•</span>{' '}
-                            {assignment.issueMissionsCount} issue <span className="text-stone-400">•</span>{' '}
+                          <p className="mt-1 text-xs text-slate-500">
+                            {assignment.activeMissionsCount} active <span className="text-slate-400">•</span>{' '}
+                            {assignment.uninvoicedActiveCount} uninvoiced <span className="text-slate-400">•</span>{' '}
+                            {assignment.issueMissionsCount} issue <span className="text-slate-400">•</span>{' '}
                             {assignment.missionsCount} mission
                             {assignment.missionsCount === 1 ? '' : 's'}
                           </p>
                         </div>
 
-                        <div className="min-w-0 text-xs text-stone-500 lg:text-right">
-                          <p className="font-medium text-stone-700">
+                        <div className="min-w-0 text-xs text-slate-500 lg:text-right">
+                          <p className="font-medium text-slate-700">
                             {formatPercentage(assignment.marginRatio * 100, 0)} margin
                           </p>
                           <p className="mt-1 truncate">
-                            {assignment.costBasisLabel} <span className="text-stone-400">•</span> Exp{' '}
+                            {assignment.costBasisLabel} <span className="text-slate-400">•</span> Exp{' '}
                             {formatCurrencyWithDecimals(assignment.expensesGenerated)}
                           </p>
                         </div>
@@ -1053,33 +1053,33 @@ export function Assignments() {
 
               {selectedAssignment ? (
                 <SectionCard className="overflow-hidden p-0">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                     <div>
-                      <h2 className="font-heading text-xl font-semibold tracking-tight text-stone-950">
+                      <h2 className="font-heading text-xl font-semibold tracking-tight text-slate-950">
                         Linked missions
                       </h2>
-                      <p className="mt-1 text-sm text-stone-500">
+                      <p className="mt-1 text-sm text-slate-500">
                         Mission workload and invoice state for this assignment.
                       </p>
                     </div>
-                    <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600">
+                    <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
                       {selectedAssignment.missionsCount} mission
                       {selectedAssignment.missionsCount === 1 ? '' : 's'}
                     </div>
                   </div>
 
-                  <div className="hidden border-b border-stone-200 bg-stone-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(210px,0.9fr)_auto] lg:gap-3">
+                  <div className="hidden border-b border-slate-200 bg-slate-50/70 px-4 py-2 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(210px,0.9fr)_auto] lg:gap-3">
                     {['Mission', 'Operations', 'Billing'].map((label) => (
                       <p
                         key={label}
-                        className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500"
+                        className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500"
                       >
                         {label}
                       </p>
                     ))}
                   </div>
 
-                  <div className="max-h-[34rem] divide-y divide-stone-200 overflow-y-auto">
+                  <div className="max-h-[34rem] divide-y divide-slate-200 overflow-y-auto">
                     {selectedAssignment.missions.map((mission) => {
                       const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
                       const margin = getMissionMarginSnapshot(mission)
@@ -1092,10 +1092,10 @@ export function Assignments() {
                           <button
                             type="button"
                             onClick={() => navigate(getMissionDetailRoute(mission.mission_id))}
-                            className="min-w-0 rounded-[0.9rem] px-1 py-1 text-left transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                            className="min-w-0 rounded-[0.9rem] px-1 py-1 text-left transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                           >
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-semibold text-stone-950">
+                              <p className="text-sm font-semibold text-slate-950">
                                 {mission.reference}
                               </p>
                               <StatusBadge
@@ -1109,26 +1109,26 @@ export function Assignments() {
                                 <StatusBadge label="margin sensitive" tone="warning" />
                               ) : null}
                             </div>
-                            <p className="mt-1 text-sm text-stone-700">
+                            <p className="mt-1 text-sm text-slate-700">
                               {mission.departure_location} to {mission.arrival_location}
                             </p>
-                            <p className="mt-1 truncate text-sm text-stone-500">
+                            <p className="mt-1 truncate text-sm text-slate-500">
                               {clientNameById.get(mission.client_id) ?? 'Unknown client'}
                             </p>
                           </button>
 
-                          <div className="text-sm text-stone-500 lg:text-right">
-                            <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500 lg:hidden">
+                          <div className="text-sm text-slate-500 lg:text-right">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 lg:hidden">
                               Operations
                             </p>
-                            <p className="mt-1 font-medium text-stone-900 lg:mt-0">
+                            <p className="mt-1 font-medium text-slate-900 lg:mt-0">
                               {formatDateTime(mission.departure_datetime)}
                             </p>
-                            <p className="mt-1 text-xs text-stone-500">
+                            <p className="mt-1 text-xs text-slate-500">
                               {formatCurrencyWithDecimals(mission.revenue_amount)} · Margin{' '}
                               {formatPercentage(margin.marginRatio * 100, 0)}
                             </p>
-                            <p className="mt-1 text-xs text-stone-500">
+                            <p className="mt-1 text-xs text-slate-500">
                               {margin.sourceLabel} cost{' '}
                               {formatCurrencyWithDecimals(margin.baselineCost)}
                             </p>
@@ -1179,7 +1179,7 @@ export function Assignments() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-semibold tracking-tight text-stone-950">
+                          <h2 className="text-lg font-semibold tracking-tight text-slate-950">
                             {selectedAssignment.driverName}
                           </h2>
                           {selectedAssignment.hasIssue ? (
@@ -1192,7 +1192,7 @@ export function Assignments() {
                             <StatusBadge label="margin sensitive" tone="warning" />
                           ) : null}
                         </div>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           {selectedAssignment.missionsCount} mission
                           {selectedAssignment.missionsCount === 1 ? '' : 's'} across{' '}
                           {selectedAssignment.clientCount} client
@@ -1235,42 +1235,42 @@ export function Assignments() {
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-2 border-t border-stone-200 pt-4 text-sm text-stone-600">
+                    <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm text-slate-600">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs text-stone-500">Revenue</p>
-                        <p className="font-medium text-stone-950">
+                        <p className="text-xs text-slate-500">Revenue</p>
+                        <p className="font-medium text-slate-950">
                           {formatCurrencyWithDecimals(selectedAssignment.revenueGenerated)}
                         </p>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs text-stone-500">Margin</p>
+                        <p className="text-xs text-slate-500">Margin</p>
                         <div className="text-right">
-                          <p className="font-medium text-stone-950">
+                          <p className="font-medium text-slate-950">
                             {formatCurrencyWithDecimals(selectedAssignment.marginGenerated)}
                           </p>
-                          <p className="text-[11px] text-stone-500">
+                          <p className="text-[11px] text-slate-500">
                             {formatPercentage(selectedAssignment.marginRatio * 100, 0)}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs text-stone-500">Cost basis</p>
+                        <p className="text-xs text-slate-500">Cost basis</p>
                         <div className="text-right">
-                          <p className="font-medium text-stone-950">
+                          <p className="font-medium text-slate-950">
                             {formatCurrencyWithDecimals(selectedAssignment.costBasisGenerated)}
                           </p>
-                          <p className="text-[11px] text-stone-500">
+                          <p className="text-[11px] text-slate-500">
                             {selectedAssignment.costBasisLabel}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs text-stone-500">Linked expenses</p>
+                        <p className="text-xs text-slate-500">Linked expenses</p>
                         <div className="text-right">
-                          <p className="font-medium text-stone-950">
+                          <p className="font-medium text-slate-950">
                             {formatCurrencyWithDecimals(selectedAssignment.expensesGenerated)}
                           </p>
-                          <p className="text-[11px] text-stone-500">
+                          <p className="text-[11px] text-slate-500">
                             {selectedAssignment.expenses.length} expense
                             {selectedAssignment.expenses.length === 1 ? '' : 's'}
                           </p>
@@ -1278,10 +1278,10 @@ export function Assignments() {
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-2 border-t border-stone-200 pt-4 text-xs text-stone-500">
+                    <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-xs text-slate-500">
                       <div className="flex items-start justify-between gap-3">
                         <p>Next mission</p>
-                        <p className="max-w-[15rem] text-right font-medium text-stone-900">
+                        <p className="max-w-[15rem] text-right font-medium text-slate-900">
                           {selectedAssignment.nextUpcomingMission
                             ? `${selectedAssignment.nextUpcomingMission.reference} · ${formatDateTime(selectedAssignment.nextUpcomingMission.departure_datetime)}`
                             : 'No upcoming mission'}
@@ -1289,7 +1289,7 @@ export function Assignments() {
                       </div>
                       <div className="flex items-start justify-between gap-3">
                         <p>Latest mission</p>
-                        <p className="max-w-[15rem] text-right font-medium text-stone-900">
+                        <p className="max-w-[15rem] text-right font-medium text-slate-900">
                           {selectedAssignment.mostRecentMission
                             ? `${selectedAssignment.mostRecentMission.reference} · ${formatDateTime(selectedAssignment.mostRecentMission.departure_datetime)}`
                             : 'No dated mission'}
@@ -1297,7 +1297,7 @@ export function Assignments() {
                       </div>
                       <div className="flex items-start justify-between gap-3">
                         <p>Cost coverage</p>
-                        <p className="max-w-[15rem] text-right font-medium text-stone-900">
+                        <p className="max-w-[15rem] text-right font-medium text-slate-900">
                           {selectedAssignment.actualCostMissionCount} of{' '}
                           {selectedAssignment.missionsCount} mission
                           {selectedAssignment.missionsCount === 1 ? '' : 's'} use actual cost
@@ -1307,32 +1307,32 @@ export function Assignments() {
                   </SectionCard>
 
                   <SectionCard className="overflow-hidden p-0">
-                    <div className="border-b border-stone-200 px-4 py-3">
-                      <h2 className="text-lg font-semibold tracking-tight text-stone-950">
+                    <div className="border-b border-slate-200 px-4 py-3">
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-950">
                         Linked invoices
                       </h2>
-                      <p className="mt-1 text-xs text-stone-500">
+                      <p className="mt-1 text-xs text-slate-500">
                         Cash tied to this assignment.
                       </p>
                     </div>
 
                     {selectedLinkedInvoices.length === 0 ? (
-                      <div className="px-4 py-5 text-sm text-stone-500">
+                      <div className="px-4 py-5 text-sm text-slate-500">
                         No invoices are linked yet. Uninvoiced missions can open invoicing
                         directly.
                       </div>
                     ) : (
-                      <div className="max-h-[16rem] divide-y divide-stone-200 overflow-y-auto">
+                      <div className="max-h-[16rem] divide-y divide-slate-200 overflow-y-auto">
                         {selectedLinkedInvoices.map((invoice) => (
                           <button
                             key={invoice.invoice_id}
                             type="button"
                             onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                            className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50"
+                            className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
                           >
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-sm font-semibold text-stone-950">
+                                <p className="text-sm font-semibold text-slate-950">
                                   {invoice.invoice_number}
                                 </p>
                                 <StatusBadge
@@ -1340,15 +1340,15 @@ export function Assignments() {
                                   tone={invoiceTone(invoice.status)}
                                 />
                               </div>
-                              <p className="mt-1 text-sm text-stone-500">
+                              <p className="mt-1 text-sm text-slate-500">
                                 Due {formatDate(invoice.due_date)}
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-medium text-stone-900">
+                              <p className="text-sm font-medium text-slate-900">
                                 {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
                               </p>
-                              <p className="mt-1 text-xs text-stone-500">Outstanding</p>
+                              <p className="mt-1 text-xs text-slate-500">Outstanding</p>
                             </div>
                           </button>
                         ))}
@@ -1357,21 +1357,21 @@ export function Assignments() {
                   </SectionCard>
 
                   <SectionCard className="overflow-hidden p-0">
-                    <div className="border-b border-stone-200 px-4 py-3">
-                      <h2 className="text-lg font-semibold tracking-tight text-stone-950">
+                    <div className="border-b border-slate-200 px-4 py-3">
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-950">
                         Linked expenses
                       </h2>
-                      <p className="mt-1 text-xs text-stone-500">
+                      <p className="mt-1 text-xs text-slate-500">
                         Costs attributed through driver name or mission linkage.
                       </p>
                     </div>
 
                     {selectedAssignment.expenses.length === 0 ? (
-                      <div className="px-4 py-5 text-sm text-stone-500">
+                      <div className="px-4 py-5 text-sm text-slate-500">
                         No linked expenses are currently attributed to this assignment.
                       </div>
                     ) : (
-                      <div className="max-h-[16rem] divide-y divide-stone-200 overflow-y-auto">
+                      <div className="max-h-[16rem] divide-y divide-slate-200 overflow-y-auto">
                         {selectedAssignment.expenses.map((expense) => {
                           const linkedMission = expense.mission_id
                             ? missionById.get(expense.mission_id) ?? null
@@ -1382,7 +1382,7 @@ export function Assignments() {
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-sm font-semibold text-stone-950">
+                                    <p className="text-sm font-semibold text-slate-950">
                                       {expenseTypeLabels[expense.expense_type]}
                                     </p>
                                     <StatusBadge
@@ -1393,7 +1393,7 @@ export function Assignments() {
                                       <StatusBadge label="no receipt" tone="warning" />
                                     ) : null}
                                   </div>
-                                  <p className="mt-1 truncate text-sm text-stone-500">
+                                  <p className="mt-1 truncate text-sm text-slate-500">
                                     {linkedMission
                                       ? `${linkedMission.reference} · ${linkedMission.departure_location} to ${linkedMission.arrival_location}`
                                       : expense.advanced_by_driver
@@ -1402,16 +1402,16 @@ export function Assignments() {
                                   </p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-sm font-medium text-stone-900">
+                                  <p className="text-sm font-medium text-slate-900">
                                     {formatCurrencyWithDecimals(expense.amount)}
                                   </p>
-                                  <p className="mt-1 text-xs text-stone-500">
+                                  <p className="mt-1 text-xs text-slate-500">
                                     {formatDate(expense.expense_date)}
                                   </p>
                                 </div>
                               </div>
                               {expense.notes ? (
-                                <p className="mt-2 text-xs leading-5 text-stone-500">
+                                <p className="mt-2 text-xs leading-5 text-slate-500">
                                   {truncateString(expense.notes, 100)}
                                 </p>
                               ) : null}
@@ -1424,16 +1424,16 @@ export function Assignments() {
                 </>
               ) : (
                 <SectionCard className="overflow-hidden p-0">
-                  <div className="border-b border-stone-200 px-4 py-3">
-                    <h2 className="text-base font-semibold tracking-tight text-stone-950">
+                  <div className="border-b border-slate-200 px-4 py-3">
+                    <h2 className="text-base font-semibold tracking-tight text-slate-950">
                       Portfolio signals
                     </h2>
-                    <p className="mt-1 text-xs text-stone-500">
+                    <p className="mt-1 text-xs text-slate-500">
                       Quick markers for contribution and exposure.
                     </p>
                   </div>
 
-                  <div className="divide-y divide-stone-200">
+                  <div className="divide-y divide-slate-200">
                     <button
                       type="button"
                       onClick={() =>
@@ -1441,16 +1441,16 @@ export function Assignments() {
                         updateFilters({ driver: topRevenueAssignment.driverKey })
                       }
                       disabled={!topRevenueAssignment}
-                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-stone-50 disabled:cursor-default disabled:hover:bg-transparent"
+                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent"
                     >
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Top revenue
                         </p>
-                        <p className="mt-1 text-sm font-medium text-stone-900">
+                        <p className="mt-1 text-sm font-medium text-slate-900">
                           {topRevenueAssignment?.driverName ?? 'No assignment yet'}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           {topRevenueAssignment
                             ? `${formatCurrencyWithDecimals(topRevenueAssignment.revenueGenerated)} across ${topRevenueAssignment.missionsCount} mission${topRevenueAssignment.missionsCount === 1 ? '' : 's'}`
                             : 'Revenue appears once assignments are recorded.'}
@@ -1468,16 +1468,16 @@ export function Assignments() {
                         updateFilters({ driver: topActiveAssignment.driverKey })
                       }
                       disabled={!topActiveAssignment}
-                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-stone-50 disabled:cursor-default disabled:hover:bg-transparent"
+                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent"
                     >
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Active workload
                         </p>
-                        <p className="mt-1 text-sm font-medium text-stone-900">
+                        <p className="mt-1 text-sm font-medium text-slate-900">
                           {topActiveAssignment?.driverName ?? 'No active load'}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           {topActiveAssignment
                             ? `${topActiveAssignment.activeMissionsCount} active mission${topActiveAssignment.activeMissionsCount === 1 ? '' : 's'} in queue`
                             : 'No active mission load is visible right now.'}
@@ -1495,16 +1495,16 @@ export function Assignments() {
                         updateFilters({ driver: mostExposedAssignment.driverKey })
                       }
                       disabled={!mostExposedAssignment}
-                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-stone-50 disabled:cursor-default disabled:hover:bg-transparent"
+                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent"
                     >
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Most exposed
                         </p>
-                        <p className="mt-1 text-sm font-medium text-stone-900">
+                        <p className="mt-1 text-sm font-medium text-slate-900">
                           {mostExposedAssignment?.driverName ?? 'No exposure'}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           {mostExposedAssignment
                             ? `${mostExposedAssignment.uninvoicedActiveCount} uninvoiced · ${mostExposedAssignment.issueMissionsCount} issue · ${mostExposedAssignment.marginSensitiveCount} sensitive`
                             : 'Exposure signals appear once assignments are active.'}
@@ -1518,16 +1518,16 @@ export function Assignments() {
                     <button
                       type="button"
                       onClick={() => navigate(appRoutes.missions)}
-                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-stone-50"
+                      className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50"
                     >
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Unassigned missions
                         </p>
-                        <p className="mt-1 text-sm font-medium text-stone-900">
+                        <p className="mt-1 text-sm font-medium text-slate-900">
                           {unassignedMissionsCount}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           Missions without a driver name are excluded until assigned.
                         </p>
                       </div>

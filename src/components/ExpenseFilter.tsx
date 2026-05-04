@@ -104,13 +104,13 @@ export function ExpenseFilter({ onFilterChange }: ExpenseFilterProps) {
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
         <input
           type="text"
           placeholder="Search by amount, description, mission..."
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="input-shell py-2 pl-9 pr-3"
         />
       </div>
 
@@ -121,20 +121,20 @@ export function ExpenseFilter({ onFilterChange }: ExpenseFilterProps) {
           <button
             type="button"
             onClick={() => setExpandedType(!expandedType)}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Type {typeFilter && <span className="text-blue-600 font-bold">({getExpenseTypeLabel(typeFilter)})</span>}
+            Type {typeFilter && <span className="font-bold text-teal-700">({getExpenseTypeLabel(typeFilter)})</span>}
             <ChevronDown className="w-4 h-4" />
           </button>
           {expandedType && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-32">
+            <div className="absolute left-0 top-full z-10 mt-1 min-w-32 rounded-lg border border-slate-200 bg-white shadow-lg">
               {Object.values(ExpenseType).map((type) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => handleTypeChange(type)}
-                  className={`block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
-                    typeFilter === type ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                  className={`block w-full px-4 py-2 text-left text-sm hover:bg-slate-50 ${
+                    typeFilter === type ? 'bg-teal-50 font-medium text-teal-700' : ''
                   }`}
                 >
                   {getExpenseTypeLabel(type)}
@@ -149,20 +149,20 @@ export function ExpenseFilter({ onFilterChange }: ExpenseFilterProps) {
           <button
             type="button"
             onClick={() => setExpandedStatus(!expandedStatus)}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Status {statusFilter && <span className="text-blue-600 font-bold">({getReimbursementStatusLabel(statusFilter)})</span>}
+            Status {statusFilter && <span className="font-bold text-teal-700">({getReimbursementStatusLabel(statusFilter)})</span>}
             <ChevronDown className="w-4 h-4" />
           </button>
           {expandedStatus && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-40">
+            <div className="absolute left-0 top-full z-10 mt-1 min-w-40 rounded-lg border border-slate-200 bg-white shadow-lg">
               {Object.values(ReimbursementStatus).map((status) => (
                 <button
                   key={status}
                   type="button"
                   onClick={() => handleStatusChange(status)}
-                  className={`block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
-                    statusFilter === status ? 'bg-blue-50 text-blue-700 font-medium' : ''
+                  className={`block w-full px-4 py-2 text-left text-sm hover:bg-slate-50 ${
+                    statusFilter === status ? 'bg-teal-50 font-medium text-teal-700' : ''
                   }`}
                 >
                   {getReimbursementStatusLabel(status)}
@@ -178,8 +178,8 @@ export function ExpenseFilter({ onFilterChange }: ExpenseFilterProps) {
           onClick={() => handleAdvancedChange(advancedFilter === true ? null : true)}
           className={`px-3 py-2 rounded-lg text-sm font-medium border ${
             advancedFilter === true
-              ? 'bg-orange-100 border-orange-300 text-orange-700'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-50'
+              ? 'border-amber-300 bg-amber-50 text-amber-800'
+              : 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-50'
           }`}
         >
           Driver-advanced {advancedFilter === true && '✓'}
@@ -191,8 +191,8 @@ export function ExpenseFilter({ onFilterChange }: ExpenseFilterProps) {
           onClick={() => handleMissingReceiptChange()}
           className={`px-3 py-2 rounded-lg text-sm font-medium border ${
             missingReceiptOnly
-              ? 'bg-red-100 border-red-300 text-red-700'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-50'
+              ? 'border-rose-300 bg-rose-50 text-rose-700'
+              : 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-50'
           }`}
         >
           Missing receipt {missingReceiptOnly && '⚠'}
@@ -203,7 +203,7 @@ export function ExpenseFilter({ onFilterChange }: ExpenseFilterProps) {
           <button
             type="button"
             onClick={handleClear}
-            className="inline-flex items-center gap-1 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium"
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
             <X className="w-4 h-4" />
             Clear

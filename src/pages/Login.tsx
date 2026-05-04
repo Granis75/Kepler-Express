@@ -39,7 +39,7 @@ export function Login() {
         <>
           Access is provisioned privately.{' '}
           <a href="mailto:contact@keplerexpress.com" className="font-medium text-teal-700 hover:text-teal-800">
-            Contact Kepler Express
+            Contact Kepler Ops
           </a>
         </>
       }
@@ -79,7 +79,7 @@ export function Login() {
         <button
           type="submit"
           disabled={isSubmitting || !isConfigured}
-          className="w-full rounded-full bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-primary w-full"
         >
           {isSubmitting ? 'Signing in...' : 'Log in'}
         </button>

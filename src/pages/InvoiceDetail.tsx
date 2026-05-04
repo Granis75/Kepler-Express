@@ -92,13 +92,13 @@ const invoiceStatusLabels: Record<Invoice['status'], string> = {
 }
 
 const secondaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const primaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const inlineButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 function getCollectionState(invoice: Invoice) {
   const outstanding = getInvoiceBalance(invoice)
@@ -385,14 +385,14 @@ export function InvoiceDetail() {
             <button
               type="button"
               onClick={() => navigate(appRoutes.invoices)}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to invoices
             </button>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-4xl font-semibold tracking-tight text-stone-950">
+              <h1 className="font-heading text-4xl font-semibold tracking-tight text-slate-950">
                 {invoice.invoice_number}
               </h1>
               <StatusBadge
@@ -405,7 +405,7 @@ export function InvoiceDetail() {
               ) : null}
             </div>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">{subtitle}</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500">{subtitle}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -479,13 +479,13 @@ export function InvoiceDetail() {
             <SectionCard>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Invoice summary
                   </h2>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
                     {collectionState.summary}
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     {client ? `${client.name}` : 'This client'} is billed for{' '}
                     {linkedMissions.length} linked mission
                     {linkedMissions.length === 1 ? '' : 's'} with{' '}
@@ -505,10 +505,10 @@ export function InvoiceDetail() {
                     }
                   `}
                 >
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Payment progress
                   </p>
-                  <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-stone-950">
+                  <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
                     {formatPercentage(paidRatio, 0)}
                   </p>
                   <div className="mt-3 h-2 w-44 overflow-hidden rounded-full bg-white/80">
@@ -523,7 +523,7 @@ export function InvoiceDetail() {
                       style={{ width: `${Math.min(100, Math.max(0, paidRatio))}%` }}
                     />
                   </div>
-                  <p className="mt-3 text-xs text-stone-500">
+                  <p className="mt-3 text-xs text-slate-500">
                     {latestPayment
                       ? `Latest payment on ${formatDate(latestPayment.payment_date)}`
                       : 'No payment recorded yet'}
@@ -533,12 +533,12 @@ export function InvoiceDetail() {
             </SectionCard>
 
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Linked missions
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     Mission work covered by this invoice.
                   </p>
                 </div>
@@ -560,15 +560,15 @@ export function InvoiceDetail() {
 
               {linkedMissions.length === 0 ? (
                 <div className="px-5 py-8">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     No missions are linked to this invoice yet.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     Edit the invoice to connect billing back to mission execution.
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {linkedMissions.map((mission) => {
                     const margin = getMissionMarginSnapshot(mission)
 
@@ -580,10 +580,10 @@ export function InvoiceDetail() {
                         <button
                           type="button"
                           onClick={() => openMission(mission.mission_id)}
-                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-stone-50"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left transition hover:bg-slate-50"
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-semibold text-stone-950">
+                            <h3 className="text-sm font-semibold text-slate-950">
                               {mission.reference}
                             </h3>
                             <StatusBadge
@@ -591,19 +591,19 @@ export function InvoiceDetail() {
                               tone={missionTone(mission.status)}
                             />
                           </div>
-                          <p className="mt-2 text-sm font-medium text-stone-900">
+                          <p className="mt-2 text-sm font-medium text-slate-900">
                             {mission.departure_location} to {mission.arrival_location}
                           </p>
-                          <p className="mt-1 text-sm text-stone-500">
+                          <p className="mt-1 text-sm text-slate-500">
                             {formatDateTime(mission.departure_datetime)}
                           </p>
                         </button>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Revenue
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {formatCurrencyWithDecimals(mission.revenue_amount)}
                           </p>
                           <p className="mt-1">
@@ -611,11 +611,11 @@ export function InvoiceDetail() {
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Cost basis
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {formatCurrencyWithDecimals(margin.baselineCost)}
                           </p>
                           <p className="mt-1">{margin.sourceLabel} cost source</p>
@@ -628,11 +628,11 @@ export function InvoiceDetail() {
             </SectionCard>
 
             <SectionCard className="overflow-hidden p-0">
-              <div className="border-b border-stone-200 px-5 py-4">
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <div className="border-b border-slate-200 px-5 py-4">
+                <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                   Payment history
                 </h2>
-                <p className="mt-1 text-sm text-stone-500">
+                <p className="mt-1 text-sm text-slate-500">
                   Recorded cash movements attached to this invoice.
                 </p>
               </div>
@@ -643,15 +643,15 @@ export function InvoiceDetail() {
                 </div>
               ) : paymentHistory.length === 0 ? (
                 <div className="px-5 py-8">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     No payments have been recorded yet.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     The paid amount remains at {formatCurrencyWithDecimals(invoice.amount_paid)}.
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {paymentHistory.map((payment) => {
                     const paymentMethodConfig = getPaymentMethodConfig(
                       payment.payment_method as PaymentMethod
@@ -662,11 +662,11 @@ export function InvoiceDetail() {
                         key={payment.payment_id}
                         className="grid gap-4 px-5 py-4 md:grid-cols-[170px_minmax(0,1fr)_140px] md:items-start"
                       >
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Payment date
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {formatDate(payment.payment_date)}
                           </p>
                         </div>
@@ -678,27 +678,27 @@ export function InvoiceDetail() {
                               tone="info"
                             />
                             {payment.reference ? (
-                              <span className="text-xs text-stone-500">
+                              <span className="text-xs text-slate-500">
                                 Ref {payment.reference}
                               </span>
                             ) : null}
                           </div>
                           {payment.notes ? (
-                            <p className="mt-2 text-sm leading-7 text-stone-600">
+                            <p className="mt-2 text-sm leading-7 text-slate-600">
                               {payment.notes}
                             </p>
                           ) : (
-                            <p className="mt-2 text-sm text-stone-500">
+                            <p className="mt-2 text-sm text-slate-500">
                               Payment recorded without an additional note.
                             </p>
                           )}
                         </div>
 
                         <div className="text-right">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Amount
                           </p>
-                          <p className="mt-1 text-sm font-semibold text-stone-950">
+                          <p className="mt-1 text-sm font-semibold text-slate-950">
                             {formatCurrencyWithDecimals(payment.amount)}
                           </p>
                         </div>
@@ -712,13 +712,13 @@ export function InvoiceDetail() {
 
           <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Client
               </h2>
               {client ? (
                 <div className="mt-5 space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-stone-950">{client.name}</p>
+                    <p className="text-sm font-semibold text-slate-950">{client.name}</p>
                     {clientStatusConfig ? (
                       <StatusBadge
                         label={clientStatusConfig.label}
@@ -728,36 +728,36 @@ export function InvoiceDetail() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Mail className="mt-0.5 h-4 w-4 text-stone-500" />
+                    <Mail className="mt-0.5 h-4 w-4 text-slate-500" />
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Email
                       </p>
-                      <p className="mt-1 text-sm text-stone-900">
+                      <p className="mt-1 text-sm text-slate-900">
                         {client.email || 'No email on file'}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Phone className="mt-0.5 h-4 w-4 text-stone-500" />
+                    <Phone className="mt-0.5 h-4 w-4 text-slate-500" />
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Phone
                       </p>
-                      <p className="mt-1 text-sm text-stone-900">
+                      <p className="mt-1 text-sm text-slate-900">
                         {formatPhoneNumber(client.phone)}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 text-stone-500" />
+                    <MapPin className="mt-0.5 h-4 w-4 text-slate-500" />
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Location
                       </p>
-                      <p className="mt-1 text-sm text-stone-900">
+                      <p className="mt-1 text-sm text-slate-900">
                         {[client.city, client.country].filter(Boolean).join(', ') ||
                           'No location on file'}
                       </p>
@@ -774,10 +774,10 @@ export function InvoiceDetail() {
                 </div>
               ) : (
                 <div className="mt-5">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     Client record unavailable.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     The invoice still retains its client reference in the billing record.
                   </p>
                 </div>
@@ -785,62 +785,62 @@ export function InvoiceDetail() {
             </SectionCard>
 
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Invoice metadata
               </h2>
               <div className="mt-5 space-y-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Invoice status
                   </p>
-                  <p className="mt-1 text-sm font-medium text-stone-900">
+                  <p className="mt-1 text-sm font-medium text-slate-900">
                     {invoiceStatusLabels[invoice.status]}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Issue date
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {formatDate(invoice.issue_date)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Due date
                   </p>
                   <p
                     className={
                       isOverdue
                         ? 'mt-1 text-sm font-medium text-rose-700'
-                        : 'mt-1 text-sm text-stone-900'
+                        : 'mt-1 text-sm text-slate-900'
                     }
                   >
                     {formatDate(invoice.due_date)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Linked missions
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {linkedMissions.length}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Last payment
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {latestPayment ? formatDate(latestPayment.payment_date) : 'No payment yet'}
                   </p>
                 </div>
                 {invoice.notes ? (
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                       Notes
                     </p>
-                    <p className="mt-2 text-sm leading-7 text-stone-600">{invoice.notes}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{invoice.notes}</p>
                   </div>
                 ) : null}
               </div>
@@ -848,7 +848,7 @@ export function InvoiceDetail() {
 
             {linkedMissions.length > 0 ? (
               <SectionCard>
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                   Mission shortcuts
                 </h2>
                 <div className="mt-5 flex flex-wrap gap-2">

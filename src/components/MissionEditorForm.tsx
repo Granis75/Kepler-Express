@@ -277,27 +277,27 @@ export function MissionEditorForm({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-stone-900">Notes</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-950">Notes</label>
         <textarea
           value={formData.notes ?? ''}
           onChange={(event) => handleChange('notes', event.target.value)}
           rows={4}
-          className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+          className="input-shell"
         />
       </div>
 
-      <div className="flex flex-wrap justify-end gap-3 border-t border-stone-200 pt-5">
+      <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-5">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-primary"
         >
           {isLoading ? 'Saving mission...' : initialData ? 'Save mission' : 'Create mission'}
         </button>

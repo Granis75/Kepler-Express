@@ -122,10 +122,10 @@ const approvalStatusLabels: Record<Expense['approval_status'], string> = {
 }
 
 const secondaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const primaryButtonClasses =
-  'inline-flex items-center justify-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 export function MissionDetail() {
   const navigate = useNavigate()
@@ -349,14 +349,14 @@ export function MissionDetail() {
             <button
               type="button"
               onClick={() => navigate(appRoutes.missions)}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98]"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to missions
             </button>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-4xl font-semibold tracking-tight text-stone-950">
+              <h1 className="font-heading text-4xl font-semibold tracking-tight text-slate-950">
                 {mission.reference}
               </h1>
               <StatusBadge
@@ -371,7 +371,7 @@ export function MissionDetail() {
               ) : null}
             </div>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">{subtitle}</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-500">{subtitle}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -473,31 +473,31 @@ export function MissionDetail() {
             <SectionCard>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Mission summary
                   </h2>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
                     {client ? `${client.name}` : 'This mission'} is moving from{' '}
                     {mission.departure_location} to {mission.arrival_location} with{' '}
                     {formatCurrencyWithDecimals(mission.revenue_amount)} in revenue and{' '}
                     {formatCurrencyWithDecimals(margin.baselineCost)} as the current cost basis.
                   </p>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-600">
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
                   {missionStatusLabels[mission.status]}
                 </div>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Route</p>
-                  <p className="mt-2 text-sm font-medium text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Route</p>
+                  <p className="mt-2 text-sm font-medium text-slate-900">
                     {mission.departure_location} to {mission.arrival_location}
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     Departure {formatDateTime(mission.departure_datetime)}
                   </p>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     Arrival{' '}
                     {mission.arrival_datetime
                       ? formatDateTime(mission.arrival_datetime)
@@ -506,10 +506,10 @@ export function MissionDetail() {
                 </div>
 
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Operational state
                   </p>
-                  <p className="mt-2 text-sm font-medium text-stone-900">
+                  <p className="mt-2 text-sm font-medium text-slate-900">
                     {isMissionActive(mission.status)
                       ? 'Mission is active in the live queue.'
                       : mission.status === 'delivered'
@@ -518,8 +518,8 @@ export function MissionDetail() {
                           ? 'Mission requires operational follow-up.'
                           : 'Mission is no longer active.'}
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">{assignmentSummary}</p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">{assignmentSummary}</p>
+                  <p className="mt-2 text-sm text-slate-500">
                     {linkedExpenses.length} linked expense
                     {linkedExpenses.length === 1 ? '' : 's'} totaling{' '}
                     {formatCurrencyWithDecimals(linkedExpenseTotal)}.
@@ -529,12 +529,12 @@ export function MissionDetail() {
             </SectionCard>
 
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Linked expenses
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     Direct expense trail recorded against this mission.
                   </p>
                 </div>
@@ -554,28 +554,28 @@ export function MissionDetail() {
 
               {linkedExpenses.length === 0 ? (
                 <div className="px-5 py-8">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     No expenses are linked to this mission yet.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     The cost view is currently based on mission-level estimated or actual cost only.
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {linkedExpenses.map((expense) => (
                     <article
                       key={expense.expense_id}
                       className="grid gap-4 px-5 py-4 md:grid-cols-[170px_minmax(0,1fr)_140px] md:items-start"
                     >
-                      <div className="text-sm text-stone-500">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <div className="text-sm text-slate-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Date
                         </p>
-                        <p className="mt-1 font-medium text-stone-900">
+                        <p className="mt-1 font-medium text-slate-900">
                           {formatDate(expense.expense_date)}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
+                        <p className="mt-1 text-xs text-slate-500">
                           {expense.advanced_by_driver ? 'Advanced by driver' : 'Company paid'}
                         </p>
                       </div>
@@ -594,26 +594,26 @@ export function MissionDetail() {
                             <StatusBadge label="receipt missing" tone="danger" />
                           ) : null}
                         </div>
-                        <p className="mt-2 text-sm font-medium text-stone-900">
+                        <p className="mt-2 text-sm font-medium text-slate-900">
                           {expense.driver_name || 'No driver context'} •{' '}
                           {expense.vehicle_name || 'No vehicle context'}
                         </p>
                         {expense.notes ? (
-                          <p className="mt-2 text-sm leading-7 text-stone-600">
+                          <p className="mt-2 text-sm leading-7 text-slate-600">
                             {expense.notes}
                           </p>
                         ) : (
-                          <p className="mt-2 text-sm text-stone-500">
+                          <p className="mt-2 text-sm text-slate-500">
                             No additional note recorded for this expense.
                           </p>
                         )}
                       </div>
 
                       <div className="text-right">
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                           Amount
                         </p>
-                        <p className="mt-1 text-sm font-semibold text-stone-950">
+                        <p className="mt-1 text-sm font-semibold text-slate-950">
                           {formatCurrencyWithDecimals(expense.amount)}
                         </p>
                       </div>
@@ -624,12 +624,12 @@ export function MissionDetail() {
             </SectionCard>
 
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Linked invoices
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
+                  <p className="mt-1 text-sm text-slate-500">
                     Billing objects tied back to this mission.
                   </p>
                 </div>
@@ -654,15 +654,15 @@ export function MissionDetail() {
 
               {linkedInvoices.length === 0 ? (
                 <div className="px-5 py-8">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     This mission has not been invoiced yet.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     Open invoice creation with this mission pre-linked to keep billing aligned.
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {linkedInvoices.map((invoice) => {
                     const outstanding = getInvoiceBalance(invoice)
 
@@ -671,11 +671,11 @@ export function MissionDetail() {
                         key={invoice.invoice_id}
                         type="button"
                         onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                        className="grid w-full gap-4 px-5 py-4 text-left transition hover:bg-stone-50 md:grid-cols-[minmax(0,1fr)_170px_150px] md:items-center"
+                        className="grid w-full gap-4 px-5 py-4 text-left transition hover:bg-slate-50 md:grid-cols-[minmax(0,1fr)_170px_150px] md:items-center"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-semibold text-stone-950">
+                            <h3 className="text-sm font-semibold text-slate-950">
                               {invoice.invoice_number}
                             </h3>
                             <StatusBadge
@@ -689,22 +689,22 @@ export function MissionDetail() {
                               />
                             ) : null}
                           </div>
-                          <p className="mt-2 text-sm text-stone-500">
+                          <p className="mt-2 text-sm text-slate-500">
                             Due {formatDate(invoice.due_date)} • Issued {formatDate(invoice.issue_date)}
                           </p>
                         </div>
 
-                        <div className="text-sm text-stone-500">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                        <div className="text-sm text-slate-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Total
                           </p>
-                          <p className="mt-1 font-medium text-stone-900">
+                          <p className="mt-1 font-medium text-slate-900">
                             {formatCurrencyWithDecimals(invoice.amount_total)}
                           </p>
                         </div>
 
                         <div className="text-right">
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                             Outstanding
                           </p>
                           <p
@@ -713,7 +713,7 @@ export function MissionDetail() {
                                 ? 'mt-1 text-sm font-semibold text-rose-700'
                                 : outstanding > 0
                                   ? 'mt-1 text-sm font-semibold text-amber-800'
-                                  : 'mt-1 text-sm font-semibold text-stone-900'
+                                  : 'mt-1 text-sm font-semibold text-slate-900'
                             }
                           >
                             {formatCurrencyWithDecimals(outstanding)}
@@ -729,13 +729,13 @@ export function MissionDetail() {
 
           <div className="space-y-5 xl:sticky xl:top-24 xl:self-start">
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Client
               </h2>
               {client ? (
                 <div className="mt-5 space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-stone-950">{client.name}</p>
+                    <p className="text-sm font-semibold text-slate-950">{client.name}</p>
                     {clientStatusConfig ? (
                       <StatusBadge
                         label={clientStatusConfig.label}
@@ -745,36 +745,36 @@ export function MissionDetail() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Mail className="mt-0.5 h-4 w-4 text-stone-500" />
+                    <Mail className="mt-0.5 h-4 w-4 text-slate-500" />
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Email
                       </p>
-                      <p className="mt-1 text-sm text-stone-900">
+                      <p className="mt-1 text-sm text-slate-900">
                         {client.email || 'No email on file'}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Phone className="mt-0.5 h-4 w-4 text-stone-500" />
+                    <Phone className="mt-0.5 h-4 w-4 text-slate-500" />
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Phone
                       </p>
-                      <p className="mt-1 text-sm text-stone-900">
+                      <p className="mt-1 text-sm text-slate-900">
                         {formatPhoneNumber(client.phone)}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 text-stone-500" />
+                    <MapPin className="mt-0.5 h-4 w-4 text-slate-500" />
                     <div className="min-w-0">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Location
                       </p>
-                      <p className="mt-1 text-sm text-stone-900">
+                      <p className="mt-1 text-sm text-slate-900">
                         {[client.city, client.country].filter(Boolean).join(', ') ||
                           'No location on file'}
                       </p>
@@ -791,10 +791,10 @@ export function MissionDetail() {
                 </div>
               ) : (
                 <div className="mt-5">
-                  <p className="text-sm font-medium text-stone-900">
+                  <p className="text-sm font-medium text-slate-900">
                     Client record unavailable.
                   </p>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     The mission still retains its client reference in the operational record.
                   </p>
                 </div>
@@ -802,24 +802,24 @@ export function MissionDetail() {
             </SectionCard>
 
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Assignment
               </h2>
               <div className="mt-5 space-y-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Driver</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Driver</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {mission.driver_name || 'No driver assigned'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Vehicle</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Vehicle</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {mission.vehicle_name || 'No vehicle assigned'}
                   </p>
                 </div>
                 {!mission.driver_name && !mission.vehicle_name ? (
-                  <p className="text-sm text-stone-500">
+                  <p className="text-sm text-slate-500">
                     Assignment is still open for operations planning.
                   </p>
                 ) : null}
@@ -827,46 +827,46 @@ export function MissionDetail() {
             </SectionCard>
 
             <SectionCard>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+              <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                 Mission metadata
               </h2>
               <div className="mt-5 space-y-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Departure
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {formatDateTime(mission.departure_datetime)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                     Arrival
                   </p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="mt-1 text-sm text-slate-900">
                     {mission.arrival_datetime
                       ? formatDateTime(mission.arrival_datetime)
                       : 'Arrival not set'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Status</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Status</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {missionStatusLabels[mission.status]}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Route</p>
-                  <p className="mt-1 text-sm text-stone-900">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Route</p>
+                  <p className="mt-1 text-sm text-slate-900">
                     {mission.departure_location} to {mission.arrival_location}
                   </p>
                 </div>
                 {mission.notes ? (
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                       Notes
                     </p>
-                    <p className="mt-2 text-sm leading-7 text-stone-600">{mission.notes}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{mission.notes}</p>
                   </div>
                 ) : null}
               </div>

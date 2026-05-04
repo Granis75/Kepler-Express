@@ -322,10 +322,10 @@ export function Dashboard() {
           <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
             <ActionPanel>
               <div className="px-4 py-3">
-                <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                   Action queue
                 </h2>
-                <p className="mt-1 text-xs text-stone-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Direct follow-ups across billing conversion, collection, and expense control.
                 </p>
               </div>
@@ -333,11 +333,11 @@ export function Dashboard() {
                 <div className="px-4 py-6">
                   <div className="flex items-center gap-2">
                     <StatusBadge label="clear" tone="success" />
-                    <p className="text-sm font-semibold text-stone-950">
+                    <p className="text-sm font-semibold text-slate-950">
                       No immediate operational risks detected
                     </p>
                   </div>
-                  <p className="mt-2 text-sm text-stone-500">
+                  <p className="mt-2 text-sm text-slate-500">
                     Cash conversion, collection, and expense approvals are currently clear in the
                     live data.
                   </p>
@@ -364,12 +364,12 @@ export function Dashboard() {
             </ActionPanel>
 
             <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Collection queue
                   </h2>
-                  <p className="mt-1 text-xs text-stone-500">
+                  <p className="mt-1 text-xs text-slate-500">
                     Open invoices ordered for follow-up and outstanding cash visibility.
                   </p>
                 </div>
@@ -388,11 +388,11 @@ export function Dashboard() {
               </div>
 
               {collectionQueue.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-stone-500">
+                <div className="px-4 py-6 text-sm text-slate-500">
                   No invoices are waiting for collection.
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {collectionQueue.slice(0, 6).map((invoice) => (
                     <button
                       key={invoice.invoice_id}
@@ -403,11 +403,11 @@ export function Dashboard() {
                           search: createSearchParams({ queue: 'unpaid', focus: invoice.invoice_id }).toString(),
                         })
                       }
-                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_140px]"
+                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-100 md:grid-cols-[minmax(0,1fr)_160px_140px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-stone-950">
+                          <p className="text-sm font-semibold text-slate-950">
                             {invoice.invoice_number}
                           </p>
                           <StatusBadge
@@ -415,7 +415,7 @@ export function Dashboard() {
                             tone={getInvoiceTone(invoice.status)}
                           />
                         </div>
-                        <p className="mt-1 text-sm text-stone-500">
+                        <p className="mt-1 text-sm text-slate-500">
                           {invoice.mission_ids.length > 0
                             ? invoice.mission_ids
                                 .map((missionId) => missionReferenceById.get(missionId))
@@ -424,16 +424,16 @@ export function Dashboard() {
                             : 'No linked missions'}
                         </p>
                       </div>
-                      <div className="text-sm text-stone-500">
-                        <p className="font-medium text-stone-900">
+                      <div className="text-sm text-slate-500">
+                        <p className="font-medium text-slate-900">
                           Due {formatDate(invoice.due_date)}
                         </p>
                         <p className="mt-1">
                           {formatCurrencyWithDecimals(invoice.amount_total)} total
                         </p>
                       </div>
-                      <div className="text-sm text-stone-500">
-                        <p className="font-medium text-stone-900">
+                      <div className="text-sm text-slate-500">
+                        <p className="font-medium text-slate-900">
                           {formatCurrencyWithDecimals(getInvoiceBalance(invoice))}
                         </p>
                         <p className="mt-1">Outstanding</p>
@@ -447,12 +447,12 @@ export function Dashboard() {
 
           <div className="grid gap-4 xl:grid-cols-2">
             <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Active mission queue
                   </h2>
-                  <p className="mt-1 text-xs text-stone-500">
+                  <p className="mt-1 text-xs text-slate-500">
                     Live missions with invoice visibility and margin context.
                   </p>
                 </div>
@@ -471,11 +471,11 @@ export function Dashboard() {
               </div>
 
               {activeMissions.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-stone-500">
+                <div className="px-4 py-6 text-sm text-slate-500">
                   No active missions right now.
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {activeMissions.slice(0, 6).map((mission) => {
                     const linkedInvoices = missionInvoiceMap.get(mission.mission_id) ?? []
                     const margin = getMissionMarginSnapshot(mission)
@@ -490,11 +490,11 @@ export function Dashboard() {
                             search: createSearchParams({ focus: mission.mission_id }).toString(),
                           })
                         }
-                        className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
+                        className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-100 md:grid-cols-[minmax(0,1.1fr)_160px_180px]"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-stone-950">{mission.reference}</p>
+                            <p className="text-sm font-semibold text-slate-950">{mission.reference}</p>
                             <StatusBadge
                               label={mission.status.replace('_', ' ')}
                               tone={getMissionTone(mission.status)}
@@ -506,23 +506,23 @@ export function Dashboard() {
                               <StatusBadge label="margin sensitive" tone="warning" />
                             ) : null}
                           </div>
-                          <p className="mt-1 text-sm text-stone-500">
+                          <p className="mt-1 text-sm text-slate-500">
                             {mission.departure_location} to {mission.arrival_location}
                           </p>
-                          <p className="mt-1 text-sm text-stone-500">
+                          <p className="mt-1 text-sm text-slate-500">
                             {linkedInvoices.length > 0
                               ? `Invoice ${linkedInvoices.map((invoice) => invoice.invoice_number).join(', ')}`
                               : 'Billing not linked yet'}
                           </p>
                         </div>
-                        <div className="text-sm text-stone-500">
-                          <p className="font-medium text-stone-900">
+                        <div className="text-sm text-slate-500">
+                          <p className="font-medium text-slate-900">
                             {formatDateTime(mission.departure_datetime)}
                           </p>
                           <p className="mt-1">{mission.driver_name || 'Driver unassigned'}</p>
                         </div>
-                        <div className="text-sm text-stone-500">
-                          <p className="font-medium text-stone-900">
+                        <div className="text-sm text-slate-500">
+                          <p className="font-medium text-slate-900">
                             {formatCurrencyWithDecimals(mission.revenue_amount)}
                           </p>
                           <p className="mt-1">
@@ -537,12 +537,12 @@ export function Dashboard() {
             </SectionCard>
 
             <SectionCard className="p-0">
-              <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-2xl font-semibold tracking-tight text-slate-950">
                     Expense control
                   </h2>
-                  <p className="mt-1 text-xs text-stone-500">
+                  <p className="mt-1 text-xs text-slate-500">
                     Pending approvals and missing receipts across the latest expense activity.
                   </p>
                 </div>
@@ -561,11 +561,11 @@ export function Dashboard() {
               </div>
 
               {expenseAttention.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-stone-500">
+                <div className="px-4 py-6 text-sm text-slate-500">
                   Expense approvals and receipt control are clear.
                 </div>
               ) : (
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {expenseAttention.slice(0, 5).map((expense) => (
                     <button
                       key={expense.expense_id}
@@ -576,11 +576,11 @@ export function Dashboard() {
                           search: createSearchParams({ focus: expense.expense_id }).toString(),
                         })
                       }
-                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-stone-100 md:grid-cols-[minmax(0,1fr)_160px_180px]"
+                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-100 md:grid-cols-[minmax(0,1fr)_160px_180px]"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-stone-950">
+                          <p className="text-sm font-semibold text-slate-950">
                             {expense.expense_type}
                           </p>
                           <StatusBadge
@@ -591,18 +591,18 @@ export function Dashboard() {
                             <StatusBadge label="receipt missing" tone="danger" />
                           ) : null}
                         </div>
-                        <p className="mt-1 text-sm text-stone-500">
+                        <p className="mt-1 text-sm text-slate-500">
                           {missionReferenceById.get(expense.mission_id ?? '') || 'No linked mission'}
                         </p>
                       </div>
-                      <div className="text-sm text-stone-500">
-                        <p className="font-medium text-stone-900">
+                      <div className="text-sm text-slate-500">
+                        <p className="font-medium text-slate-900">
                           {formatCurrencyWithDecimals(expense.amount)}
                         </p>
                         <p className="mt-1">{formatDate(expense.expense_date)}</p>
                       </div>
-                      <div className="text-sm text-stone-500">
-                        <p className="font-medium text-stone-900">
+                      <div className="text-sm text-slate-500">
+                        <p className="font-medium text-slate-900">
                           {expense.driver_name || 'No driver'}
                         </p>
                         <p className="mt-1">

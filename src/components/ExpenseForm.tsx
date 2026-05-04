@@ -123,7 +123,7 @@ export function ExpenseForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">Expense info</h3>
+        <h3 className="text-sm font-semibold text-slate-950">Expense info</h3>
         <div className="grid grid-cols-2 gap-4">
           <TextInput
             label="Date"
@@ -146,7 +146,7 @@ export function ExpenseForm({
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">Amount</h3>
+        <h3 className="text-sm font-semibold text-slate-950">Amount</h3>
         <TextInput
           label="Amount"
           type="number"
@@ -163,7 +163,7 @@ export function ExpenseForm({
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">Assignment</h3>
+        <h3 className="text-sm font-semibold text-slate-950">Assignment</h3>
         <SelectInput
           label="Mission"
           options={[{ value: '', label: 'None' }, ...missionOptions]}
@@ -185,7 +185,7 @@ export function ExpenseForm({
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-900">Approval</h3>
+        <h3 className="text-sm font-semibold text-slate-950">Approval</h3>
         <label className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -193,9 +193,9 @@ export function ExpenseForm({
             onChange={(event) =>
               handleChange('advanced_by_driver', event.target.checked)
             }
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-slate-300 accent-teal-700 text-teal-700 focus:ring-teal-100"
           />
-          <span className="text-sm text-gray-700">Advanced by driver</span>
+          <span className="text-sm text-slate-700">Advanced by driver</span>
         </label>
         <SelectInput
           label="Approval status"
@@ -213,34 +213,34 @@ export function ExpenseForm({
             type="checkbox"
             checked={formData.receipt_present}
             onChange={(event) => handleChange('receipt_present', event.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-slate-300 accent-teal-700 text-teal-700 focus:ring-teal-100"
           />
-          <span className="text-sm text-gray-700">Receipt present</span>
+          <span className="text-sm text-slate-700">Receipt present</span>
         </label>
       </div>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-900">Notes</label>
+        <label className="block text-sm font-medium text-slate-950">Notes</label>
         <textarea
           value={formData.notes ?? ''}
           onChange={(event) => handleChange('notes', event.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="input-shell"
         />
       </div>
 
-      <div className="flex justify-end gap-3 border-t pt-4">
+      <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-4 py-2 font-medium text-gray-700 hover:bg-gray-100"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="btn-primary"
         >
           {isLoading ? 'Saving...' : expense ? 'Save changes' : 'Create expense'}
         </button>

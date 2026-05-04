@@ -8,7 +8,7 @@ interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export function TextInput({ label, error, className, ...props }: TextInputProps) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium tracking-tight text-stone-900">
+      <label className="mb-2 block text-sm font-medium tracking-tight text-slate-950">
         {label}
       </label>
       <input

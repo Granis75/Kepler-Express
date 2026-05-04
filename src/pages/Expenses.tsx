@@ -307,10 +307,10 @@ export function Expenses() {
           <SectionCard className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-slate-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-xs text-stone-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Search, queue, type, and approval.
                 </p>
               </div>
@@ -321,7 +321,7 @@ export function Expenses() {
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_170px_170px_170px]">
               <label className="relative block">
-                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
                 <input
                   data-ops-search="true"
                   type="text"
@@ -383,8 +383,8 @@ export function Expenses() {
             </div>
 
             {filteredMission ? (
-              <p className="text-xs text-stone-500">
-                Mission context: <span className="font-medium text-stone-900">{filteredMission.reference}</span>
+              <p className="text-xs text-slate-500">
+                Mission context: <span className="font-medium text-slate-900">{filteredMission.reference}</span>
               </p>
             ) : null}
           </SectionCard>
@@ -424,7 +424,7 @@ export function Expenses() {
                       setSelectedExpense(null)
                       setShowForm(true)
                     }}
-                    className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+                    className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
                   >
                     Create expense
                   </button>
@@ -441,22 +441,22 @@ export function Expenses() {
             />
           ) : (
             <SectionCard className="overflow-hidden p-0">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                 <div>
-                  <h2 className="font-heading text-[1.65rem] font-semibold tracking-tight text-stone-950">
+                  <h2 className="font-heading text-[1.65rem] font-semibold tracking-tight text-slate-950">
                     Expense queue
                   </h2>
-                  <p className="mt-0.5 text-xs text-stone-600">
+                  <p className="mt-0.5 text-xs text-slate-600">
                     Showing {filteredExpenses.length} of {expenses.length} expense
                     {filteredExpenses.length === 1 ? '' : 's'}.
                   </p>
                 </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] text-stone-600">
+                <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">
                   {queue === 'all' ? 'All expenses' : `Queue: ${queue.replace('-', ' ')}`}
                 </div>
               </div>
 
-              <div className="divide-y divide-stone-200">
+              <div className="divide-y divide-slate-200">
                 {filteredExpenses.map((expense) => (
                   <article
                     key={expense.expense_id}
@@ -467,7 +467,7 @@ export function Expenses() {
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-sm font-semibold text-stone-950">
+                        <h2 className="text-sm font-semibold text-slate-950">
                           {expenseTypeLabels[expense.expense_type]}
                         </h2>
                         <StatusBadge
@@ -478,7 +478,7 @@ export function Expenses() {
                           <StatusBadge label="receipt missing" tone="danger" />
                         ) : null}
                       </div>
-                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-sm text-stone-500">
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-sm text-slate-500">
                         {expense.mission_id ? (
                           <button
                             type="button"
@@ -490,38 +490,38 @@ export function Expenses() {
                                 }).toString(),
                               })
                             }
-                            className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
+                            className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                           >
                             {missionReferenceById.get(expense.mission_id) ?? 'Unknown mission'}
                           </button>
                         ) : (
                           <span>No linked mission</span>
                         )}
-                        <span className="text-stone-300">/</span>
-                        <span className="truncate text-xs text-stone-500">
+                        <span className="text-slate-300">/</span>
+                        <span className="truncate text-xs text-slate-500">
                           {expense.driver_name || expense.vehicle_name || 'Unassigned'}
                         </span>
                       </div>
                       {expense.notes ? (
-                        <p className="mt-1 line-clamp-1 text-xs text-stone-600">{expense.notes}</p>
+                        <p className="mt-1 line-clamp-1 text-xs text-slate-600">{expense.notes}</p>
                       ) : null}
                     </div>
 
-                    <div className="min-w-0 text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    <div className="min-w-0 text-sm text-slate-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Amount
                       </p>
-                      <p className="mt-1 font-medium text-stone-900">
+                      <p className="mt-1 font-medium text-slate-900">
                         {formatCurrencyWithDecimals(expense.amount)}
                       </p>
                       <p className="mt-1">{formatDate(expense.expense_date)}</p>
                     </div>
 
-                    <div className="min-w-0 text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    <div className="min-w-0 text-sm text-slate-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Cost control
                       </p>
-                      <p className="mt-1 font-medium text-stone-900">
+                      <p className="mt-1 font-medium text-slate-900">
                         {expense.receipt_present ? 'Receipt present' : 'Receipt missing'}
                       </p>
                       <p className="mt-1">
@@ -529,11 +529,11 @@ export function Expenses() {
                       </p>
                     </div>
 
-                    <div className="min-w-0 text-sm text-stone-500">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                    <div className="min-w-0 text-sm text-slate-500">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
                         Assignment
                       </p>
-                      <p className="mt-1 truncate font-medium text-stone-900">
+                      <p className="mt-1 truncate font-medium text-slate-900">
                         {expense.advanced_by_driver ? 'Driver advance' : 'Company paid'}
                       </p>
                       <p className="mt-1 truncate">
@@ -549,7 +549,7 @@ export function Expenses() {
                           setActionError(null)
                           setShowForm(true)
                         }}
-                        className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
+                        className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                       >
                         Edit
                       </button>

@@ -348,18 +348,18 @@ export function Layout({ children }: LayoutProps) {
   }, [commandPaletteOpen, location.pathname, location.search, navigate])
 
   return (
-    <div className="flex min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.07),_transparent_18%),linear-gradient(180deg,_#faf8f3_0%,_#f4efe8_100%)] text-stone-900">
-      <aside className="hidden border-r border-stone-200/80 bg-[#f7f2eb]/88 backdrop-blur md:sticky md:top-0 md:flex md:h-screen md:w-[292px] md:flex-col">
+    <div className="flex min-h-screen bg-[#f7f9fb] text-slate-950">
+      <aside className="hidden border-r border-slate-200 bg-white md:sticky md:top-0 md:flex md:h-screen md:w-[292px] md:flex-col">
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </aside>
 
       {sidebarOpen ? (
         <div
-          className="fixed inset-0 z-40 bg-stone-950/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         >
           <div
-            className="h-full w-[312px] border-r border-stone-200 bg-[#f7f2eb]"
+            className="h-full w-[312px] border-r border-slate-200 bg-white"
             onClick={(event) => event.stopPropagation()}
           >
             <Sidebar onClose={() => setSidebarOpen(false)} />
@@ -378,16 +378,16 @@ export function Layout({ children }: LayoutProps) {
 
       {commandPaletteOpen ? (
         <div
-          className="fixed inset-0 z-50 bg-stone-950/28 px-4 py-8 backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-slate-950/28 px-4 py-8 backdrop-blur-sm"
           onClick={closeCommandPalette}
         >
           <div
-            className="mx-auto mt-[8vh] w-full max-w-2xl overflow-hidden rounded-[1.75rem] border border-stone-200/90 bg-[#fcfaf6] shadow-[0_30px_90px_rgba(28,25,23,0.18)]"
+            className="mx-auto mt-[8vh] w-full max-w-2xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.18)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="border-b border-stone-200 px-5 py-4">
-              <div className="flex items-center gap-3 rounded-[1.15rem] border border-stone-200 bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-                <Search className="h-4 w-4 text-stone-400" />
+            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <Search className="h-4 w-4 text-slate-400" />
                 <input
                   ref={commandInputRef}
                   type="text"
@@ -440,23 +440,23 @@ export function Layout({ children }: LayoutProps) {
                   aria-controls="command-palette-results"
                   aria-expanded="true"
                   role="combobox"
-                  className="w-full bg-transparent text-sm text-stone-900 outline-none placeholder:text-stone-400"
+                  className="w-full bg-transparent text-sm text-slate-950 outline-none placeholder:text-slate-400"
                 />
-                <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-stone-500">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
                   Esc
                 </span>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-stone-500">
-                <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-slate-500">
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
                   {commandShortcutLabel}
                 </span>
-                <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
                   /
                 </span>
-                <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
                   Up Down
                 </span>
-                <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
                   G then key
                 </span>
               </div>
@@ -468,7 +468,7 @@ export function Layout({ children }: LayoutProps) {
               className="max-h-[60vh] overflow-y-auto px-3 py-3"
             >
               {filteredCommands.length === 0 ? (
-                <div className="rounded-[1.25rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500">
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                   No commands match the current search.
                 </div>
               ) : (
@@ -491,21 +491,21 @@ export function Layout({ children }: LayoutProps) {
                         aria-selected={isSelected}
                         className={
                           isSelected
-                            ? 'flex w-full items-center gap-3 rounded-[1.2rem] bg-stone-100 px-3 py-3 text-left shadow-[inset_0_0_0_1px_rgba(214,211,209,0.8)] transition'
-                            : 'flex w-full items-center gap-3 rounded-[1.2rem] px-3 py-3 text-left transition hover:bg-stone-100/80'
+                            ? 'flex w-full items-center gap-3 rounded-lg bg-slate-100 px-3 py-3 text-left shadow-[inset_0_0_0_1px_rgba(226,232,240,0.9)] transition'
+                            : 'flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-slate-50'
                         }
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] border border-stone-200 bg-white text-stone-700 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-teal-700 shadow-sm">
                           <Icon className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-stone-900">{item.label}</p>
-                          <p className="mt-0.5 truncate text-sm text-stone-500">
+                          <p className="text-sm font-medium text-slate-950">{item.label}</p>
+                          <p className="mt-0.5 truncate text-sm text-slate-500">
                             {item.description}
                           </p>
                         </div>
                         {item.shortcut ? (
-                          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-stone-500">
+                          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
                             {item.shortcut}
                           </span>
                         ) : null}

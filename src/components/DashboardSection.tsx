@@ -14,12 +14,12 @@ export function DashboardSection({
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
         {description && (
-          <p className="text-sm text-gray-600 mt-1">{description}</p>
+          <p className="mt-1 text-sm text-slate-600">{description}</p>
         )}
       </div>
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
         {children}
       </div>
     </div>

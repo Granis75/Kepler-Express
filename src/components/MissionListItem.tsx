@@ -13,11 +13,11 @@ export interface MissionListItemProps {
 }
 
 const statusStyles = {
-  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
-  delivered: 'bg-green-50 text-green-700 border-green-200',
-  cancelled: 'bg-gray-50 text-gray-700 border-gray-200',
-  issue: 'bg-red-50 text-red-700 border-red-200',
+  pending: 'bg-amber-50 text-amber-800 border-amber-200',
+  in_progress: 'bg-teal-50 text-teal-700 border-teal-200',
+  delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  cancelled: 'bg-slate-100 text-slate-700 border-slate-200',
+  issue: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 export function MissionListItem({
@@ -31,12 +31,12 @@ export function MissionListItem({
 }: MissionListItemProps) {
   const content = (
     <div className="flex items-start justify-between gap-4">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-sm font-medium text-gray-900">{reference}</p>
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-center gap-2">
+          <p className="text-sm font-medium text-slate-950">{reference}</p>
           <span
             className={clsx(
-              'inline-flex text-xs font-medium px-2 py-0.5 rounded border',
+              'inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em]',
               statusStyles[status]
             )}
           >
@@ -45,30 +45,30 @@ export function MissionListItem({
               : status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
         </div>
-        <p className="text-xs text-gray-600 truncate">
+        <p className="truncate text-xs text-slate-600">
           {client} • {route}
         </p>
-        <p className="text-xs text-gray-500 mt-1">{driver}</p>
+        <p className="mt-1 text-xs text-slate-500">{driver}</p>
       </div>
-      <div className="flex items-center gap-3 ml-2">
+      <div className="ml-2 flex items-center gap-3">
         <div className="text-right">
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-sm font-semibold text-slate-950">
             {formatCurrencyWithDecimals(revenue)}
           </p>
         </div>
-        {onClick && <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />}
+        {onClick && <ChevronRight size={16} className="shrink-0 text-slate-400" />}
       </div>
     </div>
   )
 
   if (!onClick) {
-    return <div className="p-4 border-b border-gray-100">{content}</div>
+    return <div className="border-b border-slate-200 p-4">{content}</div>
   }
 
   return (
     <button
       onClick={onClick}
-      className="w-full cursor-pointer text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-100"
+      className="w-full cursor-pointer border-b border-slate-200 p-4 text-left transition-colors duration-100 hover:bg-slate-50"
       type="button"
     >
       {content}

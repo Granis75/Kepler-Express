@@ -209,8 +209,8 @@ export function InvoiceForm({
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">
           Invoice Info
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -244,8 +244,8 @@ export function InvoiceForm({
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">
           Dates & Amount
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -280,30 +280,30 @@ export function InvoiceForm({
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_rgba(15,23,42,0.04)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950">
           Notes
         </h2>
         <textarea
           value={formData.notes}
           onChange={(event) => handleChange('notes', event.target.value)}
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-shell"
         />
       </div>
 
-      <div className="flex gap-3 sticky bottom-0 bg-white py-4 border-t border-gray-200">
+      <div className="sticky bottom-0 flex gap-3 border-t border-slate-200 bg-[#f7f9fb]/95 py-4 backdrop-blur">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="btn-primary"
         >
           {isLoading ? 'Saving...' : submitLabel}
         </button>

@@ -69,16 +69,16 @@ const invoiceQueueOptions = [
 ] as const
 
 const inlineLinkButtonClasses =
-  'inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const utilityActionButtonClasses =
-  'inline-flex items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const tertiaryActionButtonClasses =
-  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-stone-500 transition hover:bg-stone-100 hover:text-stone-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300'
+  'inline-flex items-center justify-center rounded-full px-2.5 py-1.5 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300'
 
 const checkboxClasses =
-  'h-4 w-4 rounded border-stone-300 accent-stone-900 text-stone-900 shadow-sm focus:ring-stone-300'
+  'h-4 w-4 rounded border-slate-300 accent-slate-900 text-slate-900 shadow-sm focus:ring-slate-300'
 
 export function Invoices() {
   const navigate = useNavigate()
@@ -537,10 +537,10 @@ export function Invoices() {
           <SectionCard className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-stone-950">
+                <h2 className="font-heading text-[1.35rem] font-semibold tracking-tight text-slate-950">
                   Filters
                 </h2>
-                <p className="mt-1 text-xs text-stone-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Search, queue, client, and status.
                 </p>
               </div>
@@ -551,7 +551,7 @@ export function Invoices() {
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_170px_180px_170px]">
               <label className="relative block">
-                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-stone-500" />
+                <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
                 <input
                   type="text"
                   data-ops-search="true"
@@ -692,20 +692,20 @@ export function Invoices() {
               <SectionCard className="overflow-hidden p-0">
                 <div
                   className={clsx(
-                    'flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 px-4',
+                    'flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4',
                     isCompact ? 'py-2.5' : 'py-3'
                   )}
                 >
                   <div>
                     <h2
                       className={clsx(
-                        'font-heading font-semibold tracking-tight text-stone-950',
+                        'font-heading font-semibold tracking-tight text-slate-950',
                         isCompact ? 'text-[1.65rem]' : 'text-2xl'
                       )}
                     >
                       Invoice queue
                     </h2>
-                    <p className={clsx('text-stone-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
+                    <p className={clsx('text-slate-600', isCompact ? 'mt-0.5 text-xs' : 'mt-1 text-sm')}>
                       Showing {filteredInvoices.length} of {invoices.length} invoice
                       {filteredInvoices.length === 1 ? '' : 's'}.
                     </p>
@@ -721,11 +721,11 @@ export function Invoices() {
 
                 <div
                   className={clsx(
-                    'hidden border-b border-stone-200 bg-stone-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_minmax(0,140px)_minmax(0,170px)_minmax(0,220px)_128px] md:gap-3',
+                    'hidden border-b border-slate-200 bg-slate-50/70 px-4 md:grid md:grid-cols-[minmax(0,1.35fr)_minmax(0,140px)_minmax(0,170px)_minmax(0,220px)_128px] md:gap-3',
                     isCompact ? 'py-1.5' : 'py-2'
                   )}
                 >
-                  <span className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     <input
                       type="checkbox"
                       checked={allVisibleSelected}
@@ -740,21 +740,21 @@ export function Invoices() {
                     />
                     <span>Invoice</span>
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Dates
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Amounts
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Linked missions
                   </span>
-                  <span className="text-right text-[11px] font-medium uppercase tracking-[0.18em] text-stone-500">
+                  <span className="text-right text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
                     Actions
                   </span>
                 </div>
 
-                <div className="divide-y divide-stone-200">
+                <div className="divide-y divide-slate-200">
                   {filteredInvoices.map((invoice) => {
                     const visibleMissionIds = invoice.mission_ids.slice(0, 2)
                     const remainingMissionCount =
@@ -794,8 +794,8 @@ export function Invoices() {
                                     isSelected ? 'bg-amber-100/45' : 'bg-amber-50/20'
                                   )
                                 : isSelected
-                                  ? 'border-l-stone-300 bg-stone-100/80'
-                                  : 'border-l-transparent hover:border-l-stone-300 hover:bg-stone-100'
+                                  ? 'border-l-slate-300 bg-slate-100/80'
+                                  : 'border-l-transparent hover:border-l-slate-300 hover:bg-slate-100'
                         )}
                       >
                         <div className="flex min-w-0 items-start gap-3">
@@ -809,10 +809,10 @@ export function Invoices() {
                           <button
                             type="button"
                             onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                            className="min-w-0 flex-1 rounded-[1rem] px-1 py-1 text-left transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                            className="min-w-0 flex-1 rounded-[1rem] px-1 py-1 text-left transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                           >
                             <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-950">
+                              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-slate-950">
                                 {invoice.invoice_number}
                               </h2>
                               <StatusBadge
@@ -823,11 +823,11 @@ export function Invoices() {
                                 <StatusBadge label="open balance" tone="warning" />
                               ) : null}
                             </div>
-                            <p className="mt-1 truncate text-sm font-medium text-stone-900">
+                            <p className="mt-1 truncate text-sm font-medium text-slate-900">
                               {clientNameById.get(invoice.client_id) ?? 'Unknown client'}
                             </p>
                             {invoice.notes ? (
-                              <p className="hidden text-[11px] text-stone-600 md:mt-0.5 md:block md:line-clamp-1">
+                              <p className="hidden text-[11px] text-slate-600 md:mt-0.5 md:block md:line-clamp-1">
                                 {truncateString(invoice.notes, 84)}
                               </p>
                             ) : null}
@@ -837,12 +837,12 @@ export function Invoices() {
                         <button
                           type="button"
                           onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left text-sm text-slate-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                         >
                           <p
                             className={clsx(
                               'font-medium',
-                              isOverdue ? 'text-rose-700' : 'text-stone-900'
+                              isOverdue ? 'text-rose-700' : 'text-slate-900'
                             )}
                           >
                             Due {formatDate(invoice.due_date)}
@@ -850,7 +850,7 @@ export function Invoices() {
                           <p
                             className={clsx(
                               isCompact ? 'mt-0.5 text-xs' : 'mt-1',
-                              isOverdue ? 'text-rose-700' : 'text-stone-600'
+                              isOverdue ? 'text-rose-700' : 'text-slate-600'
                             )}
                           >
                             Issued {formatDate(invoice.issue_date)}
@@ -860,7 +860,7 @@ export function Invoices() {
                         <button
                           type="button"
                           onClick={() => navigate(getInvoiceDetailRoute(invoice.invoice_id))}
-                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left text-sm text-stone-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+                          className="min-w-0 rounded-[1rem] px-1 py-1 text-left text-sm text-slate-600 transition hover:bg-white/65 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                         >
                           <p
                             className={clsx(
@@ -869,7 +869,7 @@ export function Invoices() {
                                 ? 'text-rose-700'
                                 : isPartial || isOpenBalance
                                   ? 'text-amber-700'
-                                  : 'text-stone-900'
+                                  : 'text-slate-900'
                             )}
                           >
                             Outstanding {formatCurrencyWithDecimals(outstandingAmount)}
@@ -882,10 +882,10 @@ export function Invoices() {
                           </p>
                         </button>
 
-                        <div className="min-w-0 text-sm text-stone-600">
+                        <div className="min-w-0 text-sm text-slate-600">
                           {invoice.mission_ids.length > 0 ? (
                             <>
-                              <p className="text-[11px] font-medium text-stone-600">
+                              <p className="text-[11px] font-medium text-slate-600">
                                 {invoice.mission_ids.length} linked mission
                                 {invoice.mission_ids.length === 1 ? '' : 's'}
                               </p>
@@ -913,15 +913,15 @@ export function Invoices() {
                                   </button>
                                 ))}
                                 {remainingMissionCount > 0 ? (
-                                  <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-500">
+                                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-500">
                                     +{remainingMissionCount} more
                                   </span>
                                 ) : null}
                               </div>
                             </>
                           ) : (
-                            <div className="border-t border-dashed border-stone-200 pt-2">
-                              <p className="text-xs text-stone-500">No linked missions</p>
+                            <div className="border-t border-dashed border-slate-200 pt-2">
+                              <p className="text-xs text-slate-500">No linked missions</p>
                             </div>
                           )}
                         </div>

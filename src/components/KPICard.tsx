@@ -23,24 +23,24 @@ export function KPICard({
   const content = (
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
           {label}
         </p>
-        <p className="text-2xl font-semibold text-gray-900 mt-2">{value}</p>
+        <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
         {change && (
           <p
             className={clsx(
-              'text-xs mt-2 font-medium',
-              trend === 'up' && 'text-red-600',
-              trend === 'down' && 'text-green-600',
-              trend === 'neutral' && 'text-gray-500'
+              'mt-2 text-xs font-medium',
+              trend === 'up' && 'text-rose-700',
+              trend === 'down' && 'text-emerald-700',
+              trend === 'neutral' && 'text-slate-500'
             )}
           >
             {change}
           </p>
         )}
       </div>
-      {icon && <div className="text-gray-400 ml-2">{icon}</div>}
+      {icon && <div className="ml-2 text-teal-700">{icon}</div>}
     </div>
   )
 
@@ -48,8 +48,8 @@ export function KPICard({
     return (
       <div
         className={clsx(
-          'text-left p-4 rounded-lg border',
-          variant === 'alert' ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white'
+          'rounded-lg border p-4 text-left shadow-[0_12px_32px_rgba(15,23,42,0.04)]',
+          variant === 'alert' ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'
         )}
       >
         {content}
@@ -61,11 +61,11 @@ export function KPICard({
     <button
       onClick={onClick}
       className={clsx(
-        'text-left p-4 rounded-lg border transition-all duration-150',
+        'rounded-lg border p-4 text-left transition-all duration-150',
         'hover:shadow-sm',
         variant === 'alert'
-          ? 'border-red-200 bg-red-50 hover:border-red-300'
-          : 'border-gray-200 bg-white hover:border-gray-300',
+          ? 'border-rose-200 bg-rose-50 hover:border-rose-300'
+          : 'border-slate-200 bg-white hover:border-slate-300',
         'cursor-pointer'
       )}
       type="button"

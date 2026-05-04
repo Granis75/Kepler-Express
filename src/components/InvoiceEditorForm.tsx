@@ -275,19 +275,19 @@ export function InvoiceEditorForm({
       <div>
         <div className="mb-3 flex items-center justify-between gap-4">
           <div>
-            <label className="block text-sm font-medium text-stone-900">Linked missions</label>
-            <p className="mt-1 text-sm text-stone-500">
+            <label className="block text-sm font-medium text-slate-950">Linked missions</label>
+            <p className="mt-1 text-sm text-slate-500">
               Select the missions billed on this invoice.
             </p>
           </div>
-          <div className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-700">
+          <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
             Suggested total {selectedRevenue.toLocaleString('fr-FR')} €
           </div>
         </div>
 
         <div className="grid gap-3">
           {availableMissions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm text-stone-500">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
               Select a client to load missions.
             </div>
           ) : (
@@ -297,21 +297,21 @@ export function InvoiceEditorForm({
               return (
                 <label
                   key={mission.mission_id}
-                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
                     checked
-                      ? 'border-stone-900 bg-stone-950 text-white'
-                      : 'border-stone-200 bg-white text-stone-900 hover:border-stone-300'
+                      ? 'border-slate-900 bg-slate-950 text-white'
+                      : 'border-slate-200 bg-white text-slate-950 hover:border-slate-300'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleMission(mission.mission_id)}
-                    className="mt-1 h-4 w-4 rounded border-stone-300"
+                    className="mt-1 h-4 w-4 rounded border-slate-300"
                   />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">{mission.reference}</p>
-                    <p className={checked ? 'text-sm text-stone-300' : 'text-sm text-stone-500'}>
+                    <p className={checked ? 'text-sm text-slate-300' : 'text-sm text-slate-500'}>
                       {mission.departure_location} to {mission.arrival_location}
                     </p>
                   </div>
@@ -327,27 +327,27 @@ export function InvoiceEditorForm({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-stone-900">Notes</label>
+        <label className="mb-1.5 block text-sm font-medium text-slate-950">Notes</label>
         <textarea
           value={formData.notes ?? ''}
           onChange={(event) => handleChange('notes', event.target.value)}
           rows={4}
-          className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+          className="input-shell"
         />
       </div>
 
-      <div className="flex flex-wrap justify-end gap-3 border-t border-stone-200 pt-5">
+      <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-5">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-400"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-primary"
         >
           {isLoading ? 'Saving invoice...' : initialData ? 'Save invoice' : 'Create invoice'}
         </button>
