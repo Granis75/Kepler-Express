@@ -5,5 +5,18 @@
       "source": "/(.*)",
       "destination": "/"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "kepler.anisconsult.com"
+        }
+      ],
+      "destination": "https://kepler.lyanstudio.com/:path*",
+      "permanent": true
+    }
   ]
 }
