@@ -53,18 +53,19 @@ The system is built around:
 
 ---
 
-## Impact
+## Intended operational benefits (not measured outcomes)
 
-- Reduced manual coordination  
-- Improved visibility across operations and costs  
-- Better alignment between execution and billing  
-- Clearer understanding of profitability per mission  
+The connected workflow is designed to improve traceability of missions, expenses, invoices and payments. These are **product objectives**, not independently validated time savings, revenue improvements or results from a verified customer deployment.
+
+This is a technical reference implementation; no real-world adoption figures or production certification are claimed.  
 
 ---
 
-## Live System
+## Public interface
 
-https://kepler-express.vercel.app/
+https://kepler.lyanstudio.com/
+
+The publicly reachable interface is a demonstration of the application. Accessible workflows, persistence and authentication must be tested before describing it as a fully usable production environment.
 
 ---
 
@@ -81,3 +82,10 @@ Supabase (data model & schema)
 ## Notes
 
 This project reflects a product-oriented approach, focusing on workflow structure, data logic and operational constraints rather than technical complexity.
+
+## Reviewer checklist
+
+1. Read the source architecture under `src/` and the Supabase model under `supabase/`.
+2. Run `npm install` and `npm run build` before modifying code.
+3. Use only fictional data in demonstrations; do not assume authentication or multi-tenant protections without checking backend policies.
+4. Keep the distinction between implemented features, demo accessibility and production use explicit.
