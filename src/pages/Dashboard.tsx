@@ -235,19 +235,39 @@ export function Dashboard() {
           }
         />
       ) : missions.length === 0 && invoices.length === 0 && expenses.length === 0 ? (
-        <StatePanel
-          title="Your workspace is ready for first data"
-          message="Create clients, missions, invoices, and expenses to turn this dashboard into a live operating console."
-          action={
-            <button
-              type="button"
-              onClick={() => navigate(appRoutes.clients)}
-              className="btn-primary"
-            >
-              Open clients
-            </button>
-          }
-        />
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">Getting started</p>
+          <h2 className="mt-3 text-2xl font-semibold text-slate-950">Set up your first delivery</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            Your workspace is empty. Start by adding a customer, then create a mission.
+            You can record its expenses, invoice the work and follow the payment afterwards.
+          </p>
+          <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ['1', 'Customer', 'Add the person or business you deliver for.'],
+              ['2', 'Mission', 'Record the pickup, delivery and price.'],
+              ['3', 'Expenses', 'Track costs such as fuel or tolls.'],
+              ['4', 'Invoice', 'Follow up on the amount you billed.'],
+              ['5', 'Payment', 'Keep track of what has been paid.'],
+            ].map(([number, label, description]) => (
+              <li key={number} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <span className="text-xs font-semibold text-teal-700">STEP {number}</span>
+                <h3 className="mt-2 text-sm font-semibold text-slate-950">{label}</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-600">{description}</p>
+              </li>
+            ))}
+          </ol>
+          <button
+            type="button"
+            onClick={() => navigate(appRoutes.clients)}
+            className="btn-primary mt-6"
+          >
+            Add your first customer
+          </button>
+          <p className="mt-3 text-xs text-slate-500">
+            These are instructions only. No example data has been added to your account.
+          </p>
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
